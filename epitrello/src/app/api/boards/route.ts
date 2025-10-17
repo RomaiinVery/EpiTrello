@@ -19,8 +19,18 @@ export async function POST(req: Request) {
     data: {
       title,
       description,
+      lists: {
+        create: [
+          { title: "À faire", position: 0 },
+          { title: "En cours", position: 1 },
+          { title: "Terminé", position: 2 },
+        ],
+      },
+    },
+    include: {
+      lists: true,
     },
   });
 
-  return NextResponse.json(board);
+  return NextResponse.json(board, { status: 201 });
 }
