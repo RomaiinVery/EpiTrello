@@ -9,7 +9,18 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { title } = await req.json();
-  const board = await prisma.board.create({ data: { title } });
+  const { title, description } = await req.json();
+
+  if (!title) {
+    return NextResponse.json({ error: "Title is required" }, { status: 400 });
+  }
+
+  const board = await prisma.board.create({
+    data: {
+      title,
+      description,
+    },
+  });
+
   return NextResponse.json(board);
 }
