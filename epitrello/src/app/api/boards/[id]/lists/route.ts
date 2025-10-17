@@ -16,7 +16,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
   const lists = await prisma.list.findMany({
     where: { boardId },
-    orderBy: { position: "asc" },
   });
 
   return NextResponse.json(lists);
