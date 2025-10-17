@@ -10,5 +10,6 @@ generator client {
 model Board {
   id        String   @id @default(cuid())
   title     String
+  description String?
   createdAt DateTime @default(now())
 }
