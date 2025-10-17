@@ -8,8 +8,19 @@ generator client {
 }
 
 model Board {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  lists       List[]
+}
+
+model List {
   id        String   @id @default(cuid())
   title     String
-  description String?
+  position  Int
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
   createdAt DateTime @default(now())
 }
