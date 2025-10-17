@@ -1,15 +1,22 @@
-import { PrismaClient } from "@prisma/client";
+'use client';
+import { useEffect, useState } from "react";
 
-const prisma = new PrismaClient();
+type Board = { id: string; title: string };
 
-export default async function BoardsPage() {
-  const boards = await prisma.board.findMany();
+export default function BoardsPage() {
+  const [boards, setBoards] = useState<Board[]>([]);
+
+  useEffect(() => {
+    fetch("/api/boards")
+      .then(res => res.json())
+      .then(data => setBoards(data));
+  }, []);
 
   return (
-    <div>
+    <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Boards</h1>
       <ul>
-        {boards.map((b) => (
+        {boards.map(b => (
           <li key={b.id} className="mb-2 p-2 border rounded-md">{b.title}</li>
         ))}
       </ul>
