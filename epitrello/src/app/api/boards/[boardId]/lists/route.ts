@@ -3,8 +3,8 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const boardId = params.id;
+export async function GET(request: Request, { params }: { params: { boardId: string } }) {
+  const boardId = await params.boardId;
 
   const board = await prisma.board.findUnique({
     where: { id: boardId },
@@ -21,8 +21,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   return NextResponse.json(lists);
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
-  const boardId = params.id;
+export async function POST(request: Request, { params }: { params: { boardId: string } }) {
+  const boardId = await params.boardId;
   const { title, position } = await request.json();
 
   if (!title || typeof title !== "string") {
