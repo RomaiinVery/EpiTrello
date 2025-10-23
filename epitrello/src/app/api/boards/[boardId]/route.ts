@@ -13,7 +13,7 @@ export async function GET(req: Request, { params }: { params: { boardId: string 
 }
 
 export async function DELETE(req: Request, { params }: { params: { boardId: string } }) {
-  const { boardId } = params;
+  const { boardId } = await params;
 
   try {
     const deletedBoard = await prisma.board.delete({

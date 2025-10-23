@@ -15,6 +15,12 @@ type List = {
   position: number;
 };
 
+type Card = {
+  id: string;
+  title: string;
+  content?: string | null;
+};
+
 type Board = {
   id: string;
   title: string;
@@ -30,6 +36,12 @@ async function fetchBoard(boardId: string): Promise<Board | null> {
 
 async function fetchLists(boardId: string): Promise<List[]> {
   const res = await fetch(`/api/boards/${boardId}/lists`, { cache: "no-store" });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function fetchCards(boardId: string, listId: string): Promise<Card[]> {
+  const res = await fetch(`/api/boards/${boardId}/lists/${listId}/cards`, { cache: "no-store" });
   if (!res.ok) return [];
   return res.json();
 }
@@ -58,6 +70,17 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // State for cards per list
+  const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>({});
+
+  // State for adding card dialog
+  const [showAddCardDialog, setShowAddCardDialog] = useState(false);
+  const [cardTitle, setCardTitle] = useState("");
+  const [cardContent, setCardContent] = useState("");
+  const [addingCard, setAddingCard] = useState(false);
+  const [addCardError, setAddCardError] = useState<string | null>(null);
+  const [listForNewCard, setListForNewCard] = useState<List | null>(null);
+
   React.useEffect(() => {
     let ignore = false;
     setLoading(true);
@@ -72,6 +95,15 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       const listsData = await fetchLists(boardId);
       if (ignore) return;
       setBoard({ ...boardData, lists: listsData });
+
+      // Fetch cards for each list
+      const cardsData: Record<string, Card[]> = {};
+      for (const list of listsData) {
+        const cards = await fetchCards(boardId, list.id);
+        if (ignore) return;
+        cardsData[list.id] = cards;
+      }
+      setCardsByList(cardsData);
       setLoading(false);
     }
     loadBoardAndLists();
@@ -118,6 +150,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
           ? { ...prev, lists: [...(prev.lists || []), newList] }
           : prev
       );
+      setCardsByList((prev) => ({ ...prev, [newList.id]: [] }));
       setShowDialog(false);
       setNewListTitle("");
     } catch (err) {
@@ -220,12 +253,69 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         const newLists = prev.lists.filter((l) => l.id !== listToDelete.id);
         return { ...prev, lists: newLists };
       });
+      setCardsByList((prev) => {
+        const newCardsByList = { ...prev };
+        delete newCardsByList[listToDelete.id];
+        return newCardsByList;
+      });
       setShowDeleteDialog(false);
       setListToDelete(null);
     } catch (err) {
       setDeleteError("Erreur réseau");
     }
     setDeleting(false);
+  };
+
+  // Handlers for adding card
+  const handleAddCardClick = (list: List) => {
+    setListForNewCard(list);
+    setCardTitle("");
+    setCardContent("");
+    setAddCardError(null);
+    setShowAddCardDialog(true);
+  };
+
+  const handleAddCardCancel = () => {
+    setShowAddCardDialog(false);
+    setCardTitle("");
+    setCardContent("");
+    setAddCardError(null);
+    setListForNewCard(null);
+  };
+
+  const handleAddCardConfirm = async () => {
+    if (!cardTitle.trim()) {
+      setAddCardError("Le titre ne peut pas être vide");
+      return;
+    }
+    if (!listForNewCard) return;
+    setAddingCard(true);
+    setAddCardError(null);
+    try {
+      const res = await fetch(`/api/boards/${boardId}/lists/${listForNewCard.id}/cards`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: cardTitle, content: cardContent }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setAddCardError(data.error || "Erreur lors de l'ajout de la carte");
+        setAddingCard(false);
+        return;
+      }
+      const newCard = await res.json();
+      setCardsByList((prev) => {
+        const prevCards = prev[listForNewCard.id] || [];
+        return { ...prev, [listForNewCard.id]: [...prevCards, newCard] };
+      });
+      setShowAddCardDialog(false);
+      setCardTitle("");
+      setCardContent("");
+      setListForNewCard(null);
+    } catch (err) {
+      setAddCardError("Erreur réseau");
+    }
+    setAddingCard(false);
   };
 
   if (loading) {
@@ -267,7 +357,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
           board.lists.map((list) => (
             <div
               key={list.id}
-              className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-sm relative"
+              className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-sm relative flex flex-col"
             >
               <div className="flex justify-between items-center mb-2">
                 <h2 className="font-semibold text-gray-800">{list.title}</h2>
@@ -291,7 +381,29 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <p className="text-sm text-gray-500 italic">Aucune carte pour l’instant</p>
+              {cardsByList[list.id] && cardsByList[list.id].length > 0 ? (
+                <div className="flex-grow overflow-y-auto max-h-[300px] mb-2">
+                  {cardsByList[list.id].map((card) => (
+                    <div key={card.id} className="bg-white rounded shadow p-2 mb-2">
+                      <h3 className="font-semibold text-gray-700">{card.title}</h3>
+                      {card.content && (
+                        <p className="text-gray-600 text-sm">{card.content}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic mb-2">Aucune carte pour l’instant</p>
+              )}
+
+              {/* Bouton ajouter une carte */}
+              <button
+                onClick={() => handleAddCardClick(list)}
+                className="mt-auto flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors py-1"
+                type="button"
+              >
+                + Ajouter une carte
+              </button>
             </div>
           ))
         ) : (
@@ -423,6 +535,56 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
                 type="button"
               >
                 {deleting ? "Suppression..." : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog popup pour ajouter une carte */}
+      {showAddCardDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Ajouter une carte</h3>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Titre de la carte"
+              value={cardTitle}
+              onChange={(e) => setCardTitle(e.target.value)}
+              disabled={addingCard}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddCardConfirm();
+              }}
+            />
+            <textarea
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+              placeholder="Contenu (optionnel)"
+              value={cardContent}
+              onChange={(e) => setCardContent(e.target.value)}
+              disabled={addingCard}
+              rows={3}
+            />
+            {addCardError && (
+              <div className="text-red-500 text-sm mb-2">{addCardError}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleAddCardCancel}
+                disabled={addingCard}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                onClick={handleAddCardConfirm}
+                disabled={addingCard}
+                type="button"
+              >
+                {addingCard ? "Ajout..." : "Ajouter"}
               </button>
             </div>
           </div>
