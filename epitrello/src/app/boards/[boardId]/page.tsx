@@ -74,12 +74,26 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
   const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>({});
 
   // State for adding card dialog
+  const [listForCardAction, setListForCardAction] = useState<string | null>(null);
   const [showAddCardDialog, setShowAddCardDialog] = useState(false);
   const [cardTitle, setCardTitle] = useState("");
   const [cardContent, setCardContent] = useState("");
   const [addingCard, setAddingCard] = useState(false);
   const [addCardError, setAddCardError] = useState<string | null>(null);
   const [listForNewCard, setListForNewCard] = useState<List | null>(null);
+
+  // New state variables for renaming card
+  const [showRenameCardDialog, setShowRenameCardDialog] = useState(false);
+  const [renameCardTitle, setRenameCardTitle] = useState("");
+  const [cardToRename, setCardToRename] = useState<Card | null>(null);
+  const [renamingCard, setRenamingCard] = useState(false);
+  const [renameCardError, setRenameCardError] = useState<string | null>(null);
+
+  // New state variables for deleting card
+  const [showDeleteCardDialog, setShowDeleteCardDialog] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
+  const [deletingCard, setDeletingCard] = useState(false);
+  const [deleteCardError, setDeleteCardError] = useState<string | null>(null);
 
   React.useEffect(() => {
     let ignore = false;
@@ -318,6 +332,110 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setAddingCard(false);
   };
 
+const handleRenameCard = (listId: string, cardId: string) => {
+  const card = cardsByList[listId]?.find((c) => c.id === cardId);
+  if (!card) return;
+  setCardToRename(card);
+  setListForCardAction(listId);
+  setRenameCardTitle(card.title);
+  setRenameCardError(null);
+  setShowRenameCardDialog(true);
+};
+
+const handleRenameCardCancel = () => {
+  setShowRenameCardDialog(false);
+  setCardToRename(null);
+  setRenameCardTitle("");
+  setRenameCardError(null);
+};
+
+const handleRenameCardConfirm = async () => {
+  console.log("c cliqué ici lol")
+  if (!cardToRename || !listForCardAction) return;
+  if (!renameCardTitle.trim()) {
+    setRenameCardError("Le titre ne peut pas être vide");
+    return;
+  }
+  setRenamingCard(true);
+  setRenameCardError(null);
+  try {
+    const res = await fetch(
+      `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToRename.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: renameCardTitle }),
+      }
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setRenameCardError(data.error || "Erreur lors du renommage");
+      setRenamingCard(false);
+      return;
+    }
+    const updatedCard = await res.json();
+    setCardsByList((prev) => {
+      const updatedCards = prev[listForCardAction].map((c) =>
+        c.id === updatedCard.id ? updatedCard : c
+      );
+      return { ...prev, [listForCardAction]: updatedCards };
+    });
+    setShowRenameCardDialog(false);
+    setCardToRename(null);
+    setRenameCardTitle("");
+  } catch (err) {
+    setRenameCardError("Erreur réseau");
+  }
+  setListForCardAction(null);
+  setRenamingCard(false);
+};
+
+const handleDeleteCard = (listId: string, cardId: string) => {
+  const card = cardsByList[listId]?.find((c) => c.id === cardId);
+  if (!card) return;
+  setCardToDelete(card);
+  setListForCardAction(listId);
+  setShowDeleteCardDialog(true);
+};
+
+const handleDeleteCardCancel = () => {
+  setShowDeleteCardDialog(false);
+  setCardToDelete(null);
+  setDeleteCardError(null);
+};
+
+const handleDeleteCardConfirm = async () => {
+  if (!cardToDelete || !listForCardAction) return;
+  setDeletingCard(true);
+  setDeleteCardError(null);
+  try {
+    const res = await fetch(
+      `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToDelete.id}`,
+      {
+        method: "DELETE",
+      }
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setDeleteCardError(data.error || "Erreur lors de la suppression");
+      setDeletingCard(false);
+      return;
+    }
+    setCardsByList((prev) => {
+      const filtered = prev[listForCardAction].filter(
+        (c) => c.id !== cardToDelete.id
+      );
+      return { ...prev, [listForCardAction]: filtered };
+    });
+    setShowDeleteCardDialog(false);
+    setCardToDelete(null);
+  } catch (err) {
+    setDeleteCardError("Erreur réseau");
+  }
+  setListForCardAction(null);
+  setDeletingCard(false);
+};
+
   if (loading) {
     return (
       <div className="p-6 text-center text-gray-500">
@@ -385,7 +503,28 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
                 <div className="flex-grow overflow-y-auto max-h-[300px] mb-2">
                   {cardsByList[list.id].map((card) => (
                     <div key={card.id} className="bg-white rounded shadow p-2 mb-2">
-                      <h3 className="font-semibold text-gray-700">{card.title}</h3>
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-semibold text-gray-700">{card.title}</h3>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                              aria-label="Menu"
+                              type="button"
+                            >
+                              &#x22EE;
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRenameCard(list.id, card.id)}>
+                              Renommer
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteCard(list.id, card.id)}>
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                       {card.content && (
                         <p className="text-gray-600 text-sm">{card.content}</p>
                       )}
@@ -585,6 +724,81 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
                 type="button"
               >
                 {addingCard ? "Ajout..." : "Ajouter"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog popup pour renommer une carte */}
+      {showRenameCardDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Renommer la carte</h3>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Nouveau titre"
+              value={renameCardTitle}
+              onChange={(e) => setRenameCardTitle(e.target.value)}
+              disabled={renamingCard}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameCardConfirm();
+              }}
+            />
+            {renameCardError && (
+              <div className="text-red-500 text-sm mb-2">{renameCardError}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleRenameCardCancel}
+                disabled={renamingCard}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                onClick={handleRenameCardConfirm}
+                disabled={renamingCard}
+                type="button"
+              >
+                {renamingCard ? "Renommage..." : "Renommer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog popup pour supprimer une carte */}
+      {showDeleteCardDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
+            <p className="mb-4">
+              Êtes-vous sûr de vouloir supprimer la carte "{cardToDelete?.title}" ?
+            </p>
+            {deleteCardError && (
+              <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleDeleteCardCancel}
+                disabled={deletingCard}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                onClick={handleDeleteCardConfirm}
+                disabled={deletingCard}
+                type="button"
+              >
+                {deletingCard ? "Suppression..." : "Supprimer"}
               </button>
             </div>
           </div>
