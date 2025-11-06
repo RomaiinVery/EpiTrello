@@ -37,7 +37,6 @@ export async function POST(request: NextRequest, { params }: { params: { boardId
       return NextResponse.json({ error: 'Title is required and must be a string' }, { status: 400 });
     }
 
-    // 🔹 Trouver la dernière position dans cette liste
     const lastCard = await prisma.card.findFirst({
       where: { listId },
       orderBy: { position: 'desc' },
@@ -45,7 +44,6 @@ export async function POST(request: NextRequest, { params }: { params: { boardId
 
     const nextPosition = lastCard ? lastCard.position + 1 : 0;
 
-    // 🔹 Créer la nouvelle carte avec la prochaine position
     const newCard = await prisma.card.create({
       data: {
         title,
