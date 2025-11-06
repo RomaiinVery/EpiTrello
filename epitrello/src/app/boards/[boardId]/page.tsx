@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import React from "react";
 import {
   DropdownMenu,
@@ -8,6 +8,25 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { createPortal } from "react-dom";
 
 type List = {
   id: string;
@@ -19,6 +38,8 @@ type Card = {
   id: string;
   title: string;
   content?: string | null;
+  listId: string;
+  position: number;
 };
 
 type Board = {
@@ -30,22 +51,198 @@ type Board = {
 
 async function fetchBoard(boardId: string): Promise<Board | null> {
   const res = await fetch(`/api/boards/${boardId}`, { cache: "no-store" });
-  if (!res.ok) return null; // Si 404, retourne null → “Board introuvable”
+  if (!res.ok) return null;
   return res.json();
 }
 
 async function fetchLists(boardId: string): Promise<List[]> {
   const res = await fetch(`/api/boards/${boardId}/lists`, { cache: "no-store" });
   if (!res.ok) return [];
-  return res.json();
+  // Trier par position
+  return (await res.json()).sort((a: List, b: List) => a.position - b.position);
 }
 
 async function fetchCards(boardId: string, listId: string): Promise<Card[]> {
   const res = await fetch(`/api/boards/${boardId}/lists/${listId}/cards`, { cache: "no-store" });
   if (!res.ok) return [];
-  return res.json();
+  // Trier par position
+  return (await res.json()).sort((a: Card, b: Card) => a.position - b.position);
 }
 
+function CardItem({ card, onRename, onDelete }: {
+  card: Card;
+  onRename: (listId: string, cardId: string) => void;
+  onDelete: (listId: string, cardId: string) => void;
+}) {
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: card.id,
+    data: {
+      type: "Card",
+      card,
+    },
+  });
+
+  const style = {
+    transition,
+    transform: CSS.Transform.toString(transform),
+  };
+
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="bg-gray-200 rounded shadow p-2 mb-2 h-24 opacity-50"
+      />
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="bg-white rounded shadow p-2 mb-2"
+    >
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="font-semibold text-gray-700">{card.title}</h3>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              aria-label="Menu"
+              type="button"
+            >
+              &#x22EE;
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onRename(card.listId, card.id)}>
+              Renommer
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(card.listId, card.id)}>
+              Supprimer
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {card.content && (
+        <p className="text-gray-600 text-sm">{card.content}</p>
+      )}
+    </div>
+  );
+}
+
+function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard }: {
+  list: List;
+  cards: Card[];
+  onRenameList: (listId: string) => void;
+  onDeleteList: (listId: string) => void;
+  onAddCard: (list: List) => void;
+  onRenameCard: (listId: string, cardId: string) => void;
+  onDeleteCard: (listId: string, cardId: string) => void;
+}) {
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: list.id,
+    data: {
+      type: "List",
+      list,
+    },
+  });
+
+  const style = {
+    transition,
+    transform: CSS.Transform.toString(transform),
+  };
+
+  const cardsMemo = useMemo(() => cards, [cards]);
+
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="w-64 min-w-[16rem] bg-gray-200 rounded-lg p-3 shadow-sm h-full opacity-50"
+      />
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-sm relative flex flex-col max-h-[calc(100vh-12rem)]"
+    >
+      <div {...attributes} {...listeners} className="flex justify-between items-center mb-2 cursor-grab active:cursor-grabbing">
+        <h2 className="font-semibold text-gray-800">{list.title}</h2>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              aria-label="Menu"
+              type="button"
+            >
+              &#x22EE;
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onRenameList(list.id)}>
+              Renommer
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDeleteList(list.id)}>
+              Supprimer
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Zone des cartes "triables" */}
+      <div className="flex-grow overflow-y-auto mb-2">
+        <SortableContext items={cardsMemo.map(c => c.id)} strategy={verticalListSortingStrategy}>
+          {cardsMemo.length > 0 ? (
+            cardsMemo.map((card) => (
+              <CardItem
+                key={card.id}
+                card={card}
+                onRename={onRenameCard}
+                onDelete={onDeleteCard}
+              />
+            ))
+          ) : (
+            <p className="text-sm text-gray-500 italic mb-2">Aucune carte</p>
+          )}
+        </SortableContext>
+      </div>
+
+      {/* Bouton ajouter une carte */}
+      <button
+        onClick={() => onAddCard(list)}
+        className="mt-auto flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors py-1"
+        type="button"
+      >
+        + Ajouter une carte
+      </button>
+    </div>
+  );
+}
+
+
+// == COMPOSANT PRINCIPAL DE LA PAGE ==
 export default function BoardPage({ params }: { params: { boardId: string } }) {
   // ICI ROBIN
   const { boardId } = params;
@@ -55,26 +252,24 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
   const [newListTitle, setNewListTitle] = useState("");
   const [addingList, setAddingList] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  // New state variables for rename dialog
+  // Rename dialog
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [renameTitle, setRenameTitle] = useState("");
   const [listToRename, setListToRename] = useState<List | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
 
-  // New state variables for delete dialog
+  // Delete dialog
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [listToDelete, setListToDelete] = useState<List | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // State for cards per list
+  // Cards state
   const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>({});
 
-  // State for adding card dialog
-  const [listForCardAction, setListForCardAction] = useState<string | null>(null);
+  // Add card dialog
   const [showAddCardDialog, setShowAddCardDialog] = useState(false);
   const [cardTitle, setCardTitle] = useState("");
   const [cardContent, setCardContent] = useState("");
@@ -82,18 +277,25 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
   const [addCardError, setAddCardError] = useState<string | null>(null);
   const [listForNewCard, setListForNewCard] = useState<List | null>(null);
 
-  // New state variables for renaming card
+  // Rename card dialog
+  const [listForCardAction, setListForCardAction] = useState<string | null>(null);
   const [showRenameCardDialog, setShowRenameCardDialog] = useState(false);
   const [renameCardTitle, setRenameCardTitle] = useState("");
   const [cardToRename, setCardToRename] = useState<Card | null>(null);
   const [renamingCard, setRenamingCard] = useState(false);
   const [renameCardError, setRenameCardError] = useState<string | null>(null);
 
-  // New state variables for deleting card
+  // Delete card dialog
   const [showDeleteCardDialog, setShowDeleteCardDialog] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
   const [deletingCard, setDeletingCard] = useState(false);
   const [deleteCardError, setDeleteCardError] = useState<string | null>(null);
+
+  // D&D state
+  const [activeList, setActiveList] = useState<List | null>(null);
+  const [activeCard, setActiveCard] = useState<Card | null>(null);
+
+  const listIds = useMemo(() => (board?.lists || []).map(l => l.id), [board?.lists]);
 
   React.useEffect(() => {
     let ignore = false;
@@ -110,12 +312,11 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       if (ignore) return;
       setBoard({ ...boardData, lists: listsData });
 
-      // Fetch cards for each list
       const cardsData: Record<string, Card[]> = {};
       for (const list of listsData) {
         const cards = await fetchCards(boardId, list.id);
         if (ignore) return;
-        cardsData[list.id] = cards;
+        cardsData[list.id] = cards.map(c => ({ ...c, listId: list.id }));
       }
       setCardsByList(cardsData);
       setLoading(false);
@@ -132,13 +333,11 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setNewListTitle("");
     setError(null);
   };
-
   const handleDialogCancel = () => {
     setShowDialog(false);
     setNewListTitle("");
     setError(null);
   };
-
   const handleDialogConfirm = async () => {
     if (!newListTitle.trim()) {
       setError("Le titre ne peut pas être vide");
@@ -147,10 +346,12 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setAddingList(true);
     setError(null);
     try {
+      const nextPosition = (board?.lists?.length || 0);
+
       const res = await fetch(`/api/boards/${boardId}/lists`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newListTitle }),
+        body: JSON.stringify({ title: newListTitle, position: nextPosition }), // Envoyer la position
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -173,10 +374,6 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setAddingList(false);
   };
 
-  const toggleMenu = (listId: string) => {
-    setOpenMenuId(openMenuId === listId ? null : listId);
-  };
-
   const handleRename = (listId: string) => {
     if (!board || !board.lists) return;
     const list = board.lists.find((l) => l.id === listId);
@@ -185,16 +382,13 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setRenameTitle(list.title);
     setRenameError(null);
     setShowRenameDialog(true);
-    setOpenMenuId(null);
   };
-
   const handleRenameCancel = () => {
     setShowRenameDialog(false);
     setRenameTitle("");
     setListToRename(null);
     setRenameError(null);
   };
-
   const handleRenameConfirm = async () => {
     if (!renameTitle.trim()) {
       setRenameError("Le titre ne peut pas être vide");
@@ -239,15 +433,12 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setListToDelete(list);
     setDeleteError(null);
     setShowDeleteDialog(true);
-    setOpenMenuId(null);
   };
-
   const handleDeleteCancel = () => {
     setShowDeleteDialog(false);
     setListToDelete(null);
     setDeleteError(null);
   };
-
   const handleDeleteConfirm = async () => {
     if (!listToDelete) return;
     setDeleting(true);
@@ -280,7 +471,6 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setDeleting(false);
   };
 
-  // Handlers for adding card
   const handleAddCardClick = (list: List) => {
     setListForNewCard(list);
     setCardTitle("");
@@ -288,7 +478,6 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setAddCardError(null);
     setShowAddCardDialog(true);
   };
-
   const handleAddCardCancel = () => {
     setShowAddCardDialog(false);
     setCardTitle("");
@@ -296,7 +485,6 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setAddCardError(null);
     setListForNewCard(null);
   };
-
   const handleAddCardConfirm = async () => {
     if (!cardTitle.trim()) {
       setAddCardError("Le titre ne peut pas être vide");
@@ -312,6 +500,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         body: JSON.stringify({ title: cardTitle, content: cardContent }),
       });
       if (!res.ok) {
+        // ... (gestion erreur)
         const data = await res.json().catch(() => ({}));
         setAddCardError(data.error || "Erreur lors de l'ajout de la carte");
         setAddingCard(false);
@@ -320,7 +509,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       const newCard = await res.json();
       setCardsByList((prev) => {
         const prevCards = prev[listForNewCard.id] || [];
-        return { ...prev, [listForNewCard.id]: [...prevCards, newCard] };
+        return { ...prev, [listForNewCard.id]: [...prevCards, { ...newCard, listId: listForNewCard.id }] };
       });
       setShowAddCardDialog(false);
       setCardTitle("");
@@ -332,109 +521,286 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setAddingCard(false);
   };
 
-const handleRenameCard = (listId: string, cardId: string) => {
-  const card = cardsByList[listId]?.find((c) => c.id === cardId);
-  if (!card) return;
-  setCardToRename(card);
-  setListForCardAction(listId);
-  setRenameCardTitle(card.title);
-  setRenameCardError(null);
-  setShowRenameCardDialog(true);
-};
-
-const handleRenameCardCancel = () => {
-  setShowRenameCardDialog(false);
-  setCardToRename(null);
-  setRenameCardTitle("");
-  setRenameCardError(null);
-};
-
-const handleRenameCardConfirm = async () => {
-  console.log("c cliqué ici lol")
-  if (!cardToRename || !listForCardAction) return;
-  if (!renameCardTitle.trim()) {
-    setRenameCardError("Le titre ne peut pas être vide");
-    return;
-  }
-  setRenamingCard(true);
-  setRenameCardError(null);
-  try {
-    const res = await fetch(
-      `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToRename.id}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: renameCardTitle }),
-      }
-    );
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setRenameCardError(data.error || "Erreur lors du renommage");
-      setRenamingCard(false);
-      return;
-    }
-    const updatedCard = await res.json();
-    setCardsByList((prev) => {
-      const updatedCards = prev[listForCardAction].map((c) =>
-        c.id === updatedCard.id ? updatedCard : c
-      );
-      return { ...prev, [listForCardAction]: updatedCards };
-    });
+  const handleRenameCard = (listId: string, cardId: string) => {
+    const card = cardsByList[listId]?.find((c) => c.id === cardId);
+    if (!card) return;
+    setCardToRename(card);
+    setListForCardAction(listId);
+    setRenameCardTitle(card.title);
+    setRenameCardError(null);
+    setShowRenameCardDialog(true);
+  };
+  const handleRenameCardCancel = () => {
     setShowRenameCardDialog(false);
     setCardToRename(null);
     setRenameCardTitle("");
-  } catch (err) {
-    setRenameCardError("Erreur réseau");
-  }
-  setListForCardAction(null);
-  setRenamingCard(false);
-};
-
-const handleDeleteCard = (listId: string, cardId: string) => {
-  const card = cardsByList[listId]?.find((c) => c.id === cardId);
-  if (!card) return;
-  setCardToDelete(card);
-  setListForCardAction(listId);
-  setShowDeleteCardDialog(true);
-};
-
-const handleDeleteCardCancel = () => {
-  setShowDeleteCardDialog(false);
-  setCardToDelete(null);
-  setDeleteCardError(null);
-};
-
-const handleDeleteCardConfirm = async () => {
-  if (!cardToDelete || !listForCardAction) return;
-  setDeletingCard(true);
-  setDeleteCardError(null);
-  try {
-    const res = await fetch(
-      `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToDelete.id}`,
-      {
-        method: "DELETE",
-      }
-    );
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setDeleteCardError(data.error || "Erreur lors de la suppression");
-      setDeletingCard(false);
+    setRenameCardError(null);
+  };
+  const handleRenameCardConfirm = async () => {
+    if (!cardToRename || !listForCardAction) return;
+    if (!renameCardTitle.trim()) {
+      setRenameCardError("Le titre ne peut pas être vide");
       return;
     }
-    setCardsByList((prev) => {
-      const filtered = prev[listForCardAction].filter(
-        (c) => c.id !== cardToDelete.id
+    setRenamingCard(true);
+    setRenameCardError(null);
+    try {
+      const res = await fetch(
+        `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToRename.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: renameCardTitle }),
+        }
       );
-      return { ...prev, [listForCardAction]: filtered };
-    });
+      if (!res.ok) {
+        // ... (gestion erreur)
+        const data = await res.json().catch(() => ({}));
+        setRenameCardError(data.error || "Erreur lors du renommage");
+        setRenamingCard(false);
+        return;
+      }
+      const updatedCard = await res.json();
+      setCardsByList((prev) => {
+        const updatedCards = prev[listForCardAction].map((c) =>
+          c.id === updatedCard.id ? { ...updatedCard, listId: listForCardAction } : c
+        );
+        return { ...prev, [listForCardAction]: updatedCards };
+      });
+      setShowRenameCardDialog(false);
+      setCardToRename(null);
+      setRenameCardTitle("");
+    } catch (err) {
+      setRenameCardError("Erreur réseau");
+    }
+    setListForCardAction(null);
+    setRenamingCard(false);
+  };
+
+  const handleDeleteCard = (listId: string, cardId: string) => {
+    const card = cardsByList[listId]?.find((c) => c.id === cardId);
+    if (!card) return;
+    setCardToDelete(card);
+    setListForCardAction(listId);
+    setShowDeleteCardDialog(true);
+  };
+  const handleDeleteCardCancel = () => {
     setShowDeleteCardDialog(false);
     setCardToDelete(null);
-  } catch (err) {
-    setDeleteCardError("Erreur réseau");
+    setDeleteCardError(null);
+  };
+  const handleDeleteCardConfirm = async () => {
+    if (!cardToDelete || !listForCardAction) return;
+    setDeletingCard(true);
+    setDeleteCardError(null);
+    try {
+      const res = await fetch(
+        `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToDelete.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteCardError(data.error || "Erreur lors de la suppression");
+        setDeletingCard(false);
+        return;
+      }
+      setCardsByList((prev) => {
+        const filtered = prev[listForCardAction].filter(
+          (c) => c.id !== cardToDelete.id
+        );
+        return { ...prev, [listForCardAction]: filtered };
+      });
+      setShowDeleteCardDialog(false);
+      setCardToDelete(null);
+    } catch (err) {
+      setDeleteCardError("Erreur réseau");
+    }
+    setListForCardAction(null);
+    setDeletingCard(false);
+  };
+
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    })
+  );
+
+  function handleDragStart(event: DragStartEvent) {
+    const { active } = event;
+    const { data } = active;
+
+    if (data.current?.type === "List") {
+      setActiveList(data.current.list);
+    }
+    if (data.current?.type === "Card") {
+      setActiveCard(data.current.card);
+    }
   }
-  setListForCardAction(null);
-  setDeletingCard(false);
-};
+
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    if (activeId === overId) return;
+
+    const isActiveACard = active.data.current?.type === "Card";
+    if (!isActiveACard) return;
+
+    const activeListId = active.data.current?.card.listId;
+
+    let overListId: string | null = null;
+    if (over.data.current?.type === "Card") {
+      overListId = over.data.current.card.listId;
+    } else if (over.data.current?.type === "List") {
+      overListId = over.id as string;
+    }
+
+    if (!overListId || !activeListId || activeListId === overListId) {
+      return;
+    }
+
+    setCardsByList((prev) => {
+      const sourceList = prev[activeListId];
+      const destList = prev[overListId];
+
+      if (!sourceList || !destList) {
+        return prev;
+      }
+
+      const activeIndex = sourceList.findIndex(c => c.id === activeId);
+      if (activeIndex === -1) {
+        return prev;
+      }
+
+      const newCardsState = { ...prev };
+
+      const [movedCard] = newCardsState[activeListId].splice(activeIndex, 1);
+
+      movedCard.listId = overListId;
+
+      newCardsState[overListId].push(movedCard);
+
+      return newCardsState;
+    });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveList(null);
+    setActiveCard(null);
+
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    const isActiveAList = active.data.current?.type === "List";
+
+    if (isActiveAList && activeId !== overId) {
+      setBoard((prev) => {
+        if (!prev || !prev.lists) return prev;
+        const activeIndex = prev.lists.findIndex((l) => l.id === activeId);
+        const overIndex = prev.lists.findIndex((l) => l.id === overId);
+        const newLists = arrayMove(prev.lists, activeIndex, overIndex);
+
+        const listsToUpdate = newLists.map((list, index) => ({ id: list.id, position: index }));
+        fetch(`/api/boards/${boardId}/lists/reorder`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lists: listsToUpdate }),
+        }).catch((err) => console.error("Failed to save list order", err));
+
+        return { ...prev, lists: newLists };
+      });
+      return;
+    }
+
+    const isActiveACard = active.data.current?.type === "Card";
+    if (isActiveACard) {
+      const activeListId = active.data.current?.card.listId;
+      let overListId: string | null = null;
+
+      if (over.data.current?.type === "Card") {
+        overListId = over.data.current.card.listId;
+      } else if (over.data.current?.type === "List") {
+        overListId = over.id as string;
+      }
+
+      if (!activeListId || !overListId) return;
+
+      setCardsByList((prev) => {
+        const sourceList = prev[activeListId];
+        const destList = prev[overListId];
+        if (!sourceList || !destList) return prev;
+
+        const activeIndex = sourceList.findIndex(c => c.id === activeId);
+        if (activeIndex === -1) {
+          const finalActiveIndex = destList.findIndex(c => c.id === activeId);
+          if (finalActiveIndex === -1) return prev;
+
+          let finalOverIndex: number;
+          if (over.id === activeId) {
+            finalOverIndex = finalActiveIndex;
+          } else {
+            finalOverIndex = destList.findIndex(c => c.id === overId);
+            if (finalOverIndex === -1) {
+              finalOverIndex = destList.length - 1;
+            }
+          }
+
+          const newDestList = arrayMove(destList, finalActiveIndex, finalOverIndex);
+          return { ...prev, [overListId]: newDestList };
+
+        } else {
+          const overIndex = destList.findIndex(c => c.id === overId);
+          if (overIndex === -1) return prev;
+
+          const newList = arrayMove(sourceList, activeIndex, overIndex);
+          return { ...prev, [activeListId]: newList };
+        }
+      });
+
+      setTimeout(() => {
+        setCardsByList(currentState => {
+          const sourceListCards = currentState[activeListId];
+          const destListCards = currentState[overListId];
+
+          let cardsToUpdate: { id: string, position: number, listId: string }[] = [];
+
+          if (activeListId === overListId) {
+            cardsToUpdate = sourceListCards.map((card, index) => ({
+              id: card.id, position: index, listId: activeListId,
+            }));
+          } else {
+            cardsToUpdate = [
+              ...sourceListCards.map((card, index) => ({
+                id: card.id, position: index, listId: activeListId,
+              })),
+              ...destListCards.map((card, index) => ({
+                id: card.id, position: index, listId: overListId,
+              })),
+            ];
+          }
+
+          fetch(`/api/boards/${boardId}/cards/reorder`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cards: cardsToUpdate }),
+          }).catch((err) => console.error("Failed to save card order", err));
+
+          return currentState;
+        });
+      }, 0);
+    }
+  }
 
   if (loading) {
     return (
@@ -452,8 +818,8 @@ const handleDeleteCardConfirm = async () => {
   }
 
   return (
-    <div className="p-6">
-      {/* Bouton retour */}
+    <div className="p-6 h-full flex flex-col">
+      {/* Return button */}
       <Link
         href="/boards"
         className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
@@ -461,7 +827,7 @@ const handleDeleteCardConfirm = async () => {
         ← Back
       </Link>
 
-      {/* Infos de la board */}
+      {/* Board infos */}
       <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
       {board.description && (
         <p className="text-gray-600 mb-4">{board.description}</p>
@@ -469,101 +835,71 @@ const handleDeleteCardConfirm = async () => {
 
       <hr className="my-4" />
 
-      {/* Zone des listes */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {board.lists && board.lists.length > 0 ? (
-          board.lists.map((list) => (
-            <div
-              key={list.id}
-              className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-sm relative flex flex-col"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="font-semibold text-gray-800">{list.title}</h2>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                      aria-label="Menu"
-                      type="button"
-                    >
-                      &#x22EE;
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleRename(list.id)}>
-                      Renommer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDelete(list.id)}>
-                      Supprimer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+      {/* D&D Context */}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-4 flex-1 items-start">
+          <SortableContext items={listIds} strategy={horizontalListSortingStrategy}>
+            {board.lists && board.lists.length > 0 ? (
+              board.lists.map((list) => (
+                <ListContainer
+                  key={list.id}
+                  list={list}
+                  cards={cardsByList[list.id] || []}
+                  onRenameList={handleRename}
+                  onDeleteList={handleDelete}
+                  onAddCard={handleAddCardClick}
+                  onRenameCard={handleRenameCard}
+                  onDeleteCard={handleDeleteCard}
+                />
+              ))
+            ) : (
+              <div className="text-gray-400 italic">
+                Aucune liste pour le moment
               </div>
-              {cardsByList[list.id] && cardsByList[list.id].length > 0 ? (
-                <div className="flex-grow overflow-y-auto max-h-[300px] mb-2">
-                  {cardsByList[list.id].map((card) => (
-                    <div key={card.id} className="bg-white rounded shadow p-2 mb-2">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-semibold text-gray-700">{card.title}</h3>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                              aria-label="Menu"
-                              type="button"
-                            >
-                              &#x22EE;
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRenameCard(list.id, card.id)}>
-                              Renommer
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteCard(list.id, card.id)}>
-                              Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      {card.content && (
-                        <p className="text-gray-600 text-sm">{card.content}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 italic mb-2">Aucune carte pour l’instant</p>
-              )}
+            )}
+          </SortableContext>
 
-              {/* Bouton ajouter une carte */}
-              <button
-                onClick={() => handleAddCardClick(list)}
-                className="mt-auto flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors py-1"
-                type="button"
-              >
-                + Ajouter une carte
-              </button>
-            </div>
-          ))
-        ) : (
-          <div className="text-gray-400 italic">
-            Aucune liste pour le moment
+          {/* Button add a list */}
+          <div className="w-64 min-w-[16rem]">
+            <button
+              onClick={handleAddListClick}
+              className="flex items-center justify-center h-full w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors"
+              type="button"
+            >
+              + Ajouter une liste
+            </button>
           </div>
+        </div>
+
+        {/* Portal to display the dragged item */}
+        {createPortal(
+          <DragOverlay>
+            {activeList && (
+              <div className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
+                <h2 className="font-semibold text-gray-800">{activeList.title}</h2>
+              </div>
+            )}
+            {activeCard && (
+              <div className="bg-white rounded shadow p-2 mb-2 w-64 opacity-90">
+                <h3 className="font-semibold text-gray-700">{activeCard.title}</h3>
+                {activeCard.content && (
+                  <p className="text-gray-600 text-sm">{activeCard.content}</p>
+                )}
+              </div>
+            )}
+          </DragOverlay>,
+          document.body
         )}
 
-        {/* Bouton ajouter une liste */}
-        <div className="w-64 min-w-[16rem]">
-          <button
-            onClick={handleAddListClick}
-            className="flex items-center justify-center h-full w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors"
-            type="button"
-          >
-            + Ajouter une liste
-          </button>
-        </div>
-      </div>
+      </DndContext>
 
-      {/* Dialog popup pour ajouter une liste */}
+
+      {/* Dialog popup to add a list */}
       {showDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
@@ -605,7 +941,7 @@ const handleDeleteCardConfirm = async () => {
         </div>
       )}
 
-      {/* Dialog popup pour renommer une liste */}
+      {/* Dialog popup to rename a list */}
       {showRenameDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
@@ -647,7 +983,7 @@ const handleDeleteCardConfirm = async () => {
         </div>
       )}
 
-      {/* Dialog popup pour supprimer une liste */}
+      {/* Dialog popup to delete a list */}
       {showDeleteDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
@@ -680,7 +1016,7 @@ const handleDeleteCardConfirm = async () => {
         </div>
       )}
 
-      {/* Dialog popup pour ajouter une carte */}
+      {/* Dialog popup to add a card */}
       {showAddCardDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
@@ -730,7 +1066,7 @@ const handleDeleteCardConfirm = async () => {
         </div>
       )}
 
-      {/* Dialog popup pour renommer une carte */}
+      {/* Dialog popup to rename a card */}
       {showRenameCardDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
@@ -772,7 +1108,7 @@ const handleDeleteCardConfirm = async () => {
         </div>
       )}
 
-      {/* Dialog popup pour supprimer une carte */}
+      {/* Dialog popup to delete a card */}
       {showDeleteCardDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
