@@ -7,7 +7,6 @@ const prisma = new PrismaClient();
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-
   if (!session || !session.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -22,10 +21,21 @@ export async function GET() {
 
   const boards = await prisma.board.findMany({
     where: {
-      userId: user.id,
+      OR: [
+        { userId: user.id },
+        { members: { some: { id: user.id } } }
+      ]
     },
     orderBy: {
       createdAt: 'desc'
+    },
+    include: {
+      members: {
+        select: { id: true, name: true, email: true }
+      },
+      user: {
+        select: { id: true, name: true, email: true }
+      }
     }
   });
 

@@ -16,6 +16,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   boards    Board[]
+
+  sharedBoards Board[] @relation("BoardMembers")
 }
 
 model Board {
@@ -27,7 +29,9 @@ model Board {
   lists       List[]
 
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade) // <-- AJOUT : Relation
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  members     User[]   @relation("BoardMembers")
 }
 
 model List {
