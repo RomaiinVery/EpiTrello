@@ -8,12 +8,14 @@ generator client {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String   // Hashed password
-  name        String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed password
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  boards    Board[]
 }
 
 model Board {
@@ -23,6 +25,9 @@ model Board {
   createdAt   DateTime @default(now())
 
   lists       List[]
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade) // <-- AJOUT : Relation
 }
 
 model List {

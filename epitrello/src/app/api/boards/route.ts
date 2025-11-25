@@ -1,14 +1,52 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const boards = await prisma.board.findMany();
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const boards = await prisma.board.findMany({
+    where: {
+      userId: user.id,
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
   return NextResponse.json(boards);
 }
 
 export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
   const { title, description } = await req.json();
 
   if (!title) {
@@ -19,11 +57,12 @@ export async function POST(req: Request) {
     data: {
       title,
       description,
+      userId: user.id,
       lists: {
         create: [
-          { title: "À faire", position: 0 },
-          { title: "En cours", position: 1 },
-          { title: "Terminé", position: 2 },
+          { title: "Todo", position: 0 },
+          { title: "Pending", position: 1 },
+          { title: "Finished", position: 2 },
         ],
       },
     },
