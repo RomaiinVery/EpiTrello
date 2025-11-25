@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -18,9 +17,15 @@ export default function AuthPage() {
     password: "",
   });
 
+  // Fonction utilitaire pour vérifier le format de l'email via Regex
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const toggleVariant = () => {
     setVariant((prev) => (prev === "LOGIN" ? "REGISTER" : "LOGIN"));
-    setErrorMessage(null); // Clear errors on switch
+    setErrorMessage(null); 
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,11 +39,11 @@ export default function AuthPage() {
     });
 
     if (callback?.error) {
-      setErrorMessage("Invalid credentials. Please check your email and password.");
+      // Message si l'email n'existe pas ou mot de passe faux (côté serveur)
+      setErrorMessage("Identifiants invalides. Vérifiez votre email et mot de passe.");
     }
 
     if (callback?.ok && !callback?.error) {
-      // Successful login -> Redirect to Dashboard
       router.push("/");
       router.refresh();
     }
@@ -60,7 +65,7 @@ export default function AuthPage() {
       await loginUser();
 
     } catch (error: any) {
-      setErrorMessage(error.message || "Something went wrong during registration.");
+      setErrorMessage(error.message || "Une erreur est survenue lors de l'inscription.");
     }
   };
 
@@ -68,6 +73,15 @@ export default function AuthPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
+
+    // 1. VÉRIFICATION DU FORMAT EMAIL (Côté Client)
+    if (!data.email || !isValidEmail(data.email)) {
+        setErrorMessage("Veuillez entrer une adresse email valide (ex: nom@domaine.com)");
+        setIsLoading(false); // Important : arrêter le chargement
+        return; // On arrête tout ici
+    }
+
+
 
     try {
       if (variant === "LOGIN") {
@@ -77,6 +91,7 @@ export default function AuthPage() {
       }
     } catch (error) {
       console.error(error);
+      setErrorMessage("Une erreur inattendue est survenue.");
     } finally {
       setIsLoading(false);
     }
@@ -85,25 +100,22 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       
-      {/* Header Logo / Title */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center text-5xl mb-4">📋</div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          {variant === "LOGIN" ? "Sign in to your account" : "Create your account"}
+          {variant === "LOGIN" ? "Connexion" : "Créer un compte"}
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           
-          {/* Main Form */}
           <form className="space-y-6" onSubmit={handleSubmit}>
             
-            {/* Name Field (Register Only) */}
             {variant === "REGISTER" && (
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Full Name
+                  Nom complet
                 </label>
                 <div className="mt-1">
                   <input
@@ -120,30 +132,33 @@ export default function AuthPage() {
               </div>
             )}
 
-            {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+                Adresse email
               </label>
               <div className="mt-1">
                 <input
                   id="email"
                   name="email"
-                  type="email"
+                  type="email" // Le type="email" aide aussi le navigateur
                   autoComplete="email"
                   required
                   disabled={isLoading}
                   value={data.email}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  // J'ajoute une bordure rouge conditionnelle si le message contient "email"
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${
+                    errorMessage && errorMessage.toLowerCase().includes("email") 
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  }`}
                 />
               </div>
             </div>
 
-            {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Mot de passe
               </label>
               <div className="mt-1">
                 <input
@@ -155,19 +170,23 @@ export default function AuthPage() {
                   disabled={isLoading}
                   value={data.password}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${
+                    errorMessage && errorMessage.toLowerCase().includes("mot de passe") 
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  }`}
                 />
               </div>
             </div>
 
-            {/* Error Feedback */}
+            {/* Zone d'affichage des erreurs */}
             {errorMessage && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-md">
+              <div className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 p-3 rounded-md flex items-center gap-2 animate-pulse">
+                <span>⚠️</span>
                 {errorMessage}
               </div>
             )}
 
-            {/* Submit Button */}
             <div>
               <button
                 type="submit"
@@ -180,16 +199,15 @@ export default function AuthPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Processing...
+                    Traitement...
                   </span>
                 ) : (
-                  variant === "LOGIN" ? "Sign in" : "Register"
+                  variant === "LOGIN" ? "Se connecter" : "S'inscrire"
                 )}
               </button>
             </div>
           </form>
 
-          {/* Toggle Link */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -197,7 +215,7 @@ export default function AuthPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">
-                  {variant === "LOGIN" ? "New to the platform?" : "Already have an account?"}
+                  {variant === "LOGIN" ? "Nouveau ici ?" : "Déjà un compte ?"}
                 </span>
               </div>
             </div>
@@ -207,7 +225,7 @@ export default function AuthPage() {
                 onClick={toggleVariant}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
-                {variant === "LOGIN" ? "Create an account" : "Sign in"}
+                {variant === "LOGIN" ? "Créer un compte" : "Se connecter"}
               </button>
             </div>
           </div>
