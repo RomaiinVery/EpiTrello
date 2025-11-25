@@ -7,6 +7,17 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed password
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  boards    Board[]
+}
+
 model Board {
   id          String   @id @default(cuid())
   title       String
@@ -14,6 +25,9 @@ model Board {
   createdAt   DateTime @default(now())
 
   lists       List[]
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade) // <-- AJOUT : Relation
 }
 
 model List {
