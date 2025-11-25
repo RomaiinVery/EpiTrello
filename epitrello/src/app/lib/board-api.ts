@@ -1,6 +1,5 @@
-// app/lib/board-api.ts
+import { prisma } from "./prisma";
 
-// On exporte les types pour qu'ils soient réutilisables
 export type List = {
   id: string;
   title: string;
@@ -22,23 +21,41 @@ export type Board = {
   lists?: List[];
 };
 
+
 export async function fetchBoard(boardId: string): Promise<Board | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/boards/${boardId}`, { cache: "no-store" });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const board = await prisma.board.findUnique({
+      where: { id: boardId },
+    });
+    return board;
+  } catch (error) {
+    console.error("Erreur fetchBoard:", error);
+    return null;
+  }
 }
 
 export async function fetchLists(boardId: string): Promise<List[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/boards/${boardId}/lists`, { cache: "no-store" });
-  if (!res.ok) return [];
-  return (await res.json()).sort((a: List, b: List) => a.position - b.position);
+  try {
+    const lists = await prisma.list.findMany({
+      where: { boardId },
+      orderBy: { position: 'asc' },
+    });
+    return lists;
+  } catch (error) {
+    console.error("Erreur fetchLists:", error);
+    return [];
+  }
 }
 
 export async function fetchCards(boardId: string, listId: string): Promise<Card[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/boards/${boardId}/lists/${listId}/cards`, { cache: "no-store" });
-  if (!res.ok) return [];
-  return (await res.json()).sort((a: Card, b: Card) => a.position - b.position);
+  try {
+    const cards = await prisma.card.findMany({
+      where: { listId },
+      orderBy: { position: 'asc' },
+    });
+    return cards;
+  } catch (error) {
+    console.error("Erreur fetchCards:", error);
+    return [];
+  }
 }
