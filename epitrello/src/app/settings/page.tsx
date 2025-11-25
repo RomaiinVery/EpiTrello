@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react"; // Import de useSession
 
 // --- Types ---
 type SettingsState = {
@@ -24,6 +25,8 @@ type PasswordState = {
 
 export default function SettingsPage() {
   const router = useRouter();
+  // Récupération de la session utilisateur
+  const { data: session, status } = useSession();
 
   // --- State Management ---
   const [values, setValues] = useState<SettingsState>({
@@ -39,34 +42,24 @@ export default function SettingsPage() {
   });
 
   const [passwords, setPasswords] = useState<PasswordState>({ current: "", newP: "", confirm: "" });
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // --- Effects ---
   
-  // Simulate fetching user data from an API
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setValues((v) => ({
-        ...v,
-        displayName: "Rob Z",
-        email: "rob@example.com",
-        timezone: "America/Los_Angeles",
-        language: "en",
-        theme: "system",
-        emailNotifications: true,
-        pushNotifications: true,
-        smsNotifications: false,
-        connectedGitHub: true,
-      }));
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
-  }, []);
+    useEffect(() => {
+        if (status === "authenticated" && session?.user) {
+        setValues((prev) => ({
+            ...prev,
+            displayName: session.user?.name || "", 
+            email: session.user?.email || "",
+            timezone: "Europe/Paris", 
+        }));
+        } else if (status === "unauthenticated") {
+            router.push("/auth");
+        }
+    }, [session, status, router]);
 
-  // --- Handlers ---
 
   function handleChange<K extends keyof SettingsState>(key: K, val: SettingsState[K]) {
     setValues((prev) => ({ ...prev, [key]: val }));
@@ -81,18 +74,17 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage(null);
 
-    // Simple Email Validation
     if (!/^\S+@\S+\.\S+$/.test(values.email)) {
       setMessage("Please provide a valid email address.");
       setSaving(false);
       return;
     }
 
-    // Simulate API call
+    // NOTE: Ici, il faudrait faire un appel API (PUT /api/user) pour sauvegarder en base de données.
+    // Pour l'instant, on simule juste la réussite visuelle.
     setTimeout(() => {
       setSaving(false);
-      setMessage("Settings saved successfully.");
-      // Auto-clear message after 3 seconds
+      setMessage("Settings saved successfully (Simulation).");
       setTimeout(() => setMessage(null), 3000);
     }, 800);
   }
@@ -125,12 +117,13 @@ export default function SettingsPage() {
 
   // --- Render ---
 
-  if (loading) {
+  // On utilise le status de NextAuth pour gérer le chargement
+  if (status === "loading") {
     return (
       <div className="flex h-screen w-full items-center justify-center text-gray-500">
         <div className="animate-pulse flex flex-col items-center">
             <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-            Loading settings...
+            Loading profile...
         </div>
       </div>
     );
@@ -147,7 +140,6 @@ export default function SettingsPage() {
                 className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600"
                 aria-label="Go back"
             >
-                {/* Back Arrow Icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                 </svg>
@@ -158,13 +150,13 @@ export default function SettingsPage() {
             </div>
         </div>
 
-        {/* Global Save Button (Top Right) */}
+        {/* Global Actions */}
         <div className="flex items-center gap-3">
             <button 
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={() => signOut({ callbackUrl: "/auth" })} 
+                className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors"
             >
-                Cancel
+                Logout
             </button>
             <button 
                 onClick={handleSubmit} 
@@ -203,7 +195,8 @@ export default function SettingsPage() {
               <label className="text-sm font-medium text-gray-700">Email Address</label>
               <input
                 type="email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                disabled // Généralement on empêche de changer l'email facilement sans verif
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
                 value={values.email}
                 onChange={(e) => handleChange("email", e.target.value)}
               />
@@ -218,7 +211,7 @@ export default function SettingsPage() {
               >
                 <option value="UTC">UTC</option>
                 <option value="America/Los_Angeles">America/Los_Angeles</option>
-                <option value="Europe/London">Europe/London</option>
+                <option value="Europe/Paris">Europe/Paris</option>
                 <option value="Asia/Tokyo">Asia/Tokyo</option>
               </select>
             </div>

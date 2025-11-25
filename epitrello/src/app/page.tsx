@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react"; // Import nécessaire pour gérer l'état
 
 type BoardHistory = {
   id: string;
@@ -12,6 +13,9 @@ type BoardHistory = {
 };
 
 export default function Home() {
+  // Récupération de la session utilisateur
+  const { data: session, status } = useSession();
+  
   const [recentBoards, setRecentBoards] = useState<BoardHistory[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -23,25 +27,18 @@ export default function Home() {
     if (storedHistory) {
       try {
         const parsedHistory: any[] = JSON.parse(storedHistory);
-        
-        // Data Integrity Check: Filter out items missing the 'link' property 
-        // This prevents crashes if local storage contains outdated schema data
         const validHistory = parsedHistory.filter((item) => item.link && item.id);
-        
         setRecentBoards(validHistory.sort((a, b) => b.timestamp - a.timestamp));
       } catch (e) {
         console.error("Failed to parse history", e);
-        // Clear corrupt data to reset state
         localStorage.removeItem("board_history");
       }
     }
   }, []);
 
-  // Handler: Update local storage when a navigation item is clicked
   const handleBoardClick = (value: string) => {
     let currentBoard: BoardHistory | null = null;
 
-    // Map button values to BoardHistory objects
     if (value === "boards") {
       currentBoard = {
         id: "boards",
@@ -70,7 +67,6 @@ export default function Home() {
     
     if (!currentBoard) return;
 
-    // Prevent duplicates and limit history to the last 4 items
     const newHistory = [
       currentBoard,
       ...recentBoards.filter((b) => b.id !== currentBoard!.id),
@@ -80,15 +76,82 @@ export default function Home() {
     localStorage.setItem("board_history", JSON.stringify(newHistory));
   };
 
-  // Prevent hydration mismatch by ensuring component is mounted before rendering
+  // Prevent hydration mismatch
   if (!isMounted) return null;
 
+  // ---------------------------------------------------------------------------
+  // CAS 1 : UTILISATEUR NON CONNECTÉ -> AFFICHER LA LANDING PAGE
+  // ---------------------------------------------------------------------------
+  if (status === "unauthenticated") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 text-center">
+        
+        <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
+          Organisez tout, <span className="text-blue-600">ensemble.</span>
+        </h1>
+        <p className="text-xl text-gray-500 max-w-2xl mb-10">
+          EpiTrello est l'outil de gestion de projet ultime. Gérez vos tâches, 
+          collaborez avec votre équipe et atteignez vos objectifs plus rapidement.
+        </p>
+        <div className="flex gap-4 flex-col sm:flex-row">
+          <Link 
+            href="/auth" 
+            className="px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 transform"
+          >
+            Commencer gratuitement
+          </Link>
+          <button 
+            className="px-8 py-4 text-lg font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all"
+          >
+            En savoir plus
+          </button>
+        </div>
+        
+        {/* Exemple de features en bas */}
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-left max-w-5xl">
+            <div className="p-6 bg-white border rounded-xl shadow-sm">
+                <div className="text-3xl mb-4">🚀</div>
+                <h3 className="font-bold text-lg mb-2">Rapide & Fluide</h3>
+                <p className="text-gray-500">Une interface réactive qui ne vous ralentit jamais.</p>
+            </div>
+            <div className="p-6 bg-white border rounded-xl shadow-sm">
+                <div className="text-3xl mb-4">🤝</div>
+                <h3 className="font-bold text-lg mb-2">Collaboratif</h3>
+                <p className="text-gray-500">Invitez votre équipe et assignez des tâches en un clic.</p>
+            </div>
+            <div className="p-6 bg-white border rounded-xl shadow-sm">
+                <div className="text-3xl mb-4">🔒</div>
+                <h3 className="font-bold text-lg mb-2">Sécurisé</h3>
+                <p className="text-gray-500">Vos données sont protégées par les meilleurs standards.</p>
+            </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CAS 2 : CHARGEMENT (Pendant que NextAuth vérifie le token)
+  if (status === "loading") {
+    return (
+        <div className="flex h-full items-center justify-center min-h-[60vh]">
+            <div className="animate-pulse flex flex-col items-center">
+                <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <span className="text-gray-500 font-medium">Chargement de votre espace...</span>
+            </div>
+        </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // CAS 3 : UTILISATEUR CONNECTÉ -> AFFICHER LE DASHBOARD
+  // ---------------------------------------------------------------------------
   return (
     <div className="max-w-5xl mx-auto">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome to your Workspace</h1>
-        <p className="text-gray-500 mt-2">What would you like to do today?</p>
+        <h1 className="text-3xl font-bold text-gray-800">
+            Bonjour, {session?.user?.name || "Utilisateur"} 👋
+        </h1>
+        <p className="text-gray-500 mt-2">Prêt à travailler ? Voici ton tableau de bord.</p>
       </div>
 
       {/* Main Navigation Grid */}
@@ -151,7 +214,7 @@ export default function Home() {
             {recentBoards.map((board) => (
               <Link
                 key={board.id}
-                href={board.link || "#"} // Fallback to avoid undefined prop error
+                href={board.link || "#"}
                 onClick={() => handleBoardClick(board.id)}
                 className={`
                   ${board.color} 
