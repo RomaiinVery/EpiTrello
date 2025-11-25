@@ -22,14 +22,20 @@ export async function GET(req: Request, { params }: { params: { boardId: string 
   const { boardId } = await params;
 
   const board = await prisma.board.findUnique({
-    where: { id: boardId }
+    where: { id: boardId },
+    include: {
+      members: true
+    }
   });
 
   if (!board) {
     return NextResponse.json({ error: "Board not found" }, { status: 404 });
   }
 
-  if (board.userId !== user.id) {
+  const isOwner = board.userId === user.id;
+  const isMember = board.members.some(member => member.id === user.id);
+
+  if (!isOwner && !isMember) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

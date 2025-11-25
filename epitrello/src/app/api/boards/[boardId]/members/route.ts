@@ -1,0 +1,59 @@
+// src/app/api/boards/[boardId]/members/route.ts
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../../auth/[...nextauth]/route";
+
+const prisma = new PrismaClient();
+
+export async function POST(req: Request, { params }: { params: { boardId: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!currentUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  const { boardId } = await params;
+  const { email } = await req.json();
+
+  if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
+
+  const board = await prisma.board.findUnique({
+    where: { id: boardId }
+  });
+
+  if (!board) return NextResponse.json({ error: "Board not found" }, { status: 404 });
+  if (board.userId !== currentUser.id) {
+    return NextResponse.json({ error: "Only the owner can invite members" }, { status: 403 });
+  }
+
+  const userToInvite = await prisma.user.findUnique({
+    where: { email }
+  });
+
+  if (!userToInvite) {
+    return NextResponse.json({ error: "User with this email does not exist" }, { status: 404 });
+  }
+
+  const isAlreadyMember = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      members: { some: { id: userToInvite.id } }
+    }
+  });
+
+  if (isAlreadyMember || board.userId === userToInvite.id) {
+    return NextResponse.json({ error: "User is already a member" }, { status: 400 });
+  }
+
+  await prisma.board.update({
+    where: { id: boardId },
+    data: {
+      members: {
+        connect: { id: userToInvite.id }
+      }
+    }
+  });
+
+  return NextResponse.json({ message: "Member added successfully", user: userToInvite });
+}
