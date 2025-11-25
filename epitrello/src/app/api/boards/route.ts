@@ -70,9 +70,9 @@ export async function POST(req: Request) {
       userId: user.id,
       lists: {
         create: [
-          { title: "Todo", position: 0 },
-          { title: "Pending", position: 1 },
-          { title: "Finished", position: 2 },
+          { title: "To Do", position: 0 },
+          { title: "Doing", position: 1 },
+          { title: "Done", position: 2 },
         ],
       },
     },
