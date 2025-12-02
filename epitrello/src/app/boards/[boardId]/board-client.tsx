@@ -128,6 +128,19 @@ function CardItem({ card, onRename, onDelete, onClick }: {
           ))}
         </div>
       )}
+      {card.members && card.members.length > 0 && (
+        <div className="flex items-center gap-1 mt-2">
+          {card.members.map((member) => (
+            <div
+              key={member.id}
+              className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
+              title={member.name || member.email}
+            >
+              {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

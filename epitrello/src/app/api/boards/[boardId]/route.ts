@@ -5,7 +5,7 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-export async function GET(req: Request, { params }: { params: { boardId: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ boardId: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,7 +24,20 @@ export async function GET(req: Request, { params }: { params: { boardId: string 
   const board = await prisma.board.findUnique({
     where: { id: boardId },
     include: {
-      members: true
+      members: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      },
     }
   });
 
@@ -42,7 +55,7 @@ export async function GET(req: Request, { params }: { params: { boardId: string 
   return NextResponse.json(board);
 }
 
-export async function DELETE(req: Request, { params }: { params: { boardId: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ boardId: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

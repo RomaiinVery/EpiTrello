@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LabelPicker } from "./LabelPicker";
@@ -11,6 +11,12 @@ type Label = {
   name: string;
   color: string;
   boardId: string;
+};
+
+type User = {
+  id: string;
+  email: string;
+  name?: string | null;
 };
 
 type CardDetail = {
@@ -23,6 +29,7 @@ type CardDetail = {
   updatedAt: string;
   archived: boolean;
   labels?: Label[];
+  members?: User[];
   list?: {
     id: string;
     title: string;
@@ -50,6 +57,9 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
+  const [members, setMembers] = useState<User[]>([]);
+  const [boardMembers, setBoardMembers] = useState<User[]>([]);
+  const [isAssigningMember, setIsAssigningMember] = useState(false);
 
   // Fetch card details when modal opens
   useEffect(() => {
@@ -71,6 +81,39 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       setTitle(cardData.title || "");
       setDescription(cardData.content || "");
       setLabels(cardData.labels || []);
+      setMembers(cardData.members || []);
+      
+      // Fetch board members
+      const boardRes = await fetch(`/api/boards/${boardId}`);
+      if (boardRes.ok) {
+        const boardData = await boardRes.json();
+        const allMembers: User[] = [];
+        
+        // Add owner if exists
+        if (boardData.user) {
+          allMembers.push({
+            id: boardData.user.id,
+            email: boardData.user.email,
+            name: boardData.user.name,
+          });
+        }
+        
+        // Add other members
+        if (boardData.members && Array.isArray(boardData.members)) {
+          boardData.members.forEach((m: any) => {
+            // Avoid duplicates (in case owner is also in members list)
+            if (!allMembers.some(existing => existing.id === m.id)) {
+              allMembers.push({
+                id: m.id,
+                email: m.email,
+                name: m.name,
+              });
+            }
+          });
+        }
+        
+        setBoardMembers(allMembers);
+      }
     } catch (err) {
       setError("Erreur lors du chargement de la carte");
       console.error(err);
@@ -261,11 +304,95 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                 />
               </div>
 
-              {/* Placeholder for future features */}
+              {/* Assigned Members Section */}
               <div className="border-t pt-4">
-                <p className="text-sm text-gray-500 italic">
-                  Plus de fonctionnalités à venir : dates d'échéance, membres assignés, commentaires, checklists...
-                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-gray-500" />
+                  <h3 className="text-sm font-semibold text-gray-700">Membres assignés</h3>
+                </div>
+                <div className="space-y-2">
+                  {members.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {members.map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold">
+                            {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm text-gray-700">
+                            {member.name || member.email}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(
+                                  `/api/boards/${boardId}/lists/${listId}/cards/${cardId}/members?userId=${member.id}`,
+                                  { method: "DELETE" }
+                                );
+                                if (res.ok) {
+                                  setMembers(members.filter(m => m.id !== member.id));
+                                  onUpdate();
+                                }
+                              } catch (err) {
+                                console.error("Error unassigning member:", err);
+                              }
+                            }}
+                            className="ml-1 text-gray-400 hover:text-red-600 transition-colors"
+                            aria-label="Retirer le membre"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Aucun membre assigné</p>
+                  )}
+                  <div className="mt-2">
+                    <select
+                      value=""
+                      onChange={async (e) => {
+                        const userId = e.target.value;
+                        if (!userId) return;
+                        
+                        setIsAssigningMember(true);
+                        try {
+                          const res = await fetch(
+                            `/api/boards/${boardId}/lists/${listId}/cards/${cardId}/members`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ userId }),
+                            }
+                          );
+                          if (res.ok) {
+                            const newMember = await res.json();
+                            setMembers([...members, newMember]);
+                            onUpdate();
+                            e.target.value = "";
+                          }
+                        } catch (err) {
+                          console.error("Error assigning member:", err);
+                        } finally {
+                          setIsAssigningMember(false);
+                        }
+                      }}
+                      disabled={isAssigningMember}
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                      <option value="">Assigner un membre...</option>
+                      {boardMembers
+                        .filter(m => !members.some(assigned => assigned.id === m.id))
+                        .map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name || member.email}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           )}

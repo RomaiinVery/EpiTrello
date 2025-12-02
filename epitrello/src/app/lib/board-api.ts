@@ -13,6 +13,12 @@ export type Label = {
   boardId: string;
 };
 
+export type User = {
+  id: string;
+  email: string;
+  name?: string | null;
+};
+
 export type Card = {
   id: string;
   title: string;
@@ -20,6 +26,7 @@ export type Card = {
   listId: string;
   position: number;
   labels?: Label[];
+  members?: User[];
 };
 
 export type Board = {
@@ -60,8 +67,32 @@ export async function fetchCards(boardId: string, listId: string): Promise<Card[
     const cards = await prisma.card.findMany({
       where: { listId },
       orderBy: { position: 'asc' },
+      include: {
+        labels: {
+          include: {
+            label: true,
+          },
+        },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
-    return cards;
+    
+    // Format cards to include labels and members as arrays
+    return cards.map(card => ({
+      ...card,
+      labels: card.labels.map(cl => cl.label),
+      members: card.members.map(cm => cm.user),
+    }));
   } catch (error) {
     console.error("Erreur fetchCards:", error);
     return [];

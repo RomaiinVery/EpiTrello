@@ -18,6 +18,7 @@ model User {
   boards    Board[]
 
   sharedBoards Board[] @relation("BoardMembers")
+  assignedCards CardMember[]
 }
 
 model Board {
@@ -58,6 +59,7 @@ model Card {
   archived  Boolean   @default(false)
   
   labels    CardLabel[]
+  members   CardMember[]
 }
 
 model Label {
@@ -81,4 +83,14 @@ model CardLabel {
   label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
   
   @@unique([cardId, labelId])
+}
+
+model CardMember {
+  id      String @id @default(cuid())
+  cardId  String
+  card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([cardId, userId])
 }

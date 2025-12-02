@@ -20,13 +20,25 @@ export async function GET(_request: NextRequest, { params }: { params: { boardId
             label: true,
           },
         },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    // Format cards to include labels as an array
+    // Format cards to include labels and members as arrays
     const formattedCards = cards.map(card => ({
       ...card,
       labels: card.labels.map(cl => cl.label),
+      members: card.members.map(cm => cm.user),
     }));
 
     return NextResponse.json(formattedCards, { status: 200 });

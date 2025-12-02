@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../../../auth/[...nextauth]/route";
+import { authOptions } from "../../../../../../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
+// GET: Get all members assigned to a card
 export async function GET(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -39,60 +40,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get the card with its list information, labels, and members
-    const card = await prisma.card.findUnique({
-      where: { id: cardId },
+    // Get card members
+    const cardMembers = await prisma.cardMember.findMany({
+      where: { cardId },
       include: {
-        list: {
+        user: {
           select: {
             id: true,
-            title: true,
-            boardId: true,
-          },
-        },
-        labels: {
-          include: {
-            label: true,
-          },
-        },
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-                name: true,
-              },
-            },
+            email: true,
+            name: true,
           },
         },
       },
     });
 
-    if (!card) {
-      return NextResponse.json({ error: "Card not found" }, { status: 404 });
-    }
+    const members = cardMembers.map(cm => cm.user);
 
-    // Verify the card belongs to the board
-    if (card.list.boardId !== boardId) {
-      return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
-    }
-
-    // Format the response to include labels and members as arrays
-    const formattedCard = {
-      ...card,
-      labels: card.labels.map(cl => cl.label),
-      members: card.members.map(cm => cm.user),
-    };
-
-    return NextResponse.json(formattedCard);
+    return NextResponse.json(members);
   } catch (error) {
-    console.error("Error fetching card:", error);
-    return NextResponse.json({ error: "Failed to fetch card" }, { status: 500 });
+    console.error("Error fetching card members:", error);
+    return NextResponse.json({ error: "Failed to fetch card members" }, { status: 500 });
   }
 }
 
-export async function PUT(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
+// POST: Assign a member to a card
+export async function POST(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
@@ -109,7 +81,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
     const body = await request.json();
-    const { title, content } = body;
+    const { userId } = body;
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
 
     // Verify user has access to the board
     const board = await prisma.board.findUnique({
@@ -128,57 +104,66 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (title === undefined && content === undefined) {
-      return NextResponse.json({ error: "At least one of 'title' or 'content' must be provided." }, { status: 400 });
+    // Verify the user to assign is a member of the board (owner or member)
+    const userToAssignIsOwner = board.userId === userId;
+    const userToAssignIsMember = board.members.some(m => m.id === userId);
+    if (!userToAssignIsOwner && !userToAssignIsMember) {
+      return NextResponse.json({ error: "User is not a member of this board" }, { status: 400 });
     }
 
-    const updatedCard = await prisma.card.update({
+    // Verify the card exists and belongs to the board
+    const card = await prisma.card.findUnique({
       where: { id: cardId },
+      include: { list: true },
+    });
+
+    if (!card) {
+      return NextResponse.json({ error: "Card not found" }, { status: 404 });
+    }
+
+    if (card.list.boardId !== boardId) {
+      return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
+    }
+
+    // Check if already assigned
+    const existing = await prisma.cardMember.findUnique({
+      where: {
+        cardId_userId: {
+          cardId,
+          userId,
+        },
+      },
+    });
+
+    if (existing) {
+      return NextResponse.json({ error: "User is already assigned to this card" }, { status: 400 });
+    }
+
+    // Assign the member
+    const cardMember = await prisma.cardMember.create({
       data: {
-        ...(title !== undefined && { title }),
-        ...(content !== undefined && { content }),
+        cardId,
+        userId,
       },
       include: {
-        list: {
+        user: {
           select: {
             id: true,
-            title: true,
-            boardId: true,
-          },
-        },
-        labels: {
-          include: {
-            label: true,
-          },
-        },
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-                name: true,
-              },
-            },
+            email: true,
+            name: true,
           },
         },
       },
     });
 
-    // Format the response
-    const formattedCard = {
-      ...updatedCard,
-      labels: updatedCard.labels.map(cl => cl.label),
-      members: updatedCard.members.map(cm => cm.user),
-    };
-
-    return NextResponse.json(formattedCard);
+    return NextResponse.json(cardMember.user);
   } catch (error) {
-    console.error("Error updating card:", error);
-    return NextResponse.json({ error: "Failed to update card." }, { status: 500 });
+    console.error("Error assigning member to card:", error);
+    return NextResponse.json({ error: "Failed to assign member to card" }, { status: 500 });
   }
 }
 
+// DELETE: Unassign a member from a card
 export async function DELETE(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -195,6 +180,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
     }
 
     const { cardId, boardId } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
 
     // Verify user has access to the board
     const board = await prisma.board.findUnique({
@@ -213,13 +204,34 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.card.delete({
+    // Verify the card exists and belongs to the board
+    const card = await prisma.card.findUnique({
       where: { id: cardId },
+      include: { list: true },
     });
 
-    return NextResponse.json({ message: "Card deleted successfully." });
+    if (!card) {
+      return NextResponse.json({ error: "Card not found" }, { status: 404 });
+    }
+
+    if (card.list.boardId !== boardId) {
+      return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
+    }
+
+    // Remove the assignment
+    await prisma.cardMember.delete({
+      where: {
+        cardId_userId: {
+          cardId,
+          userId,
+        },
+      },
+    });
+
+    return NextResponse.json({ message: "Member unassigned successfully" });
   } catch (error) {
-    console.error("Error deleting card:", error);
-    return NextResponse.json({ error: "Failed to delete card." }, { status: 500 });
+    console.error("Error unassigning member from card:", error);
+    return NextResponse.json({ error: "Failed to unassign member from card" }, { status: 500 });
   }
 }
+
