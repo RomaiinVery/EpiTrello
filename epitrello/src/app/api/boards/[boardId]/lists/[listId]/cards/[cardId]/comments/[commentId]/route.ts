@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../../../auth/[...nextauth]/route";
+import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
@@ -78,6 +79,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "You can only edit your own comments" }, { status: 403 });
     }
 
+    // Get card info for logging
+    const card = await prisma.card.findUnique({
+      where: { id: cardId },
+      select: { title: true },
+    });
+
     // Update the comment
     const updatedComment = await prisma.comment.update({
       where: { id: commentId },
@@ -91,6 +98,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
           },
         },
       },
+    });
+
+    // Log activity
+    await logActivity({
+      type: "comment_updated",
+      description: `${user.name || user.email} a modifié un commentaire sur la carte "${card?.title || ""}"`,
+      userId: user.id,
+      boardId,
+      cardId,
+      metadata: { cardTitle: card?.title },
     });
 
     return NextResponse.json(updatedComment);
@@ -167,9 +184,25 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "You can only delete your own comments" }, { status: 403 });
     }
 
+    // Get card info for logging
+    const card = await prisma.card.findUnique({
+      where: { id: cardId },
+      select: { title: true },
+    });
+
     // Delete the comment
     await prisma.comment.delete({
       where: { id: commentId },
+    });
+
+    // Log activity
+    await logActivity({
+      type: "comment_deleted",
+      description: `${user.name || user.email} a supprimé un commentaire sur la carte "${card?.title || ""}"`,
+      userId: user.id,
+      boardId,
+      cardId,
+      metadata: { cardTitle: card?.title },
     });
 
     return NextResponse.json({ message: "Comment deleted successfully" });

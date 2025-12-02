@@ -4,6 +4,7 @@ import { join } from "path";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../../auth/[...nextauth]/route";
+import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
@@ -129,6 +130,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       members: updatedCard.members.map(cm => cm.user),
     };
 
+    // Log activity
+    await logActivity({
+      type: "cover_uploaded",
+      description: `${user.name || user.email} a ajouté une image de couverture à la carte "${updatedCard.title || card.title}"`,
+      userId: user.id,
+      boardId,
+      cardId,
+      metadata: { cardTitle: updatedCard.title || card.title },
+    });
+
     return NextResponse.json({ coverImage: imageUrl, card: formattedCard });
   } catch (error) {
     console.error("Error uploading cover image:", error);
@@ -241,6 +252,16 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       labels: updatedCard.labels.map(cl => cl.label),
       members: updatedCard.members.map(cm => cm.user),
     };
+
+    // Log activity
+    await logActivity({
+      type: "cover_removed",
+      description: `${user.name || user.email} a retiré l'image de couverture de la carte "${updatedCard.title || card.title}"`,
+      userId: user.id,
+      boardId,
+      cardId,
+      metadata: { cardTitle: updatedCard.title || card.title },
+    });
 
     return NextResponse.json({ message: "Cover image removed", card: formattedCard });
   } catch (error) {

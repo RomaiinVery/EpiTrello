@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../../auth/[...nextauth]/route";
+import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
@@ -155,6 +156,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
           },
         },
       },
+    });
+
+    // Log activity
+    await logActivity({
+      type: "comment_added",
+      description: `${user.name || user.email} a ajouté un commentaire à la carte "${card?.title || ""}"`,
+      userId: user.id,
+      boardId,
+      cardId,
+      metadata: { cardTitle: card?.title },
     });
 
     return NextResponse.json(comment, { status: 201 });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../auth/[...nextauth]/route";
+import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
@@ -140,6 +141,16 @@ export async function POST(req: Request, { params }: { params: { boardId: string
       },
     });
 
+    // Log activity
+    await logActivity({
+      type: "label_added",
+      description: `${user.name || user.email} a ajouté le label "${label.name}" à la carte "${card.title}"`,
+      userId: user.id,
+      boardId,
+      cardId,
+      metadata: { labelName: label.name, labelColor: label.color, cardTitle: card.title },
+    });
+
     return NextResponse.json(cardLabel.label, { status: 201 });
   } catch (error) {
     console.error("Error adding label to card:", error);
@@ -188,6 +199,17 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Get label and card info for logging
+    const label = await prisma.label.findUnique({
+      where: { id: labelId },
+      select: { name: true, color: true },
+    });
+
+    const card = await prisma.card.findUnique({
+      where: { id: cardId },
+      select: { title: true },
+    });
+
     // Delete the card label relationship
     await prisma.cardLabel.delete({
       where: {
@@ -197,6 +219,18 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
         },
       },
     });
+
+    // Log activity
+    if (label && card) {
+      await logActivity({
+        type: "label_removed",
+        description: `${user.name || user.email} a retiré le label "${label.name}" de la carte "${card.title}"`,
+        userId: user.id,
+        boardId,
+        cardId,
+        metadata: { labelName: label.name, labelColor: label.color, cardTitle: card.title },
+      });
+    }
 
     return NextResponse.json({ message: "Label removed from card successfully" });
   } catch (error) {

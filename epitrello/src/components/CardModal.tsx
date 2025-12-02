@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, UserPlus, Users, Image, Trash2, MessageSquare, Edit2 } from "lucide-react";
+import { X, UserPlus, Users, Image, Trash2, MessageSquare, Edit2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LabelPicker } from "./LabelPicker";
@@ -26,6 +26,18 @@ type Comment = {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  user: User;
+};
+
+type Activity = {
+  id: string;
+  type: string;
+  description: string;
+  cardId: string | null;
+  boardId: string;
+  userId: string;
+  createdAt: string;
+  metadata: any;
   user: User;
 };
 
@@ -79,6 +91,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
 
   // Fetch card details when modal opens
   useEffect(() => {
@@ -101,6 +115,9 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       setDescription(cardData.content || "");
       setLabels(cardData.labels || []);
       setMembers(cardData.members || []);
+      
+      // Refresh activities when card is updated
+      await fetchActivities();
       
       // Fetch board members
       const boardRes = await fetch(`/api/boards/${boardId}`);
@@ -137,6 +154,9 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
 
       // Fetch comments
       await fetchComments();
+
+      // Fetch activities
+      await fetchActivities();
 
       // Fetch current user info from session
       try {
@@ -204,6 +224,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       const updatedCard = await res.json();
       setCard(updatedCard);
       setIsEditingTitle(false);
+      await fetchActivities(); // Refresh activities
       onUpdate(); // Refresh the board
     } catch (err) {
       setError("Erreur lors de la mise à jour du titre");
@@ -230,6 +251,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       const updatedCard = await res.json();
       setCard(updatedCard);
       setIsEditingDescription(false);
+      await fetchActivities(); // Refresh activities
       onUpdate(); // Refresh the board
     } catch (err) {
       setError("Erreur lors de la mise à jour de la description");
@@ -291,6 +313,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
 
       const data = await res.json();
       setCard(data.card);
+      await fetchActivities(); // Refresh activities
       onUpdate(); // Refresh the board
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erreur lors de l'upload de l'image";
@@ -322,6 +345,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
 
       const data = await res.json();
       setCard(data.card);
+      await fetchActivities(); // Refresh activities
       onUpdate(); // Refresh the board
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erreur lors de la suppression de l'image";
@@ -365,6 +389,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       const newCommentData = await res.json();
       setComments([...comments, newCommentData]);
       setNewComment("");
+      await fetchActivities(); // Refresh activities
       onUpdate(); // Refresh the board
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erreur lors de l'ajout du commentaire";
@@ -397,6 +422,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       setComments(comments.map(c => c.id === commentId ? updatedComment : c));
       setEditingCommentId(null);
       setEditingCommentContent("");
+      await fetchActivities(); // Refresh activities
       onUpdate(); // Refresh the board
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erreur lors de la modification du commentaire";
@@ -422,11 +448,27 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       }
 
       setComments(comments.filter(c => c.id !== commentId));
+      await fetchActivities(); // Refresh activities
       onUpdate(); // Refresh the board
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erreur lors de la suppression du commentaire";
       setError(errorMessage);
       console.error("Error deleting comment:", err);
+    }
+  };
+
+  const fetchActivities = async () => {
+    setLoadingActivities(true);
+    try {
+      const res = await fetch(`/api/boards/${boardId}/activities?cardId=${cardId}&limit=50`);
+      if (res.ok) {
+        const activitiesData = await res.json();
+        setActivities(activitiesData);
+      }
+    } catch (err) {
+      console.error("Error fetching activities:", err);
+    } finally {
+      setLoadingActivities(false);
     }
   };
 
@@ -638,6 +680,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                                 );
                                 if (res.ok) {
                                   setMembers(members.filter(m => m.id !== member.id));
+                                  await fetchActivities(); // Refresh activities
                                   onUpdate();
                                 }
                               } catch (err) {
@@ -675,6 +718,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                           if (res.ok) {
                             const newMember = await res.json();
                             setMembers([...members, newMember]);
+                            await fetchActivities(); // Refresh activities
                             onUpdate();
                             e.target.value = "";
                           }
@@ -839,6 +883,56 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                     ))
                   )}
                 </div>
+              </div>
+
+              {/* Activity Log Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <History className="w-4 h-4 text-gray-500" />
+                  <h3 className="text-sm font-semibold text-gray-700">Historique des activités</h3>
+                  {activities.length > 0 && (
+                    <span className="text-xs text-gray-500">({activities.length})</span>
+                  )}
+                </div>
+
+                {loadingActivities ? (
+                  <p className="text-sm text-gray-400 italic text-center py-4">
+                    Chargement...
+                  </p>
+                ) : activities.length === 0 ? (
+                  <p className="text-sm text-gray-400 italic text-center py-4">
+                    Aucune activité pour le moment
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="flex items-start gap-2 text-sm">
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-semibold flex-shrink-0 mt-0.5">
+                          {activity.user.name
+                            ? activity.user.name.charAt(0).toUpperCase()
+                            : activity.user.email.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-700">
+                            <span className="font-medium">
+                              {activity.user.name || activity.user.email}
+                            </span>{" "}
+                            {activity.description}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {new Date(activity.createdAt).toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               </div>
             </>

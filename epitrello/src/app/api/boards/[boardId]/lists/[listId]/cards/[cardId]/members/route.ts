@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../../auth/[...nextauth]/route";
+import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
@@ -143,6 +144,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "User is already assigned to this card" }, { status: 400 });
     }
 
+    // Get card info for logging
+    const card = await prisma.card.findUnique({
+      where: { id: cardId },
+      select: { title: true },
+    });
+
+    // Get user to assign info
+    const userToAssign = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    });
+
     // Assign the member
     const cardMember = await prisma.cardMember.create({
       data: {
@@ -157,6 +170,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
             name: true,
           },
         },
+      },
+    });
+
+    // Log activity
+    await logActivity({
+      type: "member_assigned",
+      description: `${user.name || user.email} a assigné ${userToAssign?.name || userToAssign?.email || "un membre"} à la carte "${card?.title || ""}"`,
+      userId: user.id,
+      boardId,
+      cardId,
+      metadata: {
+        assignedUserId: userId,
+        assignedUserName: userToAssign?.name || userToAssign?.email,
+        cardTitle: card?.title,
       },
     });
 
@@ -226,6 +253,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
 
+    // Get user to unassign info
+    const userToUnassign = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    });
+
     // Remove the assignment
     await prisma.cardMember.delete({
       where: {
@@ -233,6 +266,20 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
           cardId,
           userId,
         },
+      },
+    });
+
+    // Log activity
+    await logActivity({
+      type: "member_unassigned",
+      description: `${user.name || user.email} a retiré ${userToUnassign?.name || userToUnassign?.email || "un membre"} de la carte "${card.title}"`,
+      userId: user.id,
+      boardId,
+      cardId,
+      metadata: {
+        unassignedUserId: userId,
+        unassignedUserName: userToUnassign?.name || userToUnassign?.email,
+        cardTitle: card.title,
       },
     });
 

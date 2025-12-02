@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../auth/[...nextauth]/route";
+import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
@@ -132,7 +133,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (title === undefined && content === undefined && coverImage === undefined) {
+    if (title === undefined && content === undefined && coverImage !== undefined) {
       return NextResponse.json({ error: "At least one of 'title' or 'content' must be provided." }, { status: 400 });
     }
 
@@ -143,6 +144,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ 
         error: "coverImage cannot be updated via PUT. Use POST /cover to upload an image." 
       }, { status: 400 });
+    }
+
+    // Get the old card to compare changes
+    const oldCard = await prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        list: {
+          select: {
+            title: true,
+          },
+        },
+      },
+    });
+
+    if (!oldCard) {
+      return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
     const updatedCard = await prisma.card.update({
@@ -185,6 +202,30 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       members: updatedCard.members.map(cm => cm.user),
     };
 
+    // Log activity for changes
+    const changes: string[] = [];
+    if (title !== undefined && title !== oldCard.title) {
+      changes.push(`titre de "${oldCard.title}" à "${title}"`);
+    }
+    if (content !== undefined && content !== oldCard.content) {
+      changes.push("description");
+    }
+
+    if (changes.length > 0) {
+      await logActivity({
+        type: "card_updated",
+        description: `${user.name || user.email} a modifié ${changes.join(" et ")} de la carte "${updatedCard.title}"`,
+        userId: user.id,
+        boardId,
+        cardId,
+        metadata: {
+          oldTitle: oldCard.title,
+          newTitle: updatedCard.title,
+          listTitle: updatedCard.list.title,
+        },
+      });
+    }
+
     return NextResponse.json(formattedCard);
   } catch (error) {
     console.error("Error updating card:", error);
@@ -226,8 +267,34 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Get card info before deletion for logging
+    const card = await prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        list: {
+          select: {
+            title: true,
+          },
+        },
+      },
+    });
+
+    if (!card) {
+      return NextResponse.json({ error: "Card not found" }, { status: 404 });
+    }
+
     await prisma.card.delete({
       where: { id: cardId },
+    });
+
+    // Log activity
+    await logActivity({
+      type: "card_deleted",
+      description: `${user.name || user.email} a supprimé la carte "${card.title}"`,
+      userId: user.id,
+      boardId,
+      cardId: null, // Card is deleted, so no cardId
+      metadata: { cardTitle: card.title, listTitle: card.list.title },
     });
 
     return NextResponse.json({ message: "Card deleted successfully." });
