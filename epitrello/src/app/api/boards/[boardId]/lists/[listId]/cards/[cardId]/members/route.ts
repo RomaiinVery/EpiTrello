@@ -121,6 +121,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
+    if (!card.list) {
+      return NextResponse.json({ error: "Card list not found" }, { status: 404 });
+    }
+
     if (card.list.boardId !== boardId) {
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
@@ -212,6 +216,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     if (!card) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
+    }
+
+    if (!card.list) {
+      return NextResponse.json({ error: "Card list not found" }, { status: 404 });
     }
 
     if (card.list.boardId !== boardId) {

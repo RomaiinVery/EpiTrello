@@ -73,6 +73,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
+    if (!card.list) {
+      return NextResponse.json({ error: "Card list not found" }, { status: 404 });
+    }
+
     // Verify the card belongs to the board
     if (card.list.boardId !== boardId) {
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
@@ -129,7 +133,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
     }
 
     if (title === undefined && content === undefined && coverImage === undefined) {
-      return NextResponse.json({ error: "At least one of 'title', 'content', or 'coverImage' must be provided." }, { status: 400 });
+      return NextResponse.json({ error: "At least one of 'title' or 'content' must be provided." }, { status: 400 });
+    }
+
+    // Validate coverImage if provided (prevent XSS by only allowing safe file paths)
+    if (coverImage !== undefined) {
+      // Only allow coverImage updates through the dedicated /cover endpoint
+      // This prevents XSS attacks via data: URLs or malicious paths
+      return NextResponse.json({ 
+        error: "coverImage cannot be updated via PUT. Use POST /cover to upload an image." 
+      }, { status: 400 });
     }
 
     const updatedCard = await prisma.card.update({
@@ -137,7 +150,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       data: {
         ...(title !== undefined && { title }),
         ...(content !== undefined && { content }),
-        ...(coverImage !== undefined && { coverImage }),
       },
       include: {
         list: {

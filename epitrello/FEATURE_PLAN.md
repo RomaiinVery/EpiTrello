@@ -7,14 +7,20 @@
 - **Boards**: Create, read, update, delete, share
 - **Lists**: Create, rename, delete, reorder (drag & drop)
 - **Cards**: Create, rename, delete, reorder (drag & drop), basic content
-- **Database**: User, Board, List, Card models with relationships
+- **Card Details Modal**: Full card modal with title, description editing
+- **Card Labels/Tags**: Create labels, assign to cards, display on cards
+- **Assigned Members**: Assign board members to cards, display avatars
+- **Card Cover Images**: Upload and display cover images on cards
+- **Database**: User, Board, List, Card, Label, CardLabel, CardMember models with relationships
 - **UI Components**: Basic shadcn/ui components (Button, Dialog, Input, Card, Dropdown)
 - **Drag & Drop**: @dnd-kit for lists and cards
 
 ### ❌ Missing Core Features
-- Card details modal/view
+- Due dates (skipped/removed)
 - Workspaces/Teams
-- Advanced card features (labels, due dates, members, attachments, comments, checklists)
+- Comments system
+- Checklists
+- Attachments
 - Search and filtering
 - Board customization (backgrounds, colors)
 - Activity/History tracking
@@ -29,48 +35,48 @@
 **Goal**: Make cards functional and informative like Trello
 
 #### 1.1 Card Details Modal
-- [ ] **Backend**: Create card detail API endpoint (`GET /api/boards/[boardId]/cards/[cardId]`)
-- [ ] **Backend**: Update card API to handle full card data
-- [ ] **Frontend**: Create `CardModal` component
-- [ ] **Frontend**: Click card to open modal
-- [ ] **Frontend**: Modal layout with sidebar for actions
-- [ ] **UI**: Add close button, backdrop, animations
+- [x] **Backend**: Create card detail API endpoint (`GET /api/boards/[boardId]/cards/[cardId]`)
+- [x] **Backend**: Update card API to handle full card data
+- [x] **Frontend**: Create `CardModal` component
+- [x] **Frontend**: Click card to open modal
+- [x] **Frontend**: Modal layout with sidebar for actions
+- [x] **UI**: Add close button, backdrop, animations
 
 #### 1.2 Card Description
-- [ ] **Database**: Already have `content` field (can use as description)
-- [ ] **Frontend**: Rich text editor in card modal (or textarea for now)
-- [ ] **Frontend**: Show description preview on card (truncated)
-- [ ] **Frontend**: Edit description in modal
+- [x] **Database**: Already have `content` field (can use as description)
+- [x] **Frontend**: Rich text editor in card modal (or textarea for now)
+- [x] **Frontend**: Show description preview on card (truncated)
+- [x] **Frontend**: Edit description in modal
 
 #### 1.3 Card Labels/Tags
-- [ ] **Database**: Create `Label` model (id, name, color, boardId)
-- [ ] **Database**: Create `CardLabel` junction table
-- [ ] **Backend**: API for labels (CRUD)
-- [ ] **Backend**: API to add/remove labels from cards
-- [ ] **Frontend**: Label picker component in card modal
-- [ ] **Frontend**: Display labels on card (colored chips)
-- [ ] **Frontend**: Create/edit labels in board settings
+- [x] **Database**: Create `Label` model (id, name, color, boardId)
+- [x] **Database**: Create `CardLabel` junction table
+- [x] **Backend**: API for labels (CRUD)
+- [x] **Backend**: API to add/remove labels from cards
+- [x] **Frontend**: Label picker component in card modal
+- [x] **Frontend**: Display labels on card (colored chips)
+- [x] **Frontend**: Create/edit labels in board settings
 
 #### 1.4 Due Dates
-- [ ] **Database**: Add `dueDate` field to Card model
-- [ ] **Backend**: Update card API to handle due dates
-- [ ] **Frontend**: Date picker in card modal
-- [ ] **Frontend**: Show due date on card with visual indicator (overdue = red)
-- [ ] **Frontend**: Calendar icon with date
+- [ ] **Database**: Add `dueDate` field to Card model (SKIPPED - Feature removed)
+- [ ] **Backend**: Update card API to handle due dates (SKIPPED)
+- [ ] **Frontend**: Date picker in card modal (SKIPPED)
+- [ ] **Frontend**: Show due date on card with visual indicator (overdue = red) (SKIPPED)
+- [ ] **Frontend**: Calendar icon with date (SKIPPED)
 
 #### 1.5 Assigned Members
-- [ ] **Database**: Create `CardMember` junction table (cardId, userId)
-- [ ] **Backend**: API to assign/unassign members to cards
-- [ ] **Frontend**: Member picker in card modal (show board members)
-- [ ] **Frontend**: Display member avatars on card
-- [ ] **Frontend**: Show "Assigned to" in card modal
+- [x] **Database**: Create `CardMember` junction table (cardId, userId)
+- [x] **Backend**: API to assign/unassign members to cards
+- [x] **Frontend**: Member picker in card modal (show board members)
+- [x] **Frontend**: Display member avatars on card
+- [x] **Frontend**: Show "Assigned to" in card modal
 
 #### 1.6 Card Cover Images
-- [ ] **Database**: Add `coverImage` field to Card (URL or file path)
-- [ ] **Backend**: File upload API (or use external service like Cloudinary)
-- [ ] **Frontend**: Image upload in card modal
-- [ ] **Frontend**: Display cover image at top of card
-- [ ] **Frontend**: Remove/change cover image
+- [x] **Database**: Add `coverImage` field to Card (URL or file path)
+- [x] **Backend**: File upload API (or use external service like Cloudinary)
+- [x] **Frontend**: Image upload in card modal
+- [x] **Frontend**: Display cover image at top of card
+- [x] **Frontend**: Remove/change cover image
 
 ---
 

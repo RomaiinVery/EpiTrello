@@ -52,6 +52,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
+    if (!card.list) {
+      return NextResponse.json({ error: "Card list not found" }, { status: 404 });
+    }
+
     if (card.list.boardId !== boardId) {
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
@@ -177,6 +181,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
+    if (!card.list) {
+      return NextResponse.json({ error: "Card list not found" }, { status: 404 });
+    }
+
     if (card.list.boardId !== boardId) {
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
@@ -186,7 +194,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       try {
         const { unlink } = await import("fs/promises");
         const { join } = await import("path");
-        const filepath = join(process.cwd(), "public", card.coverImage);
+        // Remove leading slash to make it a relative path
+        const relativePath = card.coverImage.startsWith('/') ? card.coverImage.slice(1) : card.coverImage;
+        const filepath = join(process.cwd(), "public", relativePath);
         await unlink(filepath);
       } catch (fileError) {
         // File might not exist, continue anyway
