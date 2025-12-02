@@ -30,11 +30,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
 import { type List, type Card, type Board } from "@/app/lib/board-api";
+import { CardModal } from "@/components/CardModal";
 
-function CardItem({ card, onRename, onDelete }: {
+function CardItem({ card, onRename, onDelete, onClick }: {
   card: Card;
   onRename: (listId: string, cardId: string) => void;
   onDelete: (listId: string, cardId: string) => void;
+  onClick: (listId: string, cardId: string) => void;
 }) {
   const {
     setNodeRef,
@@ -71,17 +73,28 @@ function CardItem({ card, onRename, onDelete }: {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
-      className="bg-white rounded shadow p-2 mb-2"
+      className="bg-white rounded shadow p-2 mb-2 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={(e) => {
+        // Only open modal if not dragging and not clicking on dropdown
+        if (!isDragging && !(e.target as HTMLElement).closest('[role="menuitem"]')) {
+          onClick(card.listId, card.id);
+        }
+      }}
     >
       <div className="flex justify-between items-center mb-2">
-        <h3 className="font-semibold text-gray-700">{card.title}</h3>
+        <h3 
+          className="font-semibold text-gray-700 flex-1"
+          {...listeners}
+        >
+          {card.title}
+        </h3>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               className="text-gray-500 hover:text-gray-700 focus:outline-none"
               aria-label="Menu"
               type="button"
+              onClick={(e) => e.stopPropagation()}
             >
               &#x22EE;
             </button>
@@ -97,13 +110,13 @@ function CardItem({ card, onRename, onDelete }: {
         </DropdownMenu>
       </div>
       {card.content && (
-        <p className="text-gray-600 text-sm">{card.content}</p>
+        <p className="text-gray-600 text-sm line-clamp-2">{card.content}</p>
       )}
     </div>
   );
 }
 
-function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard }: {
+function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard, onCardClick }: {
   list: List;
   cards: Card[];
   onRenameList: (listId: string) => void;
@@ -111,6 +124,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
   onAddCard: (list: List) => void;
   onRenameCard: (listId: string, cardId: string) => void;
   onDeleteCard: (listId: string, cardId: string) => void;
+  onCardClick: (listId: string, cardId: string) => void;
 }) {
   const {
     setNodeRef,
@@ -182,6 +196,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
                 card={card}
                 onRename={onRenameCard}
                 onDelete={onDeleteCard}
+                onClick={onCardClick}
               />
             ))
           ) : (
@@ -246,6 +261,16 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
   const [deletingCard, setDeletingCard] = useState(false);
   const [deleteCardError, setDeleteCardError] = useState<string | null>(null);
+
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareEmail, setShareEmail] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [shareSuccess, setShareSuccess] = useState(false);
+
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
   const [activeList, setActiveList] = useState<List | null>(null);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
@@ -549,6 +574,113 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
     setDeletingCard(false);
   };
 
+  const handleShareClick = () => {
+    setShowShareDialog(true);
+    setShareEmail("");
+    setShareError(null);
+    setShareSuccess(false);
+  };
+
+  const handleShareCancel = () => {
+    setShowShareDialog(false);
+    setShareEmail("");
+    setShareError(null);
+    setShareSuccess(false);
+  };
+
+  const handleShareConfirm = async () => {
+    if (!shareEmail.trim()) {
+      setShareError("L'email ne peut pas être vide");
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(shareEmail.trim())) {
+      setShareError("Veuillez entrer une adresse email valide");
+      return;
+    }
+
+    setSharing(true);
+    setShareError(null);
+    setShareSuccess(false);
+
+    try {
+      const res = await fetch(`/api/boards/${boardId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: shareEmail.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setShareError(data.error || "Erreur lors du partage du tableau");
+        setSharing(false);
+        return;
+      }
+
+      setShareSuccess(true);
+      setShareEmail("");
+      
+      // Close dialog after 1.5 seconds on success
+      setTimeout(() => {
+        setShowShareDialog(false);
+        setShareSuccess(false);
+      }, 1500);
+    } catch (err) {
+      setShareError("Erreur réseau");
+    }
+    setSharing(false);
+  };
+
+  const handleCardClick = (listId: string, cardId: string) => {
+    setSelectedCardId(cardId);
+    setSelectedListId(listId);
+    setShowCardModal(true);
+  };
+
+  const handleCardModalClose = () => {
+    setShowCardModal(false);
+    setSelectedCardId(null);
+    setSelectedListId(null);
+  };
+
+  const handleCardUpdate = () => {
+    // Refresh cards data when card is updated
+    // This will be handled by refetching the board data
+    fetchBoardData();
+  };
+
+  const fetchBoardData = async () => {
+    try {
+      const res = await fetch(`/api/boards/${boardId}`);
+      if (res.ok) {
+        const boardData = await res.json();
+        setBoard((prev) => prev ? { ...prev, ...boardData } : boardData);
+      }
+
+      // Refetch lists and cards
+      const listsRes = await fetch(`/api/boards/${boardId}/lists`);
+      if (listsRes.ok) {
+        const listsData = await listsRes.json();
+        setBoard((prev) => prev ? { ...prev, lists: listsData } : prev);
+
+        // Refetch cards for each list
+        const newCardsByList: Record<string, Card[]> = {};
+        for (const list of listsData) {
+          const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);
+          if (cardsRes.ok) {
+            const cardsData = await cardsRes.json();
+            newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
+          }
+        }
+        setCardsByList((prev) => ({ ...prev, ...newCardsByList }));
+      }
+    } catch (err) {
+      console.error("Error refreshing board data:", err);
+    }
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -762,10 +894,21 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
         ← Back
       </Link>
 
-      <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
-      {board.description && (
-        <p className="text-gray-600 mb-4">{board.description}</p>
-      )}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
+          {board.description && (
+            <p className="text-gray-600 mb-4">{board.description}</p>
+          )}
+        </div>
+        <button
+          onClick={handleShareClick}
+          className="ml-4 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          type="button"
+        >
+          Partager
+        </button>
+      </div>
 
       <hr className="my-4" />
 
@@ -788,6 +931,7 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
                   onAddCard={handleAddCardClick}
                   onRenameCard={handleRenameCard}
                   onDeleteCard={handleDeleteCard}
+                  onCardClick={handleCardClick}
                 />
               ))
             ) : (
@@ -1063,6 +1207,67 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
             </div>
           </div>
         </div>
+      )}
+
+      {showShareDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Partager le tableau</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Entrez l'adresse email de l'utilisateur à inviter
+            </p>
+            <input
+              type="email"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="email@exemple.com"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+              disabled={sharing}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !sharing) handleShareConfirm();
+              }}
+            />
+            {shareError && (
+              <div className="text-red-500 text-sm mb-2">{shareError}</div>
+            )}
+            {shareSuccess && (
+              <div className="text-green-600 text-sm mb-2">
+                Tableau partagé avec succès !
+              </div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleShareCancel}
+                disabled={sharing}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                onClick={handleShareConfirm}
+                disabled={sharing}
+                type="button"
+              >
+                {sharing ? "Partage..." : "Partager"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card Modal */}
+      {showCardModal && selectedCardId && selectedListId && (
+        <CardModal
+          boardId={boardId}
+          cardId={selectedCardId}
+          listId={selectedListId}
+          isOpen={showCardModal}
+          onClose={handleCardModalClose}
+          onUpdate={handleCardUpdate}
+        />
       )}
     </div>
   );
