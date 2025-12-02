@@ -4,6 +4,14 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LabelPicker } from "./LabelPicker";
+
+type Label = {
+  id: string;
+  name: string;
+  color: string;
+  boardId: string;
+};
 
 type CardDetail = {
   id: string;
@@ -14,6 +22,7 @@ type CardDetail = {
   createdAt: string;
   updatedAt: string;
   archived: boolean;
+  labels?: Label[];
   list?: {
     id: string;
     title: string;
@@ -40,6 +49,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
   const [description, setDescription] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [labels, setLabels] = useState<Label[]>([]);
 
   // Fetch card details when modal opens
   useEffect(() => {
@@ -60,6 +70,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       setCard(cardData);
       setTitle(cardData.title || "");
       setDescription(cardData.content || "");
+      setLabels(cardData.labels || []);
     } catch (err) {
       setError("Erreur lors du chargement de la carte");
       console.error(err);
@@ -237,10 +248,23 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                 )}
               </div>
 
+              {/* Labels Section */}
+              <div className="border-t pt-4">
+                <LabelPicker
+                  boardId={boardId}
+                  cardId={cardId}
+                  selectedLabels={labels}
+                  onLabelsChange={(newLabels) => {
+                    setLabels(newLabels);
+                    onUpdate(); // Refresh the board
+                  }}
+                />
+              </div>
+
               {/* Placeholder for future features */}
               <div className="border-t pt-4">
                 <p className="text-sm text-gray-500 italic">
-                  Plus de fonctionnalités à venir : étiquettes, dates d'échéance, membres assignés, commentaires, checklists...
+                  Plus de fonctionnalités à venir : dates d'échéance, membres assignés, commentaires, checklists...
                 </p>
               </div>
             </div>

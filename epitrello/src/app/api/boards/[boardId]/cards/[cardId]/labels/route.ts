@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../../../auth/[...nextauth]/route";
+import { authOptions } from "../../../../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request, { params }: { params: { boardId: string; listId: string; cardId: string } }) {
+// GET - Get all labels for a card
+export async function GET(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
@@ -20,7 +21,7 @@ export async function GET(request: Request, { params }: { params: { boardId: str
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { cardId, boardId } = await params;
+    const { boardId, cardId } = await params;
 
     // Verify user has access to the board
     const board = await prisma.board.findUnique({
@@ -39,112 +40,115 @@ export async function GET(request: Request, { params }: { params: { boardId: str
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get the card with its list information and labels
-    const card = await prisma.card.findUnique({
-      where: { id: cardId },
+    // Get card labels
+    const cardLabels = await prisma.cardLabel.findMany({
+      where: { cardId },
       include: {
-        list: {
-          select: {
-            id: true,
-            title: true,
-            boardId: true,
-          },
-        },
-        labels: {
-          include: {
-            label: true,
-          },
-        },
+        label: true,
       },
     });
 
-    if (!card) {
+    const labels = cardLabels.map(cl => cl.label);
+
+    return NextResponse.json(labels);
+  } catch (error) {
+    console.error("Error fetching card labels:", error);
+    return NextResponse.json({ error: "Failed to fetch card labels" }, { status: 500 });
+  }
+}
+
+// POST - Add a label to a card
+export async function POST(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { boardId, cardId } = await params;
+    const { labelId } = await req.json();
+
+    if (!labelId) {
+      return NextResponse.json({ error: "Label ID is required" }, { status: 400 });
+    }
+
+    // Verify user has access to the board
+    const board = await prisma.board.findUnique({
+      where: { id: boardId },
+      include: { members: true },
+    });
+
+    if (!board) {
+      return NextResponse.json({ error: "Board not found" }, { status: 404 });
+    }
+
+    const isOwner = board.userId === user.id;
+    const isMember = board.members.some(member => member.id === user.id);
+
+    if (!isOwner && !isMember) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Verify label belongs to board
+    const label = await prisma.label.findUnique({
+      where: { id: labelId },
+    });
+
+    if (!label || label.boardId !== boardId) {
+      return NextResponse.json({ error: "Label not found" }, { status: 404 });
+    }
+
+    // Check if card exists and belongs to board
+    const card = await prisma.card.findUnique({
+      where: { id: cardId },
+      include: { list: true },
+    });
+
+    if (!card || card.list.boardId !== boardId) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
-    // Verify the card belongs to the board
-    if (card.list.boardId !== boardId) {
-      return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
-    }
-
-    // Format the response to include labels as an array
-    const formattedCard = {
-      ...card,
-      labels: card.labels.map(cl => cl.label),
-    };
-
-    return NextResponse.json(formattedCard);
-  } catch (error) {
-    console.error("Error fetching card:", error);
-    return NextResponse.json({ error: "Failed to fetch card" }, { status: 500 });
-  }
-}
-
-export async function PUT(request: Request, { params }: { params: { boardId: string; listId: string; cardId: string } }) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const { cardId, boardId } = await params;
-    const body = await request.json();
-    const { title, content } = body;
-
-    // Verify user has access to the board
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    if (title === undefined && content === undefined) {
-      return NextResponse.json({ error: "At least one of 'title' or 'content' must be provided." }, { status: 400 });
-    }
-
-    const updatedCard = await prisma.card.update({
-      where: { id: cardId },
-      data: {
-        ...(title !== undefined && { title }),
-        ...(content !== undefined && { content }),
-      },
-      include: {
-        list: {
-          select: {
-            id: true,
-            title: true,
-            boardId: true,
-          },
+    // Check if label is already on card
+    const existingCardLabel = await prisma.cardLabel.findUnique({
+      where: {
+        cardId_labelId: {
+          cardId,
+          labelId,
         },
       },
     });
 
-    return NextResponse.json(updatedCard);
+    if (existingCardLabel) {
+      return NextResponse.json({ error: "Label is already on this card" }, { status: 400 });
+    }
+
+    const cardLabel = await prisma.cardLabel.create({
+      data: {
+        cardId,
+        labelId,
+      },
+      include: {
+        label: true,
+      },
+    });
+
+    return NextResponse.json(cardLabel.label, { status: 201 });
   } catch (error) {
-    console.error("Error updating card:", error);
-    return NextResponse.json({ error: "Failed to update card." }, { status: 500 });
+    console.error("Error adding label to card:", error);
+    return NextResponse.json({ error: "Failed to add label to card" }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { boardId: string; listId: string; cardId: string } }) {
+// DELETE - Remove a label from a card
+export async function DELETE(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
@@ -159,7 +163,13 @@ export async function DELETE(request: Request, { params }: { params: { boardId: 
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { cardId, boardId } = await params;
+    const { boardId, cardId } = await params;
+    const { searchParams } = new URL(req.url);
+    const labelId = searchParams.get("labelId");
+
+    if (!labelId) {
+      return NextResponse.json({ error: "Label ID is required" }, { status: 400 });
+    }
 
     // Verify user has access to the board
     const board = await prisma.board.findUnique({
@@ -178,13 +188,20 @@ export async function DELETE(request: Request, { params }: { params: { boardId: 
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.card.delete({
-      where: { id: cardId },
+    // Delete the card label relationship
+    await prisma.cardLabel.delete({
+      where: {
+        cardId_labelId: {
+          cardId,
+          labelId,
+        },
+      },
     });
 
-    return NextResponse.json({ message: "Card deleted successfully." });
+    return NextResponse.json({ message: "Label removed from card successfully" });
   } catch (error) {
-    console.error("Error deleting card:", error);
-    return NextResponse.json({ error: "Failed to delete card." }, { status: 500 });
+    console.error("Error removing label from card:", error);
+    return NextResponse.json({ error: "Failed to remove label from card" }, { status: 500 });
   }
 }
+

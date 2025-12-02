@@ -27,6 +27,7 @@ model Board {
   createdAt   DateTime @default(now())
 
   lists       List[]
+  labels      Label[]
 
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -46,13 +47,38 @@ model List {
 }
 
 model Card {
-  id        String    @id @default(cuid())
+  id        String     @id @default(cuid())
   title     String
   content   String?
   position  Int
   listId    String
-  list      List      @relation(fields: [listId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  list      List       @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   archived  Boolean   @default(false)
+  
+  labels    CardLabel[]
+}
+
+model Label {
+  id        String     @id @default(cuid())
+  name      String
+  color     String     // hex color code
+  boardId   String
+  board     Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  
+  cards     CardLabel[]
+  
+  @@unique([boardId, name])
+}
+
+model CardLabel {
+  id      String @id @default(cuid())
+  cardId  String
+  card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  labelId String
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  
+  @@unique([cardId, labelId])
 }

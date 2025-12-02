@@ -14,9 +14,22 @@ export async function GET(_request: NextRequest, { params }: { params: { boardId
     const cards = await prisma.card.findMany({
       where: { listId },
       orderBy: { position: 'asc' },
+      include: {
+        labels: {
+          include: {
+            label: true,
+          },
+        },
+      },
     });
 
-    return NextResponse.json(cards, { status: 200 });
+    // Format cards to include labels as an array
+    const formattedCards = cards.map(card => ({
+      ...card,
+      labels: card.labels.map(cl => cl.label),
+    }));
+
+    return NextResponse.json(formattedCards, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to retrieve cards' }, { status: 500 });
   }

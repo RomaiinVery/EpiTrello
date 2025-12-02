@@ -112,8 +112,34 @@ function CardItem({ card, onRename, onDelete, onClick }: {
       {card.content && (
         <p className="text-gray-600 text-sm line-clamp-2">{card.content}</p>
       )}
+      {card.labels && card.labels.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {card.labels.map((label) => (
+            <div
+              key={label.id}
+              className="px-2 py-0.5 rounded text-xs font-medium"
+              style={{
+                backgroundColor: label.color,
+                color: isLabelColorLight(label.color) ? "#000" : "#fff",
+              }}
+            >
+              {label.name}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
+}
+
+// Helper function to determine if a color is light (for text contrast)
+function isLabelColorLight(color: string): boolean {
+  const hex = color.replace("#", "");
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 155;
 }
 
 function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard, onCardClick }: {

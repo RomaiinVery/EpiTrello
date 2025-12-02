@@ -6,12 +6,20 @@ export type List = {
   position: number;
 };
 
+export type Label = {
+  id: string;
+  name: string;
+  color: string;
+  boardId: string;
+};
+
 export type Card = {
   id: string;
   title: string;
   content?: string | null;
   listId: string;
   position: number;
+  labels?: Label[];
 };
 
 export type Board = {
