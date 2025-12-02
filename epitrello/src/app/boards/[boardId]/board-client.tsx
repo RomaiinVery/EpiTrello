@@ -73,7 +73,7 @@ function CardItem({ card, onRename, onDelete, onClick }: {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="bg-white rounded shadow p-2 mb-2 cursor-pointer hover:shadow-md transition-shadow"
+      className="bg-white rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
       onClick={(e) => {
         // Only open modal if not dragging and not clicking on dropdown
         if (!isDragging && !(e.target as HTMLElement).closest('[role="menuitem"]')) {
@@ -81,7 +81,15 @@ function CardItem({ card, onRename, onDelete, onClick }: {
         }
       }}
     >
-      <div className="flex justify-between items-center mb-2">
+      {card.coverImage && (
+        <img
+          src={card.coverImage}
+          alt="Cover"
+          className="w-full h-32 object-cover"
+        />
+      )}
+      <div className="p-2">
+        <div className="flex justify-between items-center mb-2">
         <h3 
           className="font-semibold text-gray-700 flex-1"
           {...listeners}
@@ -141,6 +149,7 @@ function CardItem({ card, onRename, onDelete, onClick }: {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

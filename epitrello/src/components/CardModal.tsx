@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, UserPlus, Users } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, UserPlus, Users, Image, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LabelPicker } from "./LabelPicker";
@@ -28,6 +28,7 @@ type CardDetail = {
   createdAt: string;
   updatedAt: string;
   archived: boolean;
+  coverImage?: string | null;
   labels?: Label[];
   members?: User[];
   list?: {
@@ -60,6 +61,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
   const [members, setMembers] = useState<User[]>([]);
   const [boardMembers, setBoardMembers] = useState<User[]>([]);
   const [isAssigningMember, setIsAssigningMember] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch card details when modal opens
   useEffect(() => {
@@ -194,6 +197,84 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Type de fichier non supporté. Utilisez JPEG, PNG, GIF ou WebP.");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setError("Fichier trop volumineux. Taille maximum : 5MB.");
+      return;
+    }
+
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`/api/boards/${boardId}/lists/${listId}/cards/${cardId}/cover`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erreur lors de l'upload de l'image");
+      }
+
+      const data = await res.json();
+      setCard(data.card);
+      onUpdate(); // Refresh the board
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erreur lors de l'upload de l'image";
+      setError(errorMessage);
+      console.error("Error uploading image:", err);
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (!card?.coverImage) return;
+
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/boards/${boardId}/lists/${listId}/cards/${cardId}/cover`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erreur lors de la suppression de l'image");
+      }
+
+      const data = await res.json();
+      setCard(data.card);
+      onUpdate(); // Refresh the board
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erreur lors de la suppression de l'image";
+      setError(errorMessage);
+      console.error("Error removing image:", err);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -247,16 +328,24 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : error ? (
-            <div className="text-red-500 text-center py-8">{error}</div>
+            <div className="text-red-500 text-center py-8 px-6">{error}</div>
           ) : (
-            <div className="space-y-6">
-              {/* Description Section */}
+            <>
+              {card?.coverImage && (
+                <img
+                  src={card.coverImage}
+                  alt="Cover"
+                  className="w-full h-48 object-cover"
+                />
+              )}
+              <div className="p-6 space-y-6">
+                {/* Description Section */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-sm font-semibold text-gray-700">Description</h3>
@@ -289,6 +378,67 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Cover Image Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Image className="w-4 h-4 text-gray-500" />
+                  <h3 className="text-sm font-semibold text-gray-700">Image de couverture</h3>
+                </div>
+                <div className="space-y-2">
+                  {card?.coverImage ? (
+                    <div className="relative group">
+                      <img
+                        src={card.coverImage}
+                        alt="Cover"
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingImage}
+                          >
+                            <Image className="w-4 h-4 mr-2" />
+                            Changer
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={handleRemoveImage}
+                            disabled={uploadingImage}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Supprimer
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <Image className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500 mb-3">Aucune image de couverture</p>
+                      <Button
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                      >
+                        <Image className="w-4 h-4 mr-2" />
+                        {uploadingImage ? "Upload..." : "Ajouter une image"}
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </div>
               </div>
 
               {/* Labels Section */}
@@ -394,7 +544,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            </>
           )}
         </div>
 

@@ -25,6 +25,7 @@ export type Card = {
   content?: string | null;
   listId: string;
   position: number;
+  coverImage?: string | null;
   labels?: Label[];
   members?: User[];
 };

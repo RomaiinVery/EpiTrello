@@ -109,7 +109,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
     const body = await request.json();
-    const { title, content } = body;
+    const { title, content, coverImage } = body;
 
     // Verify user has access to the board
     const board = await prisma.board.findUnique({
@@ -128,8 +128,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (title === undefined && content === undefined) {
-      return NextResponse.json({ error: "At least one of 'title' or 'content' must be provided." }, { status: 400 });
+    if (title === undefined && content === undefined && coverImage === undefined) {
+      return NextResponse.json({ error: "At least one of 'title', 'content', or 'coverImage' must be provided." }, { status: 400 });
     }
 
     const updatedCard = await prisma.card.update({
@@ -137,6 +137,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       data: {
         ...(title !== undefined && { title }),
         ...(content !== undefined && { content }),
+        ...(coverImage !== undefined && { coverImage }),
       },
       include: {
         list: {
