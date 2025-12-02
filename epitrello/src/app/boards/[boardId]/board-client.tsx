@@ -29,8 +29,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
-import { type List, type Card, type Board } from "@/app/lib/board-api";
+import { type List, type Card, type Board, type Checklist } from "@/app/lib/board-api";
 import { CardModal } from "@/components/CardModal";
+import { CheckSquare } from "lucide-react";
 
 function CardItem({ card, onRename, onDelete, onClick }: {
   card: Card;
@@ -147,6 +148,25 @@ function CardItem({ card, onRename, onDelete, onClick }: {
               {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
             </div>
           ))}
+        </div>
+      )}
+      {card.checklists && card.checklists.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {card.checklists.map((checklist) => {
+            const checkedCount = checklist.items.filter(item => item.checked).length;
+            const totalCount = checklist.items.length;
+            if (totalCount === 0) return null;
+            
+            return (
+              <div key={checklist.id} className="flex items-center gap-2 text-xs text-gray-600">
+                <CheckSquare className="w-3 h-3" />
+                <span className="flex-1">{checklist.title}</span>
+                <span className="font-medium">
+                  {checkedCount}/{totalCount}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
       </div>

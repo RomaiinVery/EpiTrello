@@ -66,6 +66,7 @@ model Card {
   members    CardMember[]
   comments   Comment[]
   activities Activity[]
+  checklists Checklist[]
 }
 
 model Label {
@@ -124,4 +125,27 @@ model Activity {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   metadata    String?  // JSON string for additional data (e.g., old list, new list, label name, etc.)
   createdAt   DateTime @default(now())
+}
+
+model Checklist {
+  id        String   @id @default(cuid())
+  title     String
+  position  Int
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  items     ChecklistItem[]
+}
+
+model ChecklistItem {
+  id          String    @id @default(cuid())
+  text        String
+  checked     Boolean   @default(false)
+  position    Int
+  checklistId String
+  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

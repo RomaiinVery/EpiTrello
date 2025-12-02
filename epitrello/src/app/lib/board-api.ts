@@ -19,6 +19,22 @@ export type User = {
   name?: string | null;
 };
 
+export type ChecklistItem = {
+  id: string;
+  text: string;
+  checked: boolean;
+  position: number;
+  checklistId: string;
+};
+
+export type Checklist = {
+  id: string;
+  title: string;
+  position: number;
+  cardId: string;
+  items: ChecklistItem[];
+};
+
 export type Card = {
   id: string;
   title: string;
@@ -28,6 +44,7 @@ export type Card = {
   coverImage?: string | null;
   labels?: Label[];
   members?: User[];
+  checklists?: Checklist[];
 };
 
 export type Board = {
@@ -85,14 +102,23 @@ export async function fetchCards(boardId: string, listId: string): Promise<Card[
             },
           },
         },
+        checklists: {
+          include: {
+            items: {
+              orderBy: { position: 'asc' },
+            },
+          },
+          orderBy: { position: 'asc' },
+        },
       },
     });
     
-    // Format cards to include labels and members as arrays
+    // Format cards to include labels, members, and checklists as arrays
     return cards.map(card => ({
       ...card,
       labels: card.labels.map(cl => cl.label),
       members: card.members.map(cm => cm.user),
+      checklists: card.checklists || [],
     }));
   } catch (error) {
     console.error("Erreur fetchCards:", error);
