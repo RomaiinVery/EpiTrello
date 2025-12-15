@@ -37,7 +37,6 @@ export async function GET(_request: NextRequest, { params }: { params: { boardId
       },
     });
 
-    // Format cards to include labels and members as arrays
     const formattedCards = cards.map(card => ({
       ...card,
       labels: card.labels.map(cl => cl.label),
@@ -71,7 +70,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Missing listId parameter' }, { status: 400 });
     }
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -88,7 +86,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the list belongs to the board
     const list = await prisma.list.findUnique({
       where: { id: listId },
     });
@@ -120,7 +117,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     });
 
-    // Log activity
     await logActivity({
       type: "card_created",
       description: `${user.name || user.email} a créé la carte "${title}"`,

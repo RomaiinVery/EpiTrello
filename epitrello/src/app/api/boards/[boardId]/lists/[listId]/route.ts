@@ -46,7 +46,6 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
   }
 }
 
-// Endpoint to update the position of a list
 export async function PATCH(req: Request, { params }: { params: { boardId: string; listId: string } }) {
   const { listId } = await params;
   const { newPosition } = await req.json();

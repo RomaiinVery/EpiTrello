@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOut, useSession } from "next-auth/react"; // Import de useSession
+import { signOut, useSession } from "next-auth/react"; 
 
-// --- Types ---
 type SettingsState = {
   displayName: string;
   email: string;
@@ -25,10 +24,8 @@ type PasswordState = {
 
 export default function SettingsPage() {
   const router = useRouter();
-  // Récupération de la session utilisateur
   const { data: session, status } = useSession();
 
-  // --- State Management ---
   const [values, setValues] = useState<SettingsState>({
     displayName: "",
     email: "",
@@ -80,8 +77,6 @@ export default function SettingsPage() {
       return;
     }
 
-    // NOTE: Ici, il faudrait faire un appel API (PUT /api/user) pour sauvegarder en base de données.
-    // Pour l'instant, on simule juste la réussite visuelle.
     setTimeout(() => {
       setSaving(false);
       setMessage("Settings saved successfully (Simulation).");
@@ -115,9 +110,7 @@ export default function SettingsPage() {
     }, 900);
   }
 
-  // --- Render ---
 
-  // On utilise le status de NextAuth pour gérer le chargement
   if (status === "loading") {
     return (
       <div className="flex h-screen w-full items-center justify-center text-gray-500">
@@ -195,7 +188,7 @@ export default function SettingsPage() {
               <label className="text-sm font-medium text-gray-700">Email Address</label>
               <input
                 type="email"
-                disabled // Généralement on empêche de changer l'email facilement sans verif
+                disabled
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
                 value={values.email}
                 onChange={(e) => handleChange("email", e.target.value)}

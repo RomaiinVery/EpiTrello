@@ -8,7 +8,6 @@ import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
-// POST: Upload cover image for a card
 export async function POST(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -26,7 +25,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
 
     const { cardId, boardId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -43,7 +41,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the card exists and belongs to the board
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: { list: true },
@@ -68,19 +65,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file type
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json({ error: "Invalid file type. Only images are allowed." }, { status: 400 });
     }
 
-    // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 400 });
     }
 
-    // Generate unique filename
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const timestamp = Date.now();
@@ -88,10 +82,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
     const filename = `${cardId}-${timestamp}.${extension}`;
     const filepath = join(process.cwd(), "public", "uploads", filename);
 
-    // Save file
     await writeFile(filepath, buffer);
 
-    // Update card with cover image URL
     const imageUrl = `/uploads/${filename}`;
     const updatedCard = await prisma.card.update({
       where: { id: cardId },
@@ -123,14 +115,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       },
     });
 
-    // Format the response
     const formattedCard = {
       ...updatedCard,
       labels: updatedCard.labels.map(cl => cl.label),
       members: updatedCard.members.map(cm => cm.user),
     };
 
-    // Log activity
     await logActivity({
       type: "cover_uploaded",
       description: `${user.name || user.email} a ajouté une image de couverture à la carte "${updatedCard.title || card.title}"`,
@@ -147,7 +137,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
   }
 }
 
-// DELETE: Remove cover image from a card
 export async function DELETE(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -165,7 +154,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     const { cardId, boardId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -182,7 +170,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the card exists and belongs to the board
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: { list: true },
@@ -200,22 +187,18 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
 
-    // Delete the file if it exists
     if (card.coverImage) {
       try {
         const { unlink } = await import("fs/promises");
         const { join } = await import("path");
-        // Remove leading slash to make it a relative path
         const relativePath = card.coverImage.startsWith('/') ? card.coverImage.slice(1) : card.coverImage;
         const filepath = join(process.cwd(), "public", relativePath);
         await unlink(filepath);
       } catch (fileError) {
-        // File might not exist, continue anyway
         console.warn("Could not delete cover image file:", fileError);
       }
     }
 
-    // Update card to remove cover image
     const updatedCard = await prisma.card.update({
       where: { id: cardId },
       data: { coverImage: null },
@@ -246,14 +229,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       },
     });
 
-    // Format the response
     const formattedCard = {
       ...updatedCard,
       labels: updatedCard.labels.map(cl => cl.label),
       members: updatedCard.members.map(cm => cm.user),
     };
 
-    // Log activity
     await logActivity({
       type: "cover_removed",
       description: `${user.name || user.email} a retiré l'image de couverture de la carte "${updatedCard.title || card.title}"`,

@@ -5,7 +5,6 @@ import { authOptions } from "../../../../../../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-// GET: Get all checklists for a card
 export async function GET(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,7 +22,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -40,7 +38,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the card exists and belongs to the board
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: { list: true },
@@ -58,7 +55,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
 
-    // Get checklists with items
     const checklists = await prisma.checklist.findMany({
       where: { cardId },
       include: {
@@ -76,7 +72,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
   }
 }
 
-// POST: Create a new checklist
 export async function POST(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -100,7 +95,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Checklist title is required" }, { status: 400 });
     }
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -117,7 +111,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the card exists and belongs to the board
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: { list: true },
@@ -135,7 +128,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
 
-    // Get the last checklist position
     const lastChecklist = await prisma.checklist.findFirst({
       where: { cardId },
       orderBy: { position: 'desc' },
@@ -143,7 +135,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
 
     const nextPosition = lastChecklist ? lastChecklist.position + 1 : 0;
 
-    // Create the checklist
     const checklist = await prisma.checklist.create({
       data: {
         title: title.trim(),

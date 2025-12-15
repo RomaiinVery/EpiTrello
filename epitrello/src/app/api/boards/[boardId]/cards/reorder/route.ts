@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../auth/[...nextauth]/route";
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
@@ -39,7 +39,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -56,7 +55,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get old card data to detect moves
     const oldCards = await prisma.card.findMany({
       where: {
         id: { in: cards.map(c => c.id) },
@@ -73,7 +71,6 @@ export async function PATCH(
 
     const oldCardsMap = new Map(oldCards.map(c => [c.id, c]));
 
-    // Get new list data
     const newLists = await prisma.list.findMany({
       where: {
         id: { in: cards.map(c => c.listId) },
@@ -100,7 +97,6 @@ export async function PATCH(
 
     await prisma.$transaction(transaction);
 
-    // Log activities for cards that moved between lists
     for (const card of cards) {
       const oldCard = oldCardsMap.get(card.id);
       if (oldCard && oldCard.listId !== card.listId) {

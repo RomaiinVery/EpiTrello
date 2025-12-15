@@ -28,7 +28,6 @@ export default function BoardsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
-  // State for delete confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
 
@@ -38,7 +37,6 @@ export default function BoardsPage() {
       .then((data) => setBoards(data));
   }, []);
 
-  // Show dialog instead of confirm()
   const handleDelete = (id: string) => {
     setDeleteBoardId(id);
     setDeleteDialogOpen(true);
@@ -109,7 +107,6 @@ export default function BoardsPage() {
               )}
             </Link>
 
-            {/* Dropdown menu à droite */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="text-gray-400 hover:text-gray-700 text-xl">
@@ -127,7 +124,6 @@ export default function BoardsPage() {
                 <DropdownMenuItem onClick={() => handleDelete(b.id)}>
                   Supprimer
                 </DropdownMenuItem>
-                {/* <DropdownMenuItem>Partager</DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
           </li>
@@ -139,7 +135,6 @@ export default function BoardsPage() {
         </div>
       )}
 
-      {/* Dialog pour renommer */}
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -160,7 +155,6 @@ export default function BoardsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour créer une nouvelle board */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -188,7 +182,6 @@ export default function BoardsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour confirmer la suppression */}
       <Dialog open={deleteDialogOpen} onOpenChange={(open) => {
         setDeleteDialogOpen(open);
         if (!open) setDeleteBoardId(null);

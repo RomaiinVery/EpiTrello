@@ -76,7 +76,6 @@ function CardItem({ card, onRename, onDelete, onClick }: {
       {...attributes}
       className="bg-white rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
       onClick={(e) => {
-        // Only open modal if not dragging and not clicking on dropdown
         if (!isDragging && !(e.target as HTMLElement).closest('[role="menuitem"]')) {
           onClick(card.listId, card.id);
         }
@@ -174,7 +173,6 @@ function CardItem({ card, onRename, onDelete, onClick }: {
   );
 }
 
-// Helper function to determine if a color is light (for text contrast)
 function isLabelColorLight(color: string): boolean {
   const hex = color.replace("#", "");
   const r = parseInt(hex.substr(0, 2), 16);
@@ -662,7 +660,6 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
       return;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(shareEmail.trim())) {
       setShareError("Veuillez entrer une adresse email valide");
@@ -690,7 +687,6 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
       setShareSuccess(true);
       setShareEmail("");
       
-      // Close dialog after 1.5 seconds on success
       setTimeout(() => {
         setShowShareDialog(false);
         setShareSuccess(false);
@@ -714,8 +710,6 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
   };
 
   const handleCardUpdate = () => {
-    // Refresh cards data when card is updated
-    // This will be handled by refetching the board data
     fetchBoardData();
   };
 
@@ -727,13 +721,11 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
         setBoard((prev) => prev ? { ...prev, ...boardData } : boardData);
       }
 
-      // Refetch lists and cards
       const listsRes = await fetch(`/api/boards/${boardId}/lists`);
       if (listsRes.ok) {
         const listsData = await listsRes.json();
         setBoard((prev) => prev ? { ...prev, lists: listsData } : prev);
 
-        // Refetch cards for each list
         const newCardsByList: Record<string, Card[]> = {};
         for (const list of listsData) {
           const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);

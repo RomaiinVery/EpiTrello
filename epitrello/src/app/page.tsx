@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react"; // Import nécessaire pour gérer l'état
+import { useSession } from "next-auth/react"; 
 
 type BoardHistory = {
   id: string;
@@ -13,13 +13,11 @@ type BoardHistory = {
 };
 
 export default function Home() {
-  // Récupération de la session utilisateur
   const { data: session, status } = useSession();
   
   const [recentBoards, setRecentBoards] = useState<BoardHistory[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Effect: Load and validate history from LocalStorage on mount
   useEffect(() => {
     setIsMounted(true);
     const storedHistory = localStorage.getItem("board_history");
@@ -42,7 +40,7 @@ export default function Home() {
     if (value === "boards") {
       currentBoard = {
         id: "boards",
-        title: "My Main Board",
+        title: "Tableaux",
         color: "bg-blue-600",
         timestamp: Date.now(),
         link: "/boards"
@@ -76,7 +74,6 @@ export default function Home() {
     localStorage.setItem("board_history", JSON.stringify(newHistory));
   };
 
-  // Prevent hydration mismatch
   if (!isMounted) return null;
 
   // ---------------------------------------------------------------------------
@@ -84,8 +81,6 @@ export default function Home() {
   // ---------------------------------------------------------------------------
 if (status === "unauthenticated") {
     return (
-      // MODIFICATION ICI : 'min-h-screen' au lieu de 80vh pour prendre tout l'écran
-      // et 'w-full' pour s'assurer que ça prend toute la largeur.
       <div className="flex flex-col items-center justify-center min-h-screen w-full px-4 text-center bg-white">
         
         <div className="max-w-4xl mx-auto flex flex-col items-center justify-center">
@@ -161,7 +156,7 @@ if (status === "unauthenticated") {
       {/* Main Navigation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        {/* Card: My Boards */}
+        {/* Card: Tableaux */}
         <Link 
           href="/boards" 
           onClick={() => handleBoardClick("boards")}
@@ -171,8 +166,8 @@ if (status === "unauthenticated") {
             📋
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-800 group-hover:text-blue-600">My Boards</h2>
-            <p className="text-gray-500 text-sm mt-1">Access your projects and active tasks.</p>
+            <h2 className="text-xl font-bold text-gray-800 group-hover:text-blue-600">Tableaux</h2>
+            <p className="text-gray-500 text-sm mt-1">Accède à tes tableaux et projets actifs.</p>
           </div>
         </Link>
 

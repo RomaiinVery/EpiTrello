@@ -5,7 +5,6 @@ import { authOptions } from "../../../../../../../../../../auth/[...nextauth]/ro
 
 const prisma = new PrismaClient();
 
-// PUT: Update a checklist item (text or checked state)
 export async function PUT(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string; checklistId: string; itemId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,7 +24,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
     const body = await request.json();
     const { text, checked } = body;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -42,7 +40,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the item exists and belongs to the checklist
     const item = await prisma.checklistItem.findUnique({
       where: { id: itemId },
       include: {
@@ -76,7 +73,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Item does not belong to this board" }, { status: 400 });
     }
 
-    // Build update data
     const updateData: { text?: string; checked?: boolean } = {};
     if (text !== undefined) {
       if (typeof text !== 'string' || text.trim().length === 0) {
@@ -95,7 +91,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "At least one of 'text' or 'checked' must be provided" }, { status: 400 });
     }
 
-    // Update the item
     const updatedItem = await prisma.checklistItem.update({
       where: { id: itemId },
       data: updateData,
@@ -108,7 +103,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
   }
 }
 
-// DELETE: Delete a checklist item
 export async function DELETE(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string; checklistId: string; itemId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -126,7 +120,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     const { cardId, boardId, checklistId, itemId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -143,7 +136,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the item exists and belongs to the checklist
     const item = await prisma.checklistItem.findUnique({
       where: { id: itemId },
       include: {
@@ -177,7 +169,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Item does not belong to this board" }, { status: 400 });
     }
 
-    // Delete the item
     await prisma.checklistItem.delete({
       where: { id: itemId },
     });

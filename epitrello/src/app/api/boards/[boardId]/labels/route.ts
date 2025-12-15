@@ -5,7 +5,6 @@ import { authOptions } from "../../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-// GET - Get all labels for a board
 export async function GET(req: Request, { params }: { params: { boardId: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,7 +22,6 @@ export async function GET(req: Request, { params }: { params: { boardId: string 
 
     const { boardId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -52,7 +50,6 @@ export async function GET(req: Request, { params }: { params: { boardId: string 
   }
 }
 
-// POST - Create a new label
 export async function POST(req: Request, { params }: { params: { boardId: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -75,7 +72,6 @@ export async function POST(req: Request, { params }: { params: { boardId: string
       return NextResponse.json({ error: "Name and color are required" }, { status: 400 });
     }
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -92,7 +88,6 @@ export async function POST(req: Request, { params }: { params: { boardId: string
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if label with same name already exists for this board
     const existingLabel = await prisma.label.findUnique({
       where: {
         boardId_name: {
@@ -120,4 +115,5 @@ export async function POST(req: Request, { params }: { params: { boardId: string
     return NextResponse.json({ error: "Failed to create label" }, { status: 500 });
   }
 }
+
 

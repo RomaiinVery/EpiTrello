@@ -112,7 +112,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "User is not a member of this board" }, { status: 400 });
     }
 
-    // Verify the card exists and belongs to the board
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: { list: true },

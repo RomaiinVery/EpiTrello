@@ -10,7 +10,7 @@ generator client {
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  password  String   // Hashed password
+  password  String   
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -60,7 +60,7 @@ model Card {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   archived   Boolean   @default(false)
-  coverImage String?    // URL or file path for cover image
+  coverImage String?
   
   labels     CardLabel[]
   members    CardMember[]
@@ -72,7 +72,7 @@ model Card {
 model Label {
   id        String     @id @default(cuid())
   name      String
-  color     String     // hex color code
+  color     String     
   boardId   String
   board     Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
@@ -115,15 +115,15 @@ model Comment {
 
 model Activity {
   id          String   @id @default(cuid())
-  type        String   // e.g., "card_created", "card_moved", "card_updated", "member_assigned", "label_added", "comment_added", "cover_uploaded"
-  description String   // Human-readable description
+  type        String   
+  description String   
   cardId      String?
   card        Card?    @relation(fields: [cardId], references: [id], onDelete: Cascade)
   boardId     String
   board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  metadata    String?  // JSON string for additional data (e.g., old list, new list, label name, etc.)
+  metadata    String?  
   createdAt   DateTime @default(now())
 }
 

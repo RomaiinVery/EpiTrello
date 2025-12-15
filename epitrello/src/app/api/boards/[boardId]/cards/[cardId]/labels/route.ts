@@ -6,7 +6,6 @@ import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
-// GET - Get all labels for a card
 export async function GET(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,8 +22,6 @@ export async function GET(req: Request, { params }: { params: { boardId: string;
     }
 
     const { boardId, cardId } = await params;
-
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -41,7 +38,6 @@ export async function GET(req: Request, { params }: { params: { boardId: string;
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get card labels
     const cardLabels = await prisma.cardLabel.findMany({
       where: { cardId },
       include: {
@@ -58,7 +54,6 @@ export async function GET(req: Request, { params }: { params: { boardId: string;
   }
 }
 
-// POST - Add a label to a card
 export async function POST(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -81,7 +76,6 @@ export async function POST(req: Request, { params }: { params: { boardId: string
       return NextResponse.json({ error: "Label ID is required" }, { status: 400 });
     }
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -98,7 +92,6 @@ export async function POST(req: Request, { params }: { params: { boardId: string
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify label belongs to board
     const label = await prisma.label.findUnique({
       where: { id: labelId },
     });
@@ -107,7 +100,6 @@ export async function POST(req: Request, { params }: { params: { boardId: string
       return NextResponse.json({ error: "Label not found" }, { status: 404 });
     }
 
-    // Check if card exists and belongs to board
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: { list: true },
@@ -117,7 +109,6 @@ export async function POST(req: Request, { params }: { params: { boardId: string
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
-    // Check if label is already on card
     const existingCardLabel = await prisma.cardLabel.findUnique({
       where: {
         cardId_labelId: {
@@ -141,7 +132,6 @@ export async function POST(req: Request, { params }: { params: { boardId: string
       },
     });
 
-    // Log activity
     await logActivity({
       type: "label_added",
       description: `${user.name || user.email} a ajouté le label "${label.name}" à la carte "${card.title}"`,
@@ -158,7 +148,6 @@ export async function POST(req: Request, { params }: { params: { boardId: string
   }
 }
 
-// DELETE - Remove a label from a card
 export async function DELETE(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -182,7 +171,6 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
       return NextResponse.json({ error: "Label ID is required" }, { status: 400 });
     }
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -199,7 +187,6 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get label and card info for logging
     const label = await prisma.label.findUnique({
       where: { id: labelId },
       select: { name: true, color: true },
@@ -210,7 +197,6 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
       select: { title: true },
     });
 
-    // Delete the card label relationship
     await prisma.cardLabel.delete({
       where: {
         cardId_labelId: {
@@ -220,7 +206,6 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
       },
     });
 
-    // Log activity
     if (label && card) {
       await logActivity({
         type: "label_removed",

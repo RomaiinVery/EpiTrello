@@ -46,8 +46,8 @@ export async function logActivity({
       },
     });
   } catch (error) {
-    // Don't fail the main operation if logging fails
     console.error("Failed to log activity:", error);
   }
 }
+
 

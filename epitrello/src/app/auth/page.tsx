@@ -39,7 +39,6 @@ export default function AuthPage() {
     });
 
     if (callback?.error) {
-      // Message si l'email n'existe pas ou mot de passe faux (côté serveur)
       setErrorMessage("Identifiants invalides. Vérifiez votre email et mot de passe.");
     }
 
@@ -74,11 +73,10 @@ export default function AuthPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
-    // 1. VÉRIFICATION DU FORMAT EMAIL (Côté Client)
     if (!data.email || !isValidEmail(data.email)) {
         setErrorMessage("Veuillez entrer une adresse email valide (ex: nom@domaine.com)");
-        setIsLoading(false); // Important : arrêter le chargement
-        return; // On arrête tout ici
+        setIsLoading(false); 
+        return; 
     }
 
 
@@ -140,13 +138,12 @@ export default function AuthPage() {
                 <input
                   id="email"
                   name="email"
-                  type="email" // Le type="email" aide aussi le navigateur
+                  type="email" 
                   autoComplete="email"
                   required
                   disabled={isLoading}
                   value={data.email}
                   onChange={handleChange}
-                  // J'ajoute une bordure rouge conditionnelle si le message contient "email"
                   className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${
                     errorMessage && errorMessage.toLowerCase().includes("email") 
                     ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
@@ -179,7 +176,6 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Zone d'affichage des erreurs */}
             {errorMessage && (
               <div className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 p-3 rounded-md flex items-center gap-2 animate-pulse">
                 <span>⚠️</span>

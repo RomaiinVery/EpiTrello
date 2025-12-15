@@ -23,7 +23,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -40,7 +39,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get the card with its list information, labels, and members
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: {
@@ -78,12 +76,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Card list not found" }, { status: 404 });
     }
 
-    // Verify the card belongs to the board
     if (card.list.boardId !== boardId) {
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
 
-    // Format the response to include labels and members as arrays
     const formattedCard = {
       ...card,
       labels: card.labels.map(cl => cl.label),
@@ -116,7 +112,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
     const body = await request.json();
     const { title, content, coverImage } = body;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -137,16 +132,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "At least one of 'title' or 'content' must be provided." }, { status: 400 });
     }
 
-    // Validate coverImage if provided (prevent XSS by only allowing safe file paths)
     if (coverImage !== undefined) {
-      // Only allow coverImage updates through the dedicated /cover endpoint
-      // This prevents XSS attacks via data: URLs or malicious paths
       return NextResponse.json({ 
         error: "coverImage cannot be updated via PUT. Use POST /cover to upload an image." 
       }, { status: 400 });
     }
 
-    // Get the old card to compare changes
     const oldCard = await prisma.card.findUnique({
       where: { id: cardId },
       include: {
@@ -195,14 +186,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       },
     });
 
-    // Format the response
     const formattedCard = {
       ...updatedCard,
       labels: updatedCard.labels.map(cl => cl.label),
       members: updatedCard.members.map(cm => cm.user),
     };
 
-    // Log activity for changes
     const changes: string[] = [];
     if (title !== undefined && title !== oldCard.title) {
       changes.push(`titre de "${oldCard.title}" à "${title}"`);
@@ -250,7 +239,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     const { cardId, boardId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -267,7 +255,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get card info before deletion for logging
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: {
@@ -287,13 +274,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       where: { id: cardId },
     });
 
-    // Log activity
     await logActivity({
       type: "card_deleted",
       description: `${user.name || user.email} a supprimé la carte "${card.title}"`,
       userId: user.id,
       boardId,
-      cardId: null, // Card is deleted, so no cardId
+      cardId: undefined,
       metadata: { cardTitle: card.title, listTitle: card.list.title },
     });
 
