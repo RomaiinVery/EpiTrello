@@ -62,9 +62,10 @@ export default function AuthPage() {
       }
 
       await loginUser();
-
-    } catch (error: any) {
-      setErrorMessage(error.message || "Une erreur est survenue lors de l'inscription.");
+    
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Une erreur est survenue lors de l'inscription.";
+      setErrorMessage(msg);
     }
   };
 

@@ -23,7 +23,7 @@ interface LogActivityParams {
   userId: string;
   boardId: string;
   cardId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null | undefined>;
 }
 
 export async function logActivity({

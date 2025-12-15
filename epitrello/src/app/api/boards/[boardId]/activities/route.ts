@@ -42,7 +42,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
     const cardId = searchParams.get("cardId");
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    const where: any = { boardId };
+    const where: { boardId: string; cardId?: string } = { boardId };
     if (cardId) {
       where.cardId = cardId;
     }

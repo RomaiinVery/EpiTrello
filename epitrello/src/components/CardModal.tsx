@@ -37,7 +37,7 @@ type Activity = {
   boardId: string;
   userId: string;
   createdAt: string;
-  metadata: any;
+  metadata: Record<string, string | number | boolean | null | undefined>;
   user: User;
 };
 
@@ -145,7 +145,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       await fetchActivities();
       
       const boardRes = await fetch(`/api/boards/${boardId}`);
-      let boardData: any = null;
+      let boardData: { user?: User; members?: User[] } | null = null;
       if (boardRes.ok) {
         boardData = await boardRes.json();
         const allMembers: User[] = [];
@@ -159,8 +159,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
         }
         
         // Add other members
-        if (boardData.members && Array.isArray(boardData.members)) {
-          boardData.members.forEach((m: any) => {
+        if (boardData?.members && Array.isArray(boardData.members)) {
+          boardData.members.forEach((m: User) => {
             if (!allMembers.some(existing => existing.id === m.id)) {
               allMembers.push({
                 id: m.id,
@@ -197,8 +197,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                 name: boardData.user.name,
               });
             }
-            if (boardData.members && Array.isArray(boardData.members)) {
-              boardData.members.forEach((m: any) => {
+            if (boardData?.members && Array.isArray(boardData.members)) {
+              boardData.members.forEach((m: User) => {
                 if (!allMembers.some(existing => existing.id === m.id)) {
                   allMembers.push({
                     id: m.id,

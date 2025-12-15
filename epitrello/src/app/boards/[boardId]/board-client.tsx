@@ -1121,7 +1121,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
             <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
             <p className="mb-4">
-              Êtes-vous sûr de vouloir supprimer la liste "{listToDelete?.title}" ?
+              Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
             </p>
             {deleteError && (
               <div className="text-red-500 text-sm mb-2">{deleteError}</div>
@@ -1243,7 +1243,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
             <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
             <p className="mb-4">
-              Êtes-vous sûr de vouloir supprimer la carte "{cardToDelete?.title}" ?
+              Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
             </p>
             {deleteCardError && (
               <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
@@ -1275,7 +1275,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
             <h3 className="text-lg font-semibold mb-3">Partager le tableau</h3>
             <p className="text-sm text-gray-600 mb-3">
-              Entrez l'adresse email de l'utilisateur à inviter
+              Entrez l&apos;adresse email de l&apos;utilisateur à inviter
             </p>
             <input
               type="email"

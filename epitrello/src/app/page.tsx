@@ -24,7 +24,7 @@ export default function Home() {
     
     if (storedHistory) {
       try {
-        const parsedHistory: any[] = JSON.parse(storedHistory);
+        const parsedHistory: { id: string; title: string; color: string; timestamp: number; link: string }[] = JSON.parse(storedHistory);
         const validHistory = parsedHistory.filter((item) => item.link && item.id);
         setRecentBoards(validHistory.sort((a, b) => b.timestamp - a.timestamp));
       } catch (e) {
@@ -88,7 +88,7 @@ if (status === "unauthenticated") {
             Organisez tout, <span className="text-blue-600">ensemble.</span>
             </h1>
             <p className="text-xl text-gray-500 max-w-2xl mb-10">
-            EpiTrello est l'outil de gestion de projet ultime. Gérez vos tâches, 
+            EpiTrello est l&apos;outil de gestion de projet ultime. Gérez vos tâches, 
             collaborez avec votre équipe et atteignez vos objectifs plus rapidement.
             </p>
             <div className="flex gap-4 flex-col sm:flex-row">

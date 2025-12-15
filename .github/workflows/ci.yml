@@ -42,7 +42,6 @@ jobs:
           cd epitrello
           npm run build
         env:
-          # Fake env vars for build time (Next.js needs them to exist, values don't matter for build usually)
           DATABASE_URL: "postgresql://user:password@localhost:5432/db"
           NEXTAUTH_SECRET: "dummy_secret_for_build"
           NEXTAUTH_URL: "http://localhost:3000"
