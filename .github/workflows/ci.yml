@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './epitrello/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd epitrello
+          npm ci
+
+      - name: Generate Prisma Client
+        run: |
+          cd epitrello
+          npx prisma generate
+
+      - name: Run Linter
+        run: |
+          cd epitrello
+          npm run lint
+
+      - name: Run Build
+        run: |
+          cd epitrello
+          npm run build
+        env:
+          # Fake env vars for build time (Next.js needs them to exist, values don't matter for build usually)
+          DATABASE_URL: "postgresql://user:password@localhost:5432/db"
+          NEXTAUTH_SECRET: "dummy_secret_for_build"
+          NEXTAUTH_URL: "http://localhost:3000"
+
