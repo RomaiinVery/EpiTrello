@@ -184,7 +184,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
                   style={{
                     backgroundColor: label.color,
                     color: isLabelColorLight(label.color) ? "#000" : "#fff",
-                    ...(isSelected && { '--tw-ring-color': label.color } as React.CSSProperties),
+                    ...(isSelected ? { '--tw-ring-color': label.color } as React.CSSProperties : {}),
                   }}
                   type="button"
                 >
