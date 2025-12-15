@@ -29,7 +29,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
-import { type List, type Card, type Board, type Checklist } from "@/app/lib/board-api";
+import { type List, type Card, type Board } from "@/app/lib/board-api";
 import { CardModal } from "@/components/CardModal";
 import { CheckSquare } from "lucide-react";
 
@@ -390,7 +390,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setCardsByList((prev) => ({ ...prev, [newList.id]: [] }));
       setShowDialog(false);
       setNewListTitle("");
-    } catch (err) {
+    } catch {
       setError("Erreur réseau");
     }
     setAddingList(false);
@@ -442,7 +442,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setShowRenameDialog(false);
       setRenameTitle("");
       setListToRename(null);
-    } catch (err) {
+    } catch {
       setRenameError("Erreur réseau");
     }
     setRenaming(false);
@@ -487,7 +487,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       });
       setShowDeleteDialog(false);
       setListToDelete(null);
-    } catch (err) {
+    } catch {
       setDeleteError("Erreur réseau");
     }
     setDeleting(false);
@@ -536,7 +536,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setCardTitle("");
       setCardContent("");
       setListForNewCard(null);
-    } catch (err) {
+    } catch {
       setAddCardError("Erreur réseau");
     }
     setAddingCard(false);
@@ -590,7 +590,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setShowRenameCardDialog(false);
       setCardToRename(null);
       setRenameCardTitle("");
-    } catch (err) {
+    } catch {
       setRenameCardError("Erreur réseau");
     }
     setListForCardAction(null);
@@ -634,7 +634,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       });
       setShowDeleteCardDialog(false);
       setCardToDelete(null);
-    } catch (err) {
+    } catch {
       setDeleteCardError("Erreur réseau");
     }
     setListForCardAction(null);
@@ -692,7 +692,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
         setShowShareDialog(false);
         setShareSuccess(false);
       }, 1500);
-    } catch (err) {
+    } catch {
       setShareError("Erreur réseau");
     }
     setSharing(false);

@@ -93,7 +93,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
       
       // Automatically add the new label to the card
       handleToggleLabel(newLabel);
-    } catch (err) {
+    } catch {
       setError("Erreur réseau");
     } finally {
       setCreating(false);
@@ -184,7 +184,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
                   style={{
                     backgroundColor: label.color,
                     color: isLabelColorLight(label.color) ? "#000" : "#fff",
-                    ringColor: label.color,
+                    ...(isSelected && { '--tw-ring-color': label.color } as React.CSSProperties),
                   }}
                   type="button"
                 >

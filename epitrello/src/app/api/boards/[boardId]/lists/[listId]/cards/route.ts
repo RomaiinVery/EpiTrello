@@ -6,7 +6,7 @@ import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
-export async function GET(_request: NextRequest, { params }: { params: { boardId: string; listId: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ boardId: string; listId: string }> }) {
   const { listId } = await params;
 
   if (!listId) {
@@ -44,7 +44,7 @@ export async function GET(_request: NextRequest, { params }: { params: { boardId
     }));
 
     return NextResponse.json(formattedCards, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to retrieve cards' }, { status: 500 });
   }
 }

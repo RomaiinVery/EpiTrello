@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function GET(req: Request, { params }: { params: { boardId: string; listId: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ boardId: string; listId: string }> }) {
   const { listId } = await params;
 
   const list = await prisma.list.findUnique({
@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: { params: { boardId: string;
   return NextResponse.json(list);
 }
 
-export async function PUT(req: Request, { params }: { params: { boardId: string; listId: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ boardId: string; listId: string }> }) {
   const { listId } = await params;
   const { title, position } = await req.json();
 
@@ -32,7 +32,7 @@ export async function PUT(req: Request, { params }: { params: { boardId: string;
   return NextResponse.json(list);
 }
 
-export async function DELETE(req: Request, { params }: { params: { boardId: string; listId: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ boardId: string; listId: string }> }) {
   const { listId } = await params;
 
   try {
@@ -46,7 +46,7 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { boardId: string; listId: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ boardId: string; listId: string }> }) {
   const { listId } = await params;
   const { newPosition } = await req.json();
 

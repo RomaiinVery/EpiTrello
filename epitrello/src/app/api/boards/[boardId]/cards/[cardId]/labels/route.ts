@@ -6,7 +6,7 @@ import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
-export async function GET(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ boardId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
@@ -54,7 +54,7 @@ export async function GET(req: Request, { params }: { params: { boardId: string;
   }
 }
 
-export async function POST(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ boardId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
@@ -148,7 +148,7 @@ export async function POST(req: Request, { params }: { params: { boardId: string
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { boardId: string; cardId: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ boardId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {

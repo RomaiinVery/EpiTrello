@@ -5,7 +5,7 @@ import { authOptions } from "../../../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-export async function PUT(req: Request, { params }: { params: { boardId: string; labelId: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ boardId: string; labelId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
@@ -77,7 +77,7 @@ export async function PUT(req: Request, { params }: { params: { boardId: string;
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { boardId: string; labelId: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ boardId: string; labelId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, UserPlus, Users, Image, Trash2, MessageSquare, Edit2, History, CheckSquare, Plus } from "lucide-react";
+import { X, Users, Image, Trash2, MessageSquare, Edit2, History, CheckSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LabelPicker } from "./LabelPicker";
@@ -150,7 +150,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
         boardData = await boardRes.json();
         const allMembers: User[] = [];
         
-        if (boardData.user) {
+        if (boardData && boardData.user) {
           allMembers.push({
             id: boardData.user.id,
             email: boardData.user.email,
