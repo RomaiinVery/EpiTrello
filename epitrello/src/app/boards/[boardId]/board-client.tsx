@@ -931,9 +931,9 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       <div className="p-6 h-full flex flex-col">
         <Link
           href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
-          className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
+          className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
         >
-          ← Back
+          ← Retour aux boards
         </Link>
         <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
         {board.description && (
@@ -950,9 +950,9 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
     <div className="p-6 h-full flex flex-col">
       <Link
         href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
-        className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
+        className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
       >
-        ← Back
+        ← Retour aux boards
       </Link>
 
       <div className="flex items-center justify-between mb-2">
