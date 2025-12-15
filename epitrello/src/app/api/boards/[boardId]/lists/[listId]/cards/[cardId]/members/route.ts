@@ -143,12 +143,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "User is already assigned to this card" }, { status: 400 });
     }
 
-    // Get card info for logging
-    const card = await prisma.card.findUnique({
-      where: { id: cardId },
-      select: { title: true },
-    });
-
     // Get user to assign info
     const userToAssign = await prisma.user.findUnique({
       where: { id: userId },

@@ -43,7 +43,7 @@ export default function Home() {
         title: "Tableaux",
         color: "bg-blue-600",
         timestamp: Date.now(),
-        link: "/boards"
+        link: "/tableaux"
       };
     } else if (value === "settings") {
       currentBoard = {
@@ -158,7 +158,7 @@ if (status === "unauthenticated") {
         
         {/* Card: Tableaux */}
         <Link 
-          href="/boards" 
+          href="/tableaux" 
           onClick={() => handleBoardClick("boards")}
           className="group bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer flex flex-col gap-4"
         >

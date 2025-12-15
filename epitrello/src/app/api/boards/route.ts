@@ -5,7 +5,7 @@ import { authOptions } from "../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,8 +19,12 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const tableauId = searchParams.get("tableauId") || undefined;
+
   const boards = await prisma.board.findMany({
     where: {
+      tableauId,
       OR: [
         { userId: user.id },
         { members: { some: { id: user.id } } }
@@ -57,16 +61,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { title, description } = await req.json();
+  const { title, description, tableauId } = await req.json();
 
-  if (!title) {
-    return NextResponse.json({ error: "Title is required" }, { status: 400 });
+  if (!title || !tableauId) {
+    return NextResponse.json({ error: "Title and tableauId are required" }, { status: 400 });
+  }
+
+  const tableau = await prisma.tableau.findFirst({
+    where: { id: tableauId, userId: user.id },
+  });
+
+  if (!tableau) {
+    return NextResponse.json({ error: "Tableau introuvable ou non autorisé" }, { status: 404 });
   }
 
   const board = await prisma.board.create({
     data: {
       title,
       description,
+      tableauId,
       userId: user.id,
       lists: {
         create: [

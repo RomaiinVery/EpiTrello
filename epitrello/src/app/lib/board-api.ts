@@ -51,6 +51,7 @@ export type Board = {
   id: string;
   title: string;
   description?: string | null;
+  tableauId: string;
   lists?: List[];
 };
 

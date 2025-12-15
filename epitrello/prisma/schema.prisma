@@ -10,17 +10,33 @@ generator client {
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  password  String   
+  password  String
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  boards    Board[]
+  tableaux Tableau[]
+  sharedTableaux Tableau[] @relation("TableauMembers")
+  boards   Board[]
 
-  sharedBoards Board[] @relation("BoardMembers")
+  sharedBoards  Board[]      @relation("BoardMembers")
   assignedCards CardMember[]
-  comments  Comment[]
-  activities Activity[]
+  comments      Comment[]
+  activities    Activity[]
+}
+
+model Tableau {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  members User[] @relation("TableauMembers")
+
+  boards Board[]
 }
 
 model Board {
@@ -29,14 +45,17 @@ model Board {
   description String?
   createdAt   DateTime @default(now())
 
-  lists       List[]
-  labels      Label[]
-  activities  Activity[]
+  lists      List[]
+  labels     Label[]
+  activities Activity[]
 
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tableauId String
+  tableau   Tableau @relation(fields: [tableauId], references: [id], onDelete: Cascade)
 
-  members     User[]   @relation("BoardMembers")
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  members User[] @relation("BoardMembers")
 }
 
 model List {
@@ -47,21 +66,21 @@ model List {
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
-  cards     Card[]
+  cards Card[]
 }
 
 model Card {
-  id         String     @id @default(cuid())
+  id         String   @id @default(cuid())
   title      String
   content    String?
   position   Int
   listId     String
-  list       List       @relation(fields: [listId], references: [id], onDelete: Cascade)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  archived   Boolean   @default(false)
+  list       List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  archived   Boolean  @default(false)
   coverImage String?
-  
+
   labels     CardLabel[]
   members    CardMember[]
   comments   Comment[]
@@ -70,15 +89,15 @@ model Card {
 }
 
 model Label {
-  id        String     @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
-  color     String     
+  color     String
   boardId   String
-  board     Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  createdAt DateTime   @default(now())
-  
-  cards     CardLabel[]
-  
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  cards CardLabel[]
+
   @@unique([boardId, name])
 }
 
@@ -88,17 +107,17 @@ model CardLabel {
   card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
   labelId String
   label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
-  
+
   @@unique([cardId, labelId])
 }
 
 model CardMember {
-  id      String @id @default(cuid())
-  cardId  String
-  card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  userId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([cardId, userId])
 }
 
@@ -115,15 +134,15 @@ model Comment {
 
 model Activity {
   id          String   @id @default(cuid())
-  type        String   
-  description String   
+  type        String
+  description String
   cardId      String?
   card        Card?    @relation(fields: [cardId], references: [id], onDelete: Cascade)
   boardId     String
   board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  metadata    String?  
+  metadata    String?
   createdAt   DateTime @default(now())
 }
 
@@ -135,8 +154,8 @@ model Checklist {
   card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  items     ChecklistItem[]
+
+  items ChecklistItem[]
 }
 
 model ChecklistItem {

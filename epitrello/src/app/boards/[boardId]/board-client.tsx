@@ -284,11 +284,12 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
 
 interface BoardClientProps {
   boardId: string;
+  tableauId?: string;
   initialBoard: Board;
   initialCardsByList: Record<string, Card[]>;
 }
 
-export default function BoardClient({ boardId, initialBoard, initialCardsByList }: BoardClientProps) {
+export default function BoardClient({ boardId, tableauId, initialBoard, initialCardsByList }: BoardClientProps) {
   
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>(initialCardsByList);
@@ -929,7 +930,7 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
     return (
       <div className="p-6 h-full flex flex-col">
         <Link
-          href="/boards"
+          href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
           className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
         >
           ← Back
@@ -948,7 +949,7 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
   return (
     <div className="p-6 h-full flex flex-col">
       <Link
-        href="/boards"
+        href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
         className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
       >
         ← Back

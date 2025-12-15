@@ -21,7 +21,7 @@ Trello est un outil de gestion de projet inspiré de la méthode Kanban de Toyot
 ## 3. Objectifs fonctionnels
 ### Fonctionnalités principales :
 1. **Gestion des espaces de travail (Workspaces)**  
-   - Création, modification et suppression d’espaces de travail. (pas fait)
+   - Création, modification et suppression d’espaces de travail. (fait)
    - Gestion des membres et des rôles (propriétaire, administrateur, membre, invité). (pas fait)
 
 2. **Tableaux (Boards)**  
