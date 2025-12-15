@@ -42,6 +42,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   
     useEffect(() => {
@@ -52,6 +54,15 @@ export default function SettingsPage() {
             email: session.user?.email || "",
             timezone: "Europe/Paris", 
         }));
+        // Fetch user profile image
+        fetch("/api/user/profile-image")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.profileImage) {
+              setProfileImage(data.profileImage);
+            }
+          })
+          .catch(() => {});
         } else if (status === "unauthenticated") {
             router.push("/auth");
         }
@@ -108,6 +119,59 @@ export default function SettingsPage() {
       setMessage("Password updated successfully.");
       setTimeout(() => setMessage(null), 3000);
     }, 900);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/user/profile-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setProfileImage(data.profileImage);
+        setMessage("Photo de profil mise à jour avec succès !");
+        setTimeout(() => setMessage(null), 3000);
+        // Trigger event to refresh navbar and sidebar
+        window.dispatchEvent(new CustomEvent("profileImageUpdated", { detail: data.profileImage }));
+      } else {
+        const error = await res.json();
+        setMessage(error.error || "Erreur lors de l'upload");
+      }
+    } catch {
+      setMessage("Erreur réseau");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function handleRemoveImage() {
+    setUploadingImage(true);
+    try {
+      const res = await fetch("/api/user/profile-image", {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setProfileImage(null);
+        setMessage("Photo de profil supprimée avec succès !");
+        setTimeout(() => setMessage(null), 3000);
+        // Trigger event to refresh navbar and sidebar
+        window.dispatchEvent(new CustomEvent("profileImageUpdated", { detail: null }));
+      }
+    } catch {
+      setMessage("Erreur réseau");
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
 
@@ -174,6 +238,51 @@ export default function SettingsPage() {
         {/* SECTION 1: Profile */}
         <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Profile Information</h2>
+          
+          {/* Profile Picture Section */}
+          <div className="mb-6 flex items-center gap-6">
+            <div className="relative">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold">
+                  {values.displayName ? values.displayName[0].toUpperCase() : "U"}
+                </div>
+              )}
+              {uploadingImage && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium inline-block">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                />
+                {uploadingImage ? "Upload..." : "Changer la photo"}
+              </label>
+              {profileImage && (
+                <button
+                  onClick={handleRemoveImage}
+                  disabled={uploadingImage}
+                  className="px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+                >
+                  Supprimer la photo
+                </button>
+              )}
+              <p className="text-xs text-gray-500">JPG, PNG, GIF. Max 5MB.</p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Display Name</label>

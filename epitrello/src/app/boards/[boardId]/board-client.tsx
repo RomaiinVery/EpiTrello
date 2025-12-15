@@ -139,13 +139,23 @@ function CardItem({ card, onRename, onDelete, onClick }: {
       {card.members && card.members.length > 0 && (
         <div className="flex items-center gap-1 mt-2">
           {card.members.map((member) => (
-            <div
-              key={member.id}
-              className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
-              title={member.name || member.email}
-            >
-              {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
-            </div>
+            member.profileImage ? (
+              <img
+                key={member.id}
+                src={member.profileImage}
+                alt={member.name || member.email}
+                className="w-6 h-6 rounded-full object-cover border-2 border-white"
+                title={member.name || member.email}
+              />
+            ) : (
+              <div
+                key={member.id}
+                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
+                title={member.name || member.email}
+              >
+                {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+              </div>
+            )
           ))}
         </div>
       )}

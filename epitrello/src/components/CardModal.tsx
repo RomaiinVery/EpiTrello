@@ -889,9 +889,17 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                           key={member.id}
                           className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200"
                         >
-                          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold">
-                            {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
-                          </div>
+                          {member.profileImage ? (
+                            <img
+                              src={member.profileImage}
+                              alt={member.name || member.email}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
+                              {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <span className="text-sm text-gray-700">
                             {member.name || member.email}
                           </span>
