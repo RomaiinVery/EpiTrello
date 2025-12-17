@@ -266,7 +266,7 @@
 model Label {
   id        String   @id @default(cuid())
   name      String
-  color     String   // hex color
+  color     String   
   boardId   String
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   cards     CardLabel[]

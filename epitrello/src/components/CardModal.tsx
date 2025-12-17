@@ -37,7 +37,7 @@ type Activity = {
   boardId: string;
   userId: string;
   createdAt: string;
-  metadata: any;
+  metadata: Record<string, string | number | boolean | null | undefined>;
   user: User;
 };
 
@@ -121,7 +121,6 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
   const [editingChecklistTitle, setEditingChecklistTitle] = useState("");
   const [newItemTexts, setNewItemTexts] = useState<Record<string, string>>({});
 
-  // Fetch card details when modal opens
   useEffect(() => {
     if (isOpen && cardId) {
       fetchCardDetails();
@@ -143,17 +142,14 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       setLabels(cardData.labels || []);
       setMembers(cardData.members || []);
       
-      // Refresh activities when card is updated
       await fetchActivities();
       
-      // Fetch board members
       const boardRes = await fetch(`/api/boards/${boardId}`);
-      let boardData: any = null;
+      let boardData: { user?: User; members?: User[] } | null = null;
       if (boardRes.ok) {
         boardData = await boardRes.json();
         const allMembers: User[] = [];
         
-        // Add owner if exists
         if (boardData.user) {
           allMembers.push({
             id: boardData.user.id,
@@ -163,9 +159,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
         }
         
         // Add other members
-        if (boardData.members && Array.isArray(boardData.members)) {
-          boardData.members.forEach((m: any) => {
-            // Avoid duplicates (in case owner is also in members list)
+        if (boardData?.members && Array.isArray(boardData.members)) {
+          boardData.members.forEach((m: User) => {
             if (!allMembers.some(existing => existing.id === m.id)) {
               allMembers.push({
                 id: m.id,
@@ -194,7 +189,6 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
         if (userRes.ok) {
           const session = await userRes.json();
           if (session?.user?.email && boardData) {
-            // Find current user in board members
             const allMembers: User[] = [];
             if (boardData.user) {
               allMembers.push({
@@ -203,8 +197,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                 name: boardData.user.name,
               });
             }
-            if (boardData.members && Array.isArray(boardData.members)) {
-              boardData.members.forEach((m: any) => {
+            if (boardData?.members && Array.isArray(boardData.members)) {
+              boardData.members.forEach((m: User) => {
                 if (!allMembers.some(existing => existing.id === m.id)) {
                   allMembers.push({
                     id: m.id,
@@ -254,8 +248,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       const updatedCard = await res.json();
       setCard(updatedCard);
       setIsEditingTitle(false);
-      await fetchActivities(); // Refresh activities
-      onUpdate(); // Refresh the board
+      await fetchActivities(); 
+      onUpdate(); 
     } catch (err) {
       setError("Erreur lors de la mise à jour du titre");
       console.error(err);
@@ -281,8 +275,8 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
       const updatedCard = await res.json();
       setCard(updatedCard);
       setIsEditingDescription(false);
-      await fetchActivities(); // Refresh activities
-      onUpdate(); // Refresh the board
+      await fetchActivities(); 
+      onUpdate(); 
     } catch (err) {
       setError("Erreur lors de la mise à jour de la description");
       console.error(err);

@@ -23,7 +23,7 @@ interface LogActivityParams {
   userId: string;
   boardId: string;
   cardId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null | undefined>;
 }
 
 export async function logActivity({
@@ -46,8 +46,8 @@ export async function logActivity({
       },
     });
   } catch (error) {
-    // Don't fail the main operation if logging fails
     console.error("Failed to log activity:", error);
   }
 }
+
 

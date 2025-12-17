@@ -6,7 +6,6 @@ import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
-// GET: Get all comments for a card
 export async function GET(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,7 +23,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -41,7 +39,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the card exists and belongs to the board
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: { list: true },
@@ -59,7 +56,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
 
-    // Get comments with user information
     const comments = await prisma.comment.findMany({
       where: { cardId },
       include: {
@@ -81,7 +77,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
   }
 }
 
-// POST: Create a new comment
 export async function POST(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -105,7 +100,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Comment content is required" }, { status: 400 });
     }
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -122,7 +116,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the card exists and belongs to the board
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       include: { list: true },
@@ -140,7 +133,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
 
-    // Create the comment
     const comment = await prisma.comment.create({
       data: {
         content: content.trim(),
@@ -158,7 +150,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       },
     });
 
-    // Log activity
     await logActivity({
       type: "comment_added",
       description: `${user.name || user.email} a ajouté un commentaire à la carte "${card?.title || ""}"`,

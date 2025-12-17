@@ -21,30 +21,30 @@ Trello est un outil de gestion de projet inspiré de la méthode Kanban de Toyot
 ## 3. Objectifs fonctionnels
 ### Fonctionnalités principales :
 1. **Gestion des espaces de travail (Workspaces)**  
-   - Création, modification et suppression d’espaces de travail.
-   - Gestion des membres et des rôles (propriétaire, administrateur, membre, invité).
+   - Création, modification et suppression d’espaces de travail. (fait)
+   - Gestion des membres et des rôles (propriétaire, administrateur, membre, invité). (pas fait)
 
 2. **Tableaux (Boards)**  
-   - Création et personnalisation de tableaux par workspace.
-   - Attribution de la visibilité (privé, workspace, public).
+   - Création et personnalisation de tableaux par workspace. (fait)
+   - Attribution de la visibilité (privé, workspace, public). (fait)
 
 3. **Listes (Lists)**  
-   - Création et modification des listes dans un tableau.
-   - Réorganisation des listes par glisser-déposer.
+   - Création et modification des listes dans un tableau. (fait)
+   - Réorganisation des listes par glisser-déposer. (fait)
 
 4. **Cartes (Cards)**  
-   - Création, édition et suppression de cartes.
-   - Déplacement entre listes par drag and drop.
-   - Ajout d’étiquettes, de membres assignés et de dates d’échéance.
-   - Commentaires, pièces jointes et checklists.
+   - Création, édition et suppression de cartes. (fait)
+   - Déplacement entre listes par drag and drop. (fait)
+   - Ajout d’étiquettes, de membres assignés et de dates d’échéance. (fait)
+   - Commentaires, pièces jointes et checklists. (fait)
 
 5. **Collaboration**  
-   - Attribution des cartes aux utilisateurs.
-   - Historique d’activité sur chaque carte et tableau.
-   - Invitations par e‑mail pour rejoindre un workspace.
+   - Attribution des cartes aux utilisateurs. (fait)
+   - Historique d’activité sur chaque carte et tableau. (fait pour les cartes)
+   - Invitations par e‑mail pour rejoindre un workspace. ( pas fait)
 
 6. **Recherche et filtrage**  
-   - Recherche par texte, étiquette, membre ou date limite.
+   - Recherche par texte, étiquette, membre ou date limite. (pas fait)
 
 ---
 

@@ -6,7 +6,6 @@ import { logActivity } from "@/app/lib/activity-logger";
 
 const prisma = new PrismaClient();
 
-// PUT: Update a comment
 export async function PUT(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string; commentId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -30,7 +29,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Comment content is required" }, { status: 400 });
     }
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -47,7 +45,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get the comment
     const comment = await prisma.comment.findUnique({
       where: { id: commentId },
       include: {
@@ -61,7 +58,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    // Verify the comment belongs to the card and board
     if (comment.cardId !== cardId) {
       return NextResponse.json({ error: "Comment does not belong to this card" }, { status: 400 });
     }
@@ -74,18 +70,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Comment does not belong to this board" }, { status: 400 });
     }
 
-    // Verify the user owns the comment
     if (comment.userId !== user.id) {
       return NextResponse.json({ error: "You can only edit your own comments" }, { status: 403 });
     }
 
-    // Get card info for logging
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       select: { title: true },
     });
 
-    // Update the comment
     const updatedComment = await prisma.comment.update({
       where: { id: commentId },
       data: { content: content.trim() },
@@ -100,7 +93,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       },
     });
 
-    // Log activity
     await logActivity({
       type: "comment_updated",
       description: `${user.name || user.email} a modifié un commentaire sur la carte "${card?.title || ""}"`,
@@ -117,7 +109,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
   }
 }
 
-// DELETE: Delete a comment
 export async function DELETE(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string; commentId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -135,7 +126,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     const { cardId, boardId, commentId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -152,7 +142,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get the comment
     const comment = await prisma.comment.findUnique({
       where: { id: commentId },
       include: {
@@ -166,7 +155,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    // Verify the comment belongs to the card and board
     if (comment.cardId !== cardId) {
       return NextResponse.json({ error: "Comment does not belong to this card" }, { status: 400 });
     }
@@ -179,23 +167,19 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Comment does not belong to this board" }, { status: 400 });
     }
 
-    // Verify the user owns the comment
     if (comment.userId !== user.id) {
       return NextResponse.json({ error: "You can only delete your own comments" }, { status: 403 });
     }
 
-    // Get card info for logging
     const card = await prisma.card.findUnique({
       where: { id: cardId },
       select: { title: true },
     });
 
-    // Delete the comment
     await prisma.comment.delete({
       where: { id: commentId },
     });
 
-    // Log activity
     await logActivity({
       type: "comment_deleted",
       description: `${user.name || user.email} a supprimé un commentaire sur la carte "${card?.title || ""}"`,

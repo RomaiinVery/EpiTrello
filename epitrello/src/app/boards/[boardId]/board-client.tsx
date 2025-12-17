@@ -76,7 +76,6 @@ function CardItem({ card, onRename, onDelete, onClick }: {
       {...attributes}
       className="bg-white rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
       onClick={(e) => {
-        // Only open modal if not dragging and not clicking on dropdown
         if (!isDragging && !(e.target as HTMLElement).closest('[role="menuitem"]')) {
           onClick(card.listId, card.id);
         }
@@ -174,7 +173,6 @@ function CardItem({ card, onRename, onDelete, onClick }: {
   );
 }
 
-// Helper function to determine if a color is light (for text contrast)
 function isLabelColorLight(color: string): boolean {
   const hex = color.replace("#", "");
   const r = parseInt(hex.substr(0, 2), 16);
@@ -286,11 +284,12 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
 
 interface BoardClientProps {
   boardId: string;
+  tableauId?: string;
   initialBoard: Board;
   initialCardsByList: Record<string, Card[]>;
 }
 
-export default function BoardClient({ boardId, initialBoard, initialCardsByList }: BoardClientProps) {
+export default function BoardClient({ boardId, tableauId, initialBoard, initialCardsByList }: BoardClientProps) {
   
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>(initialCardsByList);
@@ -662,7 +661,6 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
       return;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(shareEmail.trim())) {
       setShareError("Veuillez entrer une adresse email valide");
@@ -690,7 +688,6 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
       setShareSuccess(true);
       setShareEmail("");
       
-      // Close dialog after 1.5 seconds on success
       setTimeout(() => {
         setShowShareDialog(false);
         setShareSuccess(false);
@@ -714,8 +711,6 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
   };
 
   const handleCardUpdate = () => {
-    // Refresh cards data when card is updated
-    // This will be handled by refetching the board data
     fetchBoardData();
   };
 
@@ -727,13 +722,11 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
         setBoard((prev) => prev ? { ...prev, ...boardData } : boardData);
       }
 
-      // Refetch lists and cards
       const listsRes = await fetch(`/api/boards/${boardId}/lists`);
       if (listsRes.ok) {
         const listsData = await listsRes.json();
         setBoard((prev) => prev ? { ...prev, lists: listsData } : prev);
 
-        // Refetch cards for each list
         const newCardsByList: Record<string, Card[]> = {};
         for (const list of listsData) {
           const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);
@@ -937,7 +930,7 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
     return (
       <div className="p-6 h-full flex flex-col">
         <Link
-          href="/boards"
+          href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
           className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
         >
           ← Back
@@ -956,7 +949,7 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
   return (
     <div className="p-6 h-full flex flex-col">
       <Link
-        href="/boards"
+        href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
         className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
       >
         ← Back
@@ -1128,7 +1121,7 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
             <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
             <p className="mb-4">
-              Êtes-vous sûr de vouloir supprimer la liste "{listToDelete?.title}" ?
+              Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
             </p>
             {deleteError && (
               <div className="text-red-500 text-sm mb-2">{deleteError}</div>
@@ -1250,7 +1243,7 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
             <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
             <p className="mb-4">
-              Êtes-vous sûr de vouloir supprimer la carte "{cardToDelete?.title}" ?
+              Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
             </p>
             {deleteCardError && (
               <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
@@ -1282,7 +1275,7 @@ export default function BoardClient({ boardId, initialBoard, initialCardsByList 
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
             <h3 className="text-lg font-semibold mb-3">Partager le tableau</h3>
             <p className="text-sm text-gray-600 mb-3">
-              Entrez l'adresse email de l'utilisateur à inviter
+              Entrez l&apos;adresse email de l&apos;utilisateur à inviter
             </p>
             <input
               type="email"

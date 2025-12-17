@@ -276,7 +276,6 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
   );
 }
 
-// Helper function to determine if a color is light (for text contrast)
 function isLabelColorLight(color: string): boolean {
   const hex = color.replace("#", "");
   const r = parseInt(hex.substr(0, 2), 16);
@@ -285,4 +284,5 @@ function isLabelColorLight(color: string): boolean {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   return brightness > 155;
 }
+
 

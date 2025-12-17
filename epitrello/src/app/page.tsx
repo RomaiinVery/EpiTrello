@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react"; // Import nécessaire pour gérer l'état
+import { useSession } from "next-auth/react"; 
 
 type BoardHistory = {
   id: string;
@@ -13,20 +13,18 @@ type BoardHistory = {
 };
 
 export default function Home() {
-  // Récupération de la session utilisateur
   const { data: session, status } = useSession();
   
   const [recentBoards, setRecentBoards] = useState<BoardHistory[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Effect: Load and validate history from LocalStorage on mount
   useEffect(() => {
     setIsMounted(true);
     const storedHistory = localStorage.getItem("board_history");
     
     if (storedHistory) {
       try {
-        const parsedHistory: any[] = JSON.parse(storedHistory);
+        const parsedHistory: { id: string; title: string; color: string; timestamp: number; link: string }[] = JSON.parse(storedHistory);
         const validHistory = parsedHistory.filter((item) => item.link && item.id);
         setRecentBoards(validHistory.sort((a, b) => b.timestamp - a.timestamp));
       } catch (e) {
@@ -42,10 +40,10 @@ export default function Home() {
     if (value === "boards") {
       currentBoard = {
         id: "boards",
-        title: "My Main Board",
+        title: "Tableaux",
         color: "bg-blue-600",
         timestamp: Date.now(),
-        link: "/boards"
+        link: "/tableaux"
       };
     } else if (value === "settings") {
       currentBoard = {
@@ -76,7 +74,6 @@ export default function Home() {
     localStorage.setItem("board_history", JSON.stringify(newHistory));
   };
 
-  // Prevent hydration mismatch
   if (!isMounted) return null;
 
   // ---------------------------------------------------------------------------
@@ -84,8 +81,6 @@ export default function Home() {
   // ---------------------------------------------------------------------------
 if (status === "unauthenticated") {
     return (
-      // MODIFICATION ICI : 'min-h-screen' au lieu de 80vh pour prendre tout l'écran
-      // et 'w-full' pour s'assurer que ça prend toute la largeur.
       <div className="flex flex-col items-center justify-center min-h-screen w-full px-4 text-center bg-white">
         
         <div className="max-w-4xl mx-auto flex flex-col items-center justify-center">
@@ -93,7 +88,7 @@ if (status === "unauthenticated") {
             Organisez tout, <span className="text-blue-600">ensemble.</span>
             </h1>
             <p className="text-xl text-gray-500 max-w-2xl mb-10">
-            EpiTrello est l'outil de gestion de projet ultime. Gérez vos tâches, 
+            EpiTrello est l&apos;outil de gestion de projet ultime. Gérez vos tâches, 
             collaborez avec votre équipe et atteignez vos objectifs plus rapidement.
             </p>
             <div className="flex gap-4 flex-col sm:flex-row">
@@ -161,9 +156,9 @@ if (status === "unauthenticated") {
       {/* Main Navigation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        {/* Card: My Boards */}
+        {/* Card: Tableaux */}
         <Link 
-          href="/boards" 
+          href="/tableaux" 
           onClick={() => handleBoardClick("boards")}
           className="group bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer flex flex-col gap-4"
         >
@@ -171,8 +166,8 @@ if (status === "unauthenticated") {
             📋
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-800 group-hover:text-blue-600">My Boards</h2>
-            <p className="text-gray-500 text-sm mt-1">Access your projects and active tasks.</p>
+            <h2 className="text-xl font-bold text-gray-800 group-hover:text-blue-600">Tableaux</h2>
+            <p className="text-gray-500 text-sm mt-1">Accède à tes tableaux et projets actifs.</p>
           </div>
         </Link>
 

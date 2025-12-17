@@ -5,7 +5,6 @@ import { authOptions } from "../../../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-// PUT - Update a label
 export async function PUT(req: Request, { params }: { params: { boardId: string; labelId: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,7 +23,6 @@ export async function PUT(req: Request, { params }: { params: { boardId: string;
     const { boardId, labelId } = await params;
     const { name, color } = await req.json();
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -41,7 +39,6 @@ export async function PUT(req: Request, { params }: { params: { boardId: string;
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if label exists and belongs to board
     const existingLabel = await prisma.label.findUnique({
       where: { id: labelId },
     });
@@ -50,7 +47,6 @@ export async function PUT(req: Request, { params }: { params: { boardId: string;
       return NextResponse.json({ error: "Label not found" }, { status: 404 });
     }
 
-    // If name is being changed, check for duplicates
     if (name && name.trim() !== existingLabel.name) {
       const duplicateLabel = await prisma.label.findUnique({
         where: {
@@ -81,7 +77,6 @@ export async function PUT(req: Request, { params }: { params: { boardId: string;
   }
 }
 
-// DELETE - Delete a label
 export async function DELETE(req: Request, { params }: { params: { boardId: string; labelId: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -99,7 +94,6 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
 
     const { boardId, labelId } = await params;
 
-    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: { members: true },
@@ -116,7 +110,6 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if label exists and belongs to board
     const existingLabel = await prisma.label.findUnique({
       where: { id: labelId },
     });
@@ -135,4 +128,5 @@ export async function DELETE(req: Request, { params }: { params: { boardId: stri
     return NextResponse.json({ error: "Failed to delete label" }, { status: 500 });
   }
 }
+
 
