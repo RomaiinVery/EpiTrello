@@ -29,7 +29,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
-import { type List, type Card, type Board, type Checklist } from "@/app/lib/board-api";
+import { type List, type Card, type Board } from "@/app/lib/board-api";
 import { CardModal } from "@/components/CardModal";
 import { CheckSquare } from "lucide-react";
 
@@ -139,13 +139,23 @@ function CardItem({ card, onRename, onDelete, onClick }: {
       {card.members && card.members.length > 0 && (
         <div className="flex items-center gap-1 mt-2">
           {card.members.map((member) => (
-            <div
-              key={member.id}
-              className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
-              title={member.name || member.email}
-            >
-              {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
-            </div>
+            member.profileImage ? (
+              <img
+                key={member.id}
+                src={member.profileImage}
+                alt={member.name || member.email}
+                className="w-6 h-6 rounded-full object-cover border-2 border-white"
+                title={member.name || member.email}
+              />
+            ) : (
+              <div
+                key={member.id}
+                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
+                title={member.name || member.email}
+              >
+                {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+              </div>
+            )
           ))}
         </div>
       )}
@@ -390,7 +400,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setCardsByList((prev) => ({ ...prev, [newList.id]: [] }));
       setShowDialog(false);
       setNewListTitle("");
-    } catch (err) {
+    } catch {
       setError("Erreur réseau");
     }
     setAddingList(false);
@@ -442,7 +452,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setShowRenameDialog(false);
       setRenameTitle("");
       setListToRename(null);
-    } catch (err) {
+    } catch {
       setRenameError("Erreur réseau");
     }
     setRenaming(false);
@@ -487,7 +497,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       });
       setShowDeleteDialog(false);
       setListToDelete(null);
-    } catch (err) {
+    } catch {
       setDeleteError("Erreur réseau");
     }
     setDeleting(false);
@@ -536,7 +546,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setCardTitle("");
       setCardContent("");
       setListForNewCard(null);
-    } catch (err) {
+    } catch {
       setAddCardError("Erreur réseau");
     }
     setAddingCard(false);
@@ -590,7 +600,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setShowRenameCardDialog(false);
       setCardToRename(null);
       setRenameCardTitle("");
-    } catch (err) {
+    } catch {
       setRenameCardError("Erreur réseau");
     }
     setListForCardAction(null);
@@ -634,7 +644,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       });
       setShowDeleteCardDialog(false);
       setCardToDelete(null);
-    } catch (err) {
+    } catch {
       setDeleteCardError("Erreur réseau");
     }
     setListForCardAction(null);
@@ -692,7 +702,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
         setShowShareDialog(false);
         setShareSuccess(false);
       }, 1500);
-    } catch (err) {
+    } catch {
       setShareError("Erreur réseau");
     }
     setSharing(false);
@@ -931,9 +941,9 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       <div className="p-6 h-full flex flex-col">
         <Link
           href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
-          className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
+          className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
         >
-          ← Back
+          ← Retour aux boards
         </Link>
         <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
         {board.description && (
@@ -950,9 +960,9 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
     <div className="p-6 h-full flex flex-col">
       <Link
         href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
-        className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
+        className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
       >
-        ← Back
+        ← Retour aux boards
       </Link>
 
       <div className="flex items-center justify-between mb-2">

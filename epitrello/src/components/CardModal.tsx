@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, UserPlus, Users, Image, Trash2, MessageSquare, Edit2, History, CheckSquare, Plus } from "lucide-react";
+import { X, Users, Image, Trash2, MessageSquare, Edit2, History, CheckSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LabelPicker } from "./LabelPicker";
@@ -17,6 +17,7 @@ type User = {
   id: string;
   email: string;
   name?: string | null;
+  profileImage?: string | null;
 };
 
 type Comment = {
@@ -150,7 +151,7 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
         boardData = await boardRes.json();
         const allMembers: User[] = [];
         
-        if (boardData.user) {
+        if (boardData && boardData.user) {
           allMembers.push({
             id: boardData.user.id,
             email: boardData.user.email,
@@ -889,9 +890,17 @@ export function CardModal({ boardId, cardId, listId, isOpen, onClose, onUpdate }
                           key={member.id}
                           className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200"
                         >
-                          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold">
-                            {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
-                          </div>
+                          {member.profileImage ? (
+                            <img
+                              src={member.profileImage}
+                              alt={member.name || member.email}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
+                              {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <span className="text-sm text-gray-700">
                             {member.name || member.email}
                           </span>

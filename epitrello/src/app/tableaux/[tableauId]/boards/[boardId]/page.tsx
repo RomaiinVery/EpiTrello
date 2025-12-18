@@ -1,12 +1,12 @@
-import { fetchBoard, fetchLists, fetchCards, List, Card } from "@/app/lib/board-api";
+import { fetchBoard, fetchLists, fetchCards, Card } from "@/app/lib/board-api";
 import BoardClient from "@/app/boards/[boardId]/board-client";
 
 export default async function BoardPage({
   params,
 }: {
-  params: { tableauId: string; boardId: string };
+  params: Promise<{ tableauId: string; boardId: string }>;
 }) {
-  const { tableauId, boardId } = params;
+  const { tableauId, boardId } = await params;
 
   const boardData = await fetchBoard(boardId);
 

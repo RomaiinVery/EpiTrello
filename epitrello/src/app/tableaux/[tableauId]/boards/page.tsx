@@ -152,7 +152,7 @@ export default function BoardsByTableauPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <Link href="/tableaux" className="text-gray-500 hover:text-gray-700 text-sm">
+          <Link href="/tableaux" className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors mb-2 inline-block">
             ← Retour aux tableaux
           </Link>
           <div className="flex items-center gap-4 mt-2">

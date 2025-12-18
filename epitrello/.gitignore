@@ -41,3 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+/public/uploads/profiles/*
+!public/uploads/profiles/.gitkeep

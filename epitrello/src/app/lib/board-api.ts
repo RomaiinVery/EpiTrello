@@ -17,6 +17,7 @@ export type User = {
   id: string;
   email: string;
   name?: string | null;
+  profileImage?: string | null;
 };
 
 export type ChecklistItem = {
@@ -99,6 +100,7 @@ export async function fetchCards(boardId: string, listId: string): Promise<Card[
                 id: true,
                 email: true,
                 name: true,
+                profileImage: true,
               },
             },
           },

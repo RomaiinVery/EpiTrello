@@ -10,7 +10,7 @@ type ListUpdateData = {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { boardId: string } }
+  { params }: { params: Promise<{ boardId: string }> }
 ) {
   const { boardId } = await params;
   const body = await request.json();

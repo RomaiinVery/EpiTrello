@@ -88,7 +88,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ board
       where: { id: boardId },
     });
     return NextResponse.json({ message: "Board deleted", board: deletedBoard });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to delete board" }, { status: 500 });
   }
 }

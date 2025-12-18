@@ -6,7 +6,7 @@ import { authOptions } from "../../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
-export async function POST(req: Request, { params }: { params: { boardId: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ boardId: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
