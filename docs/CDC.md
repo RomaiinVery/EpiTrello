@@ -34,17 +34,17 @@
 - [x] **Optimistic UI :** Feedback visuel immédiat pour une UX fluide.
 
 ### 🗂️ Détails & Contenu Riche (20 J/H)
-- [x] **Modale Carte :** Interface détaillée d'édition.
-- [x] **Édition In-Place :** Modification rapide du titre et description riche (multiligne).
-- [x] **Système de Labels :** Création, gestion des couleurs et assignation aux cartes.
-- [x] **Membres Assignés :** Liaison des utilisateurs aux tâches spécifiques.
-- [x] **Cover Images :** Upload et affichage d'images de couverture (stockage local).
-
-### 💬 Collaboration & Suivi (20 J/H)
-- [x] **Checklists Avancées :** Sous-tâches avec états (coché/décoché) et persistance.
-- [x] **Fil de Commentaires :** Discussion chronologique, édition et suppression.
-- [x] **Journal d'Activités :** Logs automatiques ("Audit Trail") des actions sur la carte.
-- [x] **Indicateurs Visuels :** Badges de progression (Checklist, Pièces jointes) sur la vue board.
+- [x] **Modification d'une Carte (Modale) :** Interface complète d'édition.
+    - **Description :** Permet d'ajouter des détails textuels à la tâche (support multiligne).
+    - **Etiquettes (Labels) :** Permet de catégoriser la carte avec des labels colorés (Création de nouvelles couleurs, sélection multiple).
+    - **Membres :** Permet d'assigner des utilisateurs à la tâche (Recherche parmi les membres du tableau, affichage des avatars).
+    - **Checklists :** Permet de diviser la tâche en sous-tâches (Barre de progression, cocher/décocher, suppression).
+    - **Dates (À venir) :** Permet de définir une date d'échéance (Due Date) et de recevoir des rappels.
+    - **Couverture (Cover) :** Permet d'uploader une image de fond pour la carte (Support JPEG/PNG/WEBP, affichage en en-tête).
+    - **Commentaires :** Permet de discuter avec l'équipe (Fil chronologique, modification/suppression de ses messages).
+    - **Activités :** Permet de suivre l'historique des actions sur la carte (Logs automatiques des changements).
+- [x] **Édition In-Place :** Modification rapide du titre depuis la vue liste.
+- [x] **Indicateurs Visuels :** Badges sur la miniature de la carte (Progression checklist, trombone pour pièces jointes, etc.).
 
 ### 🐙 Intégration GitHub Avancée (12 J/H)
 *Objectif : Lier le code à la gestion de projet.*
