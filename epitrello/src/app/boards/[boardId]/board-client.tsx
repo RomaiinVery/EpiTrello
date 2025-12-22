@@ -111,6 +111,9 @@ function CardItem({ card, onRename, onDelete, onClick }: {
             <DropdownMenuItem onClick={() => onRename(card.listId, card.id)}>
               Renommer
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onClick(card.listId, card.id)}>
+              Modifier
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDelete(card.listId, card.id)}>
               Supprimer
             </DropdownMenuItem>
