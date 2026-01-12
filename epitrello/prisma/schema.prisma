@@ -21,8 +21,8 @@ model User {
   githubUsername    String?
   githubAvatarUrl   String?
 
-  tableaux Tableau[]
-  sharedTableaux Tableau[] @relation("TableauMembers")
+  workspaces Workspace[]
+  sharedWorkspaces Workspace[] @relation("WorkspaceMembers")
   boards   Board[]
 
   sharedBoards  Board[]      @relation("BoardMembers")
@@ -32,7 +32,7 @@ model User {
   attachments   Attachment[]
 }
 
-model Tableau {
+model Workspace {
   id          String   @id @default(cuid())
   title       String
   description String?
@@ -41,7 +41,7 @@ model Tableau {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  members User[] @relation("TableauMembers")
+  members User[] @relation("WorkspaceMembers")
 
   boards Board[]
 }
@@ -59,8 +59,8 @@ model Board {
   labels     Label[]
   activities Activity[]
 
-  tableauId String
-  tableau   Tableau @relation(fields: [tableauId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
