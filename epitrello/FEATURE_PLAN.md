@@ -58,11 +58,11 @@
 - [x] **Frontend**: Create/edit labels in board settings
 
 #### 1.4 Due Dates
-- [ ] **Database**: Add `dueDate` field to Card model (SKIPPED - Feature removed)
-- [ ] **Backend**: Update card API to handle due dates (SKIPPED)
-- [ ] **Frontend**: Date picker in card modal (SKIPPED)
-- [ ] **Frontend**: Show due date on card with visual indicator (overdue = red) (SKIPPED)
-- [ ] **Frontend**: Calendar icon with date (SKIPPED)
+- [x] **Database**: Add `dueDate` field to Card model
+- [x] **Backend**: Update card API to handle due dates
+- [x] **Frontend**: Date picker in card modal
+- [x] **Frontend**: Show due date on card with visual indicator (overdue = red)
+- [x] **Frontend**: Calendar icon with date
 
 #### 1.5 Assigned Members
 - [x] **Database**: Create `CardMember` junction table (cardId, userId)

@@ -31,7 +31,9 @@ import { createPortal } from "react-dom";
 
 import { type List, type Card, type Board } from "@/app/lib/board-api";
 import { CardModal } from "@/components/CardModal";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Clock } from "lucide-react";
+import { format, isPast, isToday, isTomorrow } from "date-fns";
+import { fr } from "date-fns/locale";
 
 function CardItem({ card, onRename, onDelete, onClick }: {
   card: Card;
@@ -90,97 +92,115 @@ function CardItem({ card, onRename, onDelete, onClick }: {
       )}
       <div className="p-2">
         <div className="flex justify-between items-center mb-2">
-        <h3 
-          className="font-semibold text-gray-700 flex-1"
-          {...listeners}
-        >
-          {card.title}
-        </h3>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="text-gray-500 hover:text-gray-700 focus:outline-none"
-              aria-label="Menu"
-              type="button"
-              onClick={(e) => e.stopPropagation()}
-            >
-              &#x22EE;
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onRename(card.listId, card.id)}>
-              Renommer
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onClick(card.listId, card.id)}>
-              Modifier
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDelete(card.listId, card.id)}>
-              Supprimer
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      {card.content && (
-        <p className="text-gray-600 text-sm line-clamp-2">{card.content}</p>
-      )}
-      {card.labels && card.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {card.labels.map((label) => (
-            <div
-              key={label.id}
-              className="px-2 py-0.5 rounded text-xs font-medium"
-              style={{
-                backgroundColor: label.color,
-                color: isLabelColorLight(label.color) ? "#000" : "#fff",
-              }}
-            >
-              {label.name}
-            </div>
-          ))}
-        </div>
-      )}
-      {card.members && card.members.length > 0 && (
-        <div className="flex items-center gap-1 mt-2">
-          {card.members.map((member) => (
-            member.profileImage ? (
-              <img
-                key={member.id}
-                src={member.profileImage}
-                alt={member.name || member.email}
-                className="w-6 h-6 rounded-full object-cover border-2 border-white"
-                title={member.name || member.email}
-              />
-            ) : (
-              <div
-                key={member.id}
-                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
-                title={member.name || member.email}
+          <h3
+            className="font-semibold text-gray-700 flex-1"
+            {...listeners}
+          >
+            {card.title}
+          </h3>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label="Menu"
+                type="button"
+                onClick={(e) => e.stopPropagation()}
               >
-                {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
-              </div>
-            )
-          ))}
+                &#x22EE;
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onRename(card.listId, card.id)}>
+                Renommer
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onClick(card.listId, card.id)}>
+                Modifier
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete(card.listId, card.id)}>
+                Supprimer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      )}
-      {card.checklists && card.checklists.length > 0 && (
-        <div className="mt-2 space-y-1">
-          {card.checklists.map((checklist) => {
-            const checkedCount = checklist.items.filter(item => item.checked).length;
-            const totalCount = checklist.items.length;
-            if (totalCount === 0) return null;
-            
-            return (
-              <div key={checklist.id} className="flex items-center gap-2 text-xs text-gray-600">
-                <CheckSquare className="w-3 h-3" />
-                <span className="flex-1">{checklist.title}</span>
-                <span className="font-medium">
-                  {checkedCount}/{totalCount}
-                </span>
+        {card.content && (
+          <p className="text-gray-600 text-sm line-clamp-2">{card.content}</p>
+        )}
+        {card.labels && card.labels.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {card.labels.map((label) => (
+              <div
+                key={label.id}
+                className="px-2 py-0.5 rounded text-xs font-medium"
+                style={{
+                  backgroundColor: label.color,
+                  color: isLabelColorLight(label.color) ? "#000" : "#fff",
+                }}
+              >
+                {label.name}
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+        {card.dueDate && (
+          <div
+            className={`mt-2 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 ${card.isDone
+                ? "bg-green-100 text-green-700"
+                : isPast(new Date(card.dueDate)) && !isToday(new Date(card.dueDate))
+                  ? "bg-red-100 text-red-700"
+                  : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-gray-100 text-gray-600"
+              }`}
+            title={card.isDone ? "Terminée" : "Date d'échéance"}
+          >
+            <Clock className="w-3 h-3" />
+            <span>
+              {format(new Date(card.dueDate), "d MMM", { locale: fr })}
+            </span>
+          </div>
+        )}
+        {card.members && card.members.length > 0 && (
+          <div className="flex items-center gap-1 mt-2">
+            {card.members.map((member) => (
+              member.profileImage ? (
+                <img
+                  key={member.id}
+                  src={member.profileImage}
+                  alt={member.name || member.email}
+                  className="w-6 h-6 rounded-full object-cover border-2 border-white"
+                  title={member.name || member.email}
+                />
+              ) : (
+                <div
+                  key={member.id}
+                  className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
+                  title={member.name || member.email}
+                >
+                  {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+                </div>
+              )
+            ))}
+          </div>
+        )}
+        {card.checklists && card.checklists.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {card.checklists.map((checklist) => {
+              const checkedCount = checklist.items.filter(item => item.checked).length;
+              const totalCount = checklist.items.length;
+              if (totalCount === 0) return null;
+
+              return (
+                <div key={checklist.id} className="flex items-center gap-2 text-xs text-gray-600">
+                  <CheckSquare className="w-3 h-3" />
+                  <span className="flex-1">{checklist.title}</span>
+                  <span className="font-medium">
+                    {checkedCount}/{totalCount}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -303,7 +323,7 @@ interface BoardClientProps {
 }
 
 export default function BoardClient({ boardId, tableauId, initialBoard, initialCardsByList }: BoardClientProps) {
-  
+
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>(initialCardsByList);
 
@@ -358,7 +378,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
 
   const listIds = useMemo(() => (board?.lists || []).map(l => l.id), [board?.lists]);
 
-  
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -700,7 +720,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
 
       setShareSuccess(true);
       setShareEmail("");
-      
+
       setTimeout(() => {
         setShowShareDialog(false);
         setShareSuccess(false);
@@ -1043,7 +1063,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
             )}
           </DragOverlay>,
           document.body
-        ): null }
+        ) : null}
 
       </DndContext>
 
