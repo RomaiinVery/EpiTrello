@@ -20,11 +20,11 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const tableauId = searchParams.get("tableauId") || undefined;
+  const workspaceId = searchParams.get("workspaceId") || undefined;
 
   const boards = await prisma.board.findMany({
     where: {
-      tableauId,
+      workspaceId,
       OR: [
         { userId: user.id },
         { members: { some: { id: user.id } } }
@@ -61,25 +61,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { title, description, tableauId } = await req.json();
+  const { title, description, workspaceId } = await req.json();
 
-  if (!title || !tableauId) {
-    return NextResponse.json({ error: "Title and tableauId are required" }, { status: 400 });
+  if (!title || !workspaceId) {
+    return NextResponse.json({ error: "Title and workspaceId are required" }, { status: 400 });
   }
 
-  const tableau = await prisma.tableau.findFirst({
-    where: { id: tableauId, userId: user.id },
+  const workspace = await prisma.workspace.findFirst({
+    where: { id: workspaceId, userId: user.id },
   });
 
-  if (!tableau) {
-    return NextResponse.json({ error: "Tableau introuvable ou non autorisé" }, { status: 404 });
+  if (!workspace) {
+    return NextResponse.json({ error: "Workspace introuvable ou non autorisé" }, { status: 404 });
   }
 
   const board = await prisma.board.create({
     data: {
       title,
       description,
-      tableauId,
+      workspaceId,
       userId: user.id,
       lists: {
         create: [

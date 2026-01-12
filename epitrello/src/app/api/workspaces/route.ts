@@ -19,7 +19,7 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const tableaux = await prisma.tableau.findMany({
+  const workspaces = await prisma.workspace.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     include: {
@@ -28,10 +28,10 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
       },
     },
-    
+
   });
 
-  return NextResponse.json(tableaux);
+  return NextResponse.json(workspaces);
 }
 
 export async function POST(req: Request) {
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
 
-  const tableau = await prisma.tableau.create({
+  const workspace = await prisma.workspace.create({
     data: {
       title,
       description,
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json(tableau, { status: 201 });
+  return NextResponse.json(workspace, { status: 201 });
 }
 
 

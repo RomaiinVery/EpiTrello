@@ -7,7 +7,7 @@ export default function LegacyBoardsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/tableaux");
+    router.replace("/workspaces");
   }, [router]);
 
   return null;

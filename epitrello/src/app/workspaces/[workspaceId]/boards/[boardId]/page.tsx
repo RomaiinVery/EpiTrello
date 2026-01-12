@@ -4,13 +4,13 @@ import BoardClient from "@/app/boards/[boardId]/board-client";
 export default async function BoardPage({
   params,
 }: {
-  params: Promise<{ tableauId: string; boardId: string }>;
+  params: Promise<{ workspaceId: string; boardId: string }>;
 }) {
-  const { tableauId, boardId } = await params;
+  const { workspaceId, boardId } = await params;
 
   const boardData = await fetchBoard(boardId);
 
-  if (!boardData || boardData.tableauId !== tableauId) {
+  if (!boardData || boardData.workspaceId !== workspaceId) {
     return (
       <div className="p-6 text-center text-gray-500">
         Board introuvable
@@ -31,7 +31,7 @@ export default async function BoardPage({
 
   return (
     <BoardClient
-      tableauId={tableauId}
+      workspaceId={workspaceId}
       boardId={boardId}
       initialBoard={initialBoard}
       initialCardsByList={initialCardsByList}
