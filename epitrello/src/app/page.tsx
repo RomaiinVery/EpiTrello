@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react"; 
+import { useSession } from "next-auth/react";
 
 type BoardHistory = {
   id: string;
@@ -14,14 +14,14 @@ type BoardHistory = {
 
 export default function Home() {
   const { data: session, status } = useSession();
-  
+
   const [recentBoards, setRecentBoards] = useState<BoardHistory[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     const storedHistory = localStorage.getItem("board_history");
-    
+
     if (storedHistory) {
       try {
         const parsedHistory: { id: string; title: string; color: string; timestamp: number; link: string }[] = JSON.parse(storedHistory);
@@ -62,7 +62,7 @@ export default function Home() {
         link: "/team-management"
       };
     }
-    
+
     if (!currentBoard) return;
 
     const newHistory = [
@@ -79,50 +79,50 @@ export default function Home() {
   // ---------------------------------------------------------------------------
   // CAS 1 : UTILISATEUR NON CONNECTÉ -> AFFICHER LA LANDING PAGE
   // ---------------------------------------------------------------------------
-if (status === "unauthenticated") {
+  if (status === "unauthenticated") {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen w-full px-4 text-center bg-white">
-        
+
         <div className="max-w-4xl mx-auto flex flex-col items-center justify-center">
-            <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
             Organisez tout, <span className="text-blue-600">ensemble.</span>
-            </h1>
-            <p className="text-xl text-gray-500 max-w-2xl mb-10">
-            EpiTrello est l&apos;outil de gestion de projet ultime. Gérez vos tâches, 
+          </h1>
+          <p className="text-xl text-gray-500 max-w-2xl mb-10">
+            EpiTrello est l&apos;outil de gestion de projet ultime. Gérez vos tâches,
             collaborez avec votre équipe et atteignez vos objectifs plus rapidement.
-            </p>
-            <div className="flex gap-4 flex-col sm:flex-row">
-            <Link 
-                href="/auth" 
-                className="px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 transform"
+          </p>
+          <div className="flex gap-4 flex-col sm:flex-row">
+            <Link
+              href="/auth"
+              className="px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 transform"
             >
-                Commencer gratuitement
+              Commencer gratuitement
             </Link>
-            <button 
-                className="px-8 py-4 text-lg font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all"
+            <button
+              className="px-8 py-4 text-lg font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all"
             >
-                En savoir plus
+              En savoir plus
             </button>
+          </div>
+
+          {/* Features section */}
+          <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-left w-full">
+            <div className="p-6 bg-white border rounded-xl shadow-sm">
+              <div className="text-3xl mb-4">🚀</div>
+              <h3 className="font-bold text-lg mb-2">Rapide & Fluide</h3>
+              <p className="text-gray-500">Une interface réactive qui ne vous ralentit jamais.</p>
             </div>
-            
-            {/* Features section */}
-            <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-left w-full">
-                <div className="p-6 bg-white border rounded-xl shadow-sm">
-                    <div className="text-3xl mb-4">🚀</div>
-                    <h3 className="font-bold text-lg mb-2">Rapide & Fluide</h3>
-                    <p className="text-gray-500">Une interface réactive qui ne vous ralentit jamais.</p>
-                </div>
-                <div className="p-6 bg-white border rounded-xl shadow-sm">
-                    <div className="text-3xl mb-4">🤝</div>
-                    <h3 className="font-bold text-lg mb-2">Collaboratif</h3>
-                    <p className="text-gray-500">Invitez votre équipe et assignez des tâches en un clic.</p>
-                </div>
-                <div className="p-6 bg-white border rounded-xl shadow-sm">
-                    <div className="text-3xl mb-4">🔒</div>
-                    <h3 className="font-bold text-lg mb-2">Sécurisé</h3>
-                    <p className="text-gray-500">Vos données sont protégées par les meilleurs standards.</p>
-                </div>
+            <div className="p-6 bg-white border rounded-xl shadow-sm">
+              <div className="text-3xl mb-4">🤝</div>
+              <h3 className="font-bold text-lg mb-2">Collaboratif</h3>
+              <p className="text-gray-500">Invitez votre équipe et assignez des tâches en un clic.</p>
             </div>
+            <div className="p-6 bg-white border rounded-xl shadow-sm">
+              <div className="text-3xl mb-4">🔒</div>
+              <h3 className="font-bold text-lg mb-2">Sécurisé</h3>
+              <p className="text-gray-500">Vos données sont protégées par les meilleurs standards.</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -131,12 +131,12 @@ if (status === "unauthenticated") {
   // CAS 2 : CHARGEMENT (Pendant que NextAuth vérifie le token)
   if (status === "loading") {
     return (
-        <div className="flex h-full items-center justify-center min-h-[60vh]">
-            <div className="animate-pulse flex flex-col items-center">
-                <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <span className="text-gray-500 font-medium">Chargement de votre espace...</span>
-            </div>
+      <div className="flex h-full items-center justify-center min-h-[60vh]">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <span className="text-gray-500 font-medium">Chargement de votre espace...</span>
         </div>
+      </div>
     );
   }
 
@@ -148,17 +148,17 @@ if (status === "unauthenticated") {
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">
-            Bonjour, {session?.user?.name || "Utilisateur"} 👋
+          Bonjour, {session?.user?.name || "Utilisateur"} 👋
         </h1>
         <p className="text-gray-500 mt-2">Prêt à travailler ? Voici ton tableau de bord.</p>
       </div>
 
       {/* Main Navigation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        {/* Card: Tableaux */}
-        <Link 
-          href="/tableaux" 
+
+        {/* Card: Workspaces */}
+        <Link
+          href="/workspaces"
           onClick={() => handleBoardClick("boards")}
           className="group bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer flex flex-col gap-4"
         >
@@ -166,13 +166,13 @@ if (status === "unauthenticated") {
             📋
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-800 group-hover:text-blue-600">Tableaux</h2>
-            <p className="text-gray-500 text-sm mt-1">Accède à tes tableaux et projets actifs.</p>
+            <h2 className="text-xl font-bold text-gray-800 group-hover:text-blue-600">Workspaces</h2>
+            <p className="text-gray-500 text-sm mt-1">Accède à tes workspaces et projets actifs.</p>
           </div>
         </Link>
 
         {/* Card: Team Management */}
-        <Link 
+        <Link
           href="/team-management"
           onClick={() => handleBoardClick("team_management")}
           className="group bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-400 transition-all cursor-pointer flex flex-col gap-4"
@@ -187,8 +187,8 @@ if (status === "unauthenticated") {
         </Link>
 
         {/* Card: Settings */}
-        <Link 
-          href="/settings" 
+        <Link
+          href="/settings"
           onClick={() => handleBoardClick("settings")}
           className="group bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-400 transition-all cursor-pointer flex flex-col gap-4"
         >
@@ -227,7 +227,7 @@ if (status === "unauthenticated") {
               >
                 <span className="truncate">{board.title}</span>
                 <span className="text-xs text-white/80 font-normal flex items-center gap-1">
-                   Last viewed: {new Date(board.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  Last viewed: {new Date(board.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </Link>
             ))}

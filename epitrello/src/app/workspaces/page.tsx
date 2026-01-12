@@ -18,70 +18,70 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type Tableau = {
+type Workspace = {
   id: string;
   title: string;
   description?: string | null;
   boards?: { id: string; title: string }[];
 };
 
-export default function TableauxPage() {
-  const [tableaux, setTableaux] = useState<Tableau[]>([]);
+export default function WorkspacesPage() {
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [renameOpen, setRenameOpen] = useState(false);
-  const [renameTableauId, setRenameTableauId] = useState<string | null>(null);
+  const [renameWorkspaceId, setRenameWorkspaceId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteTableauId, setDeleteTableauId] = useState<string | null>(null);
+  const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/tableaux")
+    fetch("/api/workspaces")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setTableaux(data);
-        } else if (data && Array.isArray(data.tableaux)) {
-          setTableaux(data.tableaux);
+          setWorkspaces(data);
+        } else if (data && Array.isArray(data.workspaces)) {
+          setWorkspaces(data.workspaces);
         } else {
-          setTableaux([]);
+          setWorkspaces([]);
         }
       })
-      .catch(() => setTableaux([]));
+      .catch(() => setWorkspaces([]));
   }, []);
 
   const handleDelete = (id: string) => {
-    setDeleteTableauId(id);
+    setDeleteWorkspaceId(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!deleteTableauId) return;
-    await fetch(`/api/tableaux/${deleteTableauId}`, { method: "DELETE" });
-    setTableaux((prev) => prev.filter((t) => t.id !== deleteTableauId));
+    if (!deleteWorkspaceId) return;
+    await fetch(`/api/workspaces/${deleteWorkspaceId}`, { method: "DELETE" });
+    setWorkspaces((prev) => prev.filter((t) => t.id !== deleteWorkspaceId));
     setDeleteDialogOpen(false);
-    setDeleteTableauId(null);
+    setDeleteWorkspaceId(null);
     window.dispatchEvent(new Event("sidebarUpdated"));
   };
 
   const handleRename = async () => {
-    if (!renameTableauId || !newTitle) return;
+    if (!renameWorkspaceId || !newTitle) return;
 
-    await fetch(`/api/tableaux/${renameTableauId}`, {
+    await fetch(`/api/workspaces/${renameWorkspaceId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: newTitle }),
     });
 
-    setTableaux((prev) =>
+    setWorkspaces((prev) =>
       prev.map((t) =>
-        t.id === renameTableauId ? { ...t, title: newTitle } : t
+        t.id === renameWorkspaceId ? { ...t, title: newTitle } : t
       )
     );
 
     setRenameOpen(false);
-    setRenameTableauId(null);
+    setRenameWorkspaceId(null);
     setNewTitle("");
     window.dispatchEvent(new Event("sidebarUpdated"));
   };
@@ -89,15 +89,15 @@ export default function TableauxPage() {
   const handleCreate = async () => {
     if (!createTitle) return;
 
-    const res = await fetch("/api/tableaux", {
+    const res = await fetch("/api/workspaces", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: createTitle, description: createDescription }),
     });
 
     if (res.ok) {
-      const newTableau = await res.json();
-      setTableaux((prev) => [...prev, newTableau]);
+      const newWorkspace = await res.json();
+      setWorkspaces((prev) => [...prev, newWorkspace]);
       setCreateOpen(false);
       setCreateTitle("");
       setCreateDescription("");
@@ -111,16 +111,16 @@ export default function TableauxPage() {
         ← Retour à l&apos;accueil
       </Link>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Tableaux</h1>
-        <Button onClick={() => setCreateOpen(true)}>Créer un tableau</Button>
+        <h1 className="text-2xl font-semibold">Workspaces</h1>
+        <Button onClick={() => setCreateOpen(true)}>Créer un workspace</Button>
       </div>
       <ul className="space-y-2">
-        {tableaux.map((t) => (
+        {workspaces.map((t) => (
           <li
             key={t.id}
             className="flex justify-between items-center p-2 border rounded-md hover:bg-gray-50 transition"
           >
-            <Link href={`/tableaux/${t.id}/boards`} className="flex flex-col flex-1 ml-2">
+            <Link href={`/workspaces/${t.id}/boards`} className="flex flex-col flex-1 ml-2">
               <span className="font-semibold hover:underline">{t.title}</span>
               {t.description && (
                 <span className="text-gray-500 text-sm line-clamp-1">{t.description}</span>
@@ -140,7 +140,7 @@ export default function TableauxPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => {
-                  setRenameTableauId(t.id);
+                  setRenameWorkspaceId(t.id);
                   setNewTitle(t.title);
                   setRenameOpen(true);
                 }}>
@@ -154,16 +154,16 @@ export default function TableauxPage() {
           </li>
         ))}
       </ul>
-      {tableaux.length === 0 && (
+      {workspaces.length === 0 && (
         <div className="flex items-center justify-center h-64 text-gray-500">
-          Aucun tableau pour le moment
+          Aucun workspace pour le moment
         </div>
       )}
 
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Renommer le tableau</DialogTitle>
+            <DialogTitle>Renommer le workspace</DialogTitle>
           </DialogHeader>
           <Input
             value={newTitle}
@@ -183,7 +183,7 @@ export default function TableauxPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Créer un nouveau tableau</DialogTitle>
+            <DialogTitle>Créer un nouveau workspace</DialogTitle>
           </DialogHeader>
           <Input
             value={createTitle}
@@ -209,14 +209,14 @@ export default function TableauxPage() {
 
       <Dialog open={deleteDialogOpen} onOpenChange={(open) => {
         setDeleteDialogOpen(open);
-        if (!open) setDeleteTableauId(null);
+        if (!open) setDeleteWorkspaceId(null);
       }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Supprimer le tableau</DialogTitle>
+            <DialogTitle>Supprimer le workspace</DialogTitle>
           </DialogHeader>
           <div className="mb-4">
-            Êtes-vous sûr de vouloir supprimer ce tableau ? Cette action est irréversible.
+            Êtes-vous sûr de vouloir supprimer ce workspace ? Cette action est irréversible.
           </div>
           <DialogFooter>
             <Button variant="destructive" onClick={confirmDelete}>

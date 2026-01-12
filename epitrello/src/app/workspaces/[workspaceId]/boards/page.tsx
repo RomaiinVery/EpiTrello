@@ -20,15 +20,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type Board = { id: string; title: string; description?: string };
-type Tableau = { id: string; title: string };
+type Workspace = { id: string; title: string };
 
-export default function BoardsByTableauPage() {
-  const params = useParams<{ tableauId: string }>();
+export default function BoardsByWorkspacePage() {
+  const params = useParams<{ workspaceId: string }>();
   const router = useRouter();
-  const tableauId = params.tableauId;
+  const workspaceId = params.workspaceId;
 
   const [boards, setBoards] = useState<Board[]>([]);
-  const [tableau, setTableau] = useState<Tableau | null>(null);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameBoardId, setRenameBoardId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
@@ -46,22 +46,22 @@ export default function BoardsByTableauPage() {
   const [inviteSuccess, setInviteSuccess] = useState(false);
 
   useEffect(() => {
-    if (!tableauId) return;
+    if (!workspaceId) return;
 
-    fetch(`/api/tableaux/${tableauId}`)
+    fetch(`/api/workspaces/${workspaceId}`)
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (!data) {
-          router.replace("/tableaux");
+          router.replace("/workspaces");
           return;
         }
-        setTableau({ id: data.id, title: data.title });
+        setWorkspace({ id: data.id, title: data.title });
       });
 
-    fetch(`/api/boards?tableauId=${tableauId}`)
+    fetch(`/api/boards?workspaceId=${workspaceId}`)
       .then((res) => res.json())
       .then((data) => setBoards(data));
-  }, [tableauId, router]);
+  }, [workspaceId, router]);
 
   const handleDelete = (id: string) => {
     setDeleteBoardId(id);
@@ -99,12 +99,12 @@ export default function BoardsByTableauPage() {
   };
 
   const handleCreate = async () => {
-    if (!createTitle || !tableauId) return;
+    if (!createTitle || !workspaceId) return;
 
     const res = await fetch("/api/boards", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: createTitle, description: createDescription, tableauId }),
+      body: JSON.stringify({ title: createTitle, description: createDescription, workspaceId }),
     });
 
     if (res.ok) {
@@ -118,14 +118,14 @@ export default function BoardsByTableauPage() {
   };
 
   const handleInvite = async () => {
-    if (!inviteEmail || !tableauId) return;
+    if (!inviteEmail || !workspaceId) return;
 
     setInviting(true);
     setInviteError(null);
     setInviteSuccess(false);
 
     try {
-      const res = await fetch(`/api/tableaux/${tableauId}/members`, {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: inviteEmail }),
@@ -149,17 +149,17 @@ export default function BoardsByTableauPage() {
     setInviting(false);
   };
 
-  if (!tableauId) return null;
+  if (!workspaceId) return null;
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <Link href="/tableaux" className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors mb-2 inline-block">
-            ← Retour aux tableaux
+          <Link href="/workspaces" className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors mb-2 inline-block">
+            ← Retour aux workspaces
           </Link>
           <div className="flex items-center gap-4 mt-2">
-            <h1 className="text-2xl font-semibold">{tableau?.title || "Tableau"}</h1>
+            <h1 className="text-2xl font-semibold">{workspace?.title || "Workspace"}</h1>
             <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)}>
               Inviter un membre
             </Button>
@@ -173,7 +173,7 @@ export default function BoardsByTableauPage() {
             key={b.id}
             className="flex justify-between items-center p-2 border rounded-md hover:bg-gray-50 transition"
           >
-            <Link href={`/tableaux/${tableauId}/boards/${b.id}`} className="flex flex-col flex-1 ml-2">
+            <Link href={`/workspaces/${workspaceId}/boards/${b.id}`} className="flex flex-col flex-1 ml-2">
               <span className="font-semibold hover:underline">{b.title}</span>
               {b.description && (
                 <span className="text-gray-500 text-sm line-clamp-1">{b.description}</span>
@@ -281,11 +281,11 @@ export default function BoardsByTableauPage() {
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Inviter un membre au tableau</DialogTitle>
+            <DialogTitle>Inviter un membre au workspace</DialogTitle>
           </DialogHeader>
           <div className="mb-4">
             <p className="text-sm text-gray-500 mb-2">
-              Le membre aura accès à toutes les boards de ce tableau.
+              Le membre aura accès à toutes les boards de ce workspace.
             </p>
             <Input
               value={inviteEmail}

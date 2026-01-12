@@ -10,7 +10,7 @@ export default async function LegacyBoardPage({
 
   const boardData = await fetchBoard(boardId);
 
-  if (!boardData || !boardData.tableauId) {
+  if (!boardData || !boardData.workspaceId) {
     return (
       <div className="p-6 text-center text-gray-500">
         Board introuvable
@@ -18,5 +18,5 @@ export default async function LegacyBoardPage({
     );
   }
 
-  redirect(`/tableaux/${boardData.tableauId}/boards/${boardId}`);
+  redirect(`/workspaces/${boardData.workspaceId}/boards/${boardId}`);
 }

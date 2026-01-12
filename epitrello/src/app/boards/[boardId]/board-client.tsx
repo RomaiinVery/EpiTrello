@@ -144,12 +144,12 @@ function CardItem({ card, onRename, onDelete, onClick }: {
         {card.dueDate && (
           <div
             className={`mt-2 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 ${card.isDone
-                ? "bg-green-100 text-green-700"
-                : isPast(new Date(card.dueDate)) && !isToday(new Date(card.dueDate))
-                  ? "bg-red-100 text-red-700"
-                  : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-gray-100 text-gray-600"
+              ? "bg-green-100 text-green-700"
+              : isPast(new Date(card.dueDate)) && !isToday(new Date(card.dueDate))
+                ? "bg-red-100 text-red-700"
+                : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-gray-100 text-gray-600"
               }`}
             title={card.isDone ? "Terminée" : "Date d'échéance"}
           >
@@ -317,12 +317,12 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
 
 interface BoardClientProps {
   boardId: string;
-  tableauId?: string;
+  workspaceId?: string;
   initialBoard: Board;
   initialCardsByList: Record<string, Card[]>;
 }
 
-export default function BoardClient({ boardId, tableauId, initialBoard, initialCardsByList }: BoardClientProps) {
+export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList }: BoardClientProps) {
 
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>(initialCardsByList);
@@ -963,7 +963,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
     return (
       <div className="p-6 h-full flex flex-col">
         <Link
-          href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
+          href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
           className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
         >
           ← Retour aux boards
@@ -982,7 +982,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
   return (
     <div className="p-6 h-full flex flex-col">
       <Link
-        href={tableauId ? `/tableaux/${tableauId}/boards` : "/tableaux"}
+        href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
         className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
       >
         ← Retour aux boards

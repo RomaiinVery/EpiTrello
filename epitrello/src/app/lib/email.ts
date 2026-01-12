@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 export const sendInvitationEmail = async (
   to: string,
   inviterName: string,
-  tableauTitle: string,
+  workspaceTitle: string,
   inviteLink: string
 ) => {
   const transporter = nodemailer.createTransport({
@@ -19,16 +19,16 @@ export const sendInvitationEmail = async (
   const mailOptions = {
     from: `"EpiTrello" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
     to,
-    subject: `Invitation à rejoindre le tableau "${tableauTitle}" sur EpiTrello`,
+    subject: `Invitation à rejoindre le workspace "${workspaceTitle}" sur EpiTrello`,
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
         <h2 style="color: #2563eb;">Vous avez été invité !</h2>
         <p>Bonjour,</p>
-        <p><strong>${inviterName}</strong> vous a invité à rejoindre le tableau <strong>"${tableauTitle}"</strong> sur EpiTrello.</p>
-        <p>En acceptant cette invitation, vous aurez accès à tous les boards de ce tableau.</p>
+        <p><strong>${inviterName}</strong> vous a invité à rejoindre le workspace <strong>"${workspaceTitle}"</strong> sur EpiTrello.</p>
+        <p>En acceptant cette invitation, vous aurez accès à tous les boards de ce workspace.</p>
         <div style="margin: 30px 0;">
           <a href="${inviteLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-            Accéder au tableau
+            Accéder au workspace
           </a>
         </div>
         <p style="color: #666; font-size: 14px;">Si vous ne possédez pas encore de compte, vous devrez en créer un avec cette adresse email (${to}).</p>
