@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MessageSquare, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Comment, User } from "@/types";
@@ -33,7 +33,7 @@ export function CommentSection({
         fetchComments();
     }, [boardId, listId, cardId]);
 
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async () => {
         try {
             const res = await fetch(
                 `/api/boards/${boardId}/lists/${listId}/cards/${cardId}/comments`
@@ -45,7 +45,7 @@ export function CommentSection({
         } catch (err) {
             console.error("Error fetching comments:", err);
         }
-    };
+    }, [boardId, listId, cardId]);
 
     const handlePostComment = async () => {
         if (!newComment.trim()) return;
