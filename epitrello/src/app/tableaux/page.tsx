@@ -62,6 +62,7 @@ export default function TableauxPage() {
     setTableaux((prev) => prev.filter((t) => t.id !== deleteTableauId));
     setDeleteDialogOpen(false);
     setDeleteTableauId(null);
+    window.dispatchEvent(new Event("sidebarUpdated"));
   };
 
   const handleRename = async () => {
@@ -82,6 +83,7 @@ export default function TableauxPage() {
     setRenameOpen(false);
     setRenameTableauId(null);
     setNewTitle("");
+    window.dispatchEvent(new Event("sidebarUpdated"));
   };
 
   const handleCreate = async () => {
@@ -99,6 +101,7 @@ export default function TableauxPage() {
       setCreateOpen(false);
       setCreateTitle("");
       setCreateDescription("");
+      window.dispatchEvent(new Event("sidebarUpdated"));
     }
   };
 
