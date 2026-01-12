@@ -31,6 +31,7 @@ import { createPortal } from "react-dom";
 
 import { type List, type Card, type Board } from "@/app/lib/board-api";
 import { CardModal } from "@/components/CardModal";
+import { CreatePullRequestModal } from "@/components/board/CreatePullRequestModal";
 import { CheckSquare, Clock, Github } from "lucide-react";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -388,6 +389,11 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
   const [activeList, setActiveList] = useState<List | null>(null);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+
+  // PR Modal State
+  const [showPRModal, setShowPRModal] = useState(false);
+  const [prModalData, setPrModalData] = useState<{ listId: string; cardId: string; boardId: string } | null>(null);
+  const [prLoading, setPrLoading] = useState(false);
 
   const listIds = useMemo(() => (board?.lists || []).map(l => l.id), [board?.lists]);
 
@@ -804,7 +810,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       setActiveList(data.current.list);
     }
     if (data.current?.type === "Card") {
-      setActiveCard(data.current.card);
+      setActiveCard({ ...data.current.card });
     }
   }
 
@@ -859,8 +865,8 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setActiveList(null);
-    setActiveCard(null);
+    // setActiveList(null); // Moved to end
+    // setActiveCard(null); // Moved to end
 
     const { active, over } = event;
     if (!over) return;
@@ -891,7 +897,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
 
     const isActiveACard = active.data.current?.type === "Card";
     if (isActiveACard) {
-      const activeListId = active.data.current?.card.listId;
+      const activeListId = activeCard?.listId; // Use snapshot from start
       let overListId: string | null = null;
 
       if (over.data.current?.type === "Card") {
@@ -901,6 +907,18 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
       }
 
       if (!activeListId || !overListId) return;
+
+      // Check if moved to "Doing" or "En cours"
+      const destList = board?.lists?.find(l => l.id === overListId);
+      if (destList && board?.githubRepo && activeListId !== overListId &&
+        (destList.title.toLowerCase().includes("doing") || destList.title.toLowerCase().includes("en cours"))) {
+
+        const cardId = active.data.current?.card.id;
+        if (cardId) {
+          setPrModalData({ listId: overListId, cardId, boardId });
+          setShowPRModal(true);
+        }
+      }
 
       setCardsByList((prev) => {
         const sourceList = prev[activeListId];
@@ -966,6 +984,8 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
         });
       }, 0);
     }
+    setActiveList(null);
+    setActiveCard(null);
   }
 
   if (!board) {
@@ -1374,6 +1394,43 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
           isOpen={showCardModal}
           onClose={handleCardModalClose}
           onUpdate={handleCardUpdate}
+        />
+      )}
+
+      {board && board.githubRepo && prModalData && (
+        <CreatePullRequestModal
+          isOpen={showPRModal}
+          onClose={() => {
+            setShowPRModal(false);
+            setPrModalData(null);
+          }}
+          onConfirm={async (data) => {
+            if (!prModalData) return;
+            setPrLoading(true);
+            try {
+              const res = await fetch(`/api/boards/${boardId}/lists/${prModalData.listId}/cards/${prModalData.cardId}/github/pr`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+
+              if (res.ok) {
+                const pr = await res.json();
+                handleCardUpdate();
+                setShowPRModal(false);
+                setPrModalData(null);
+              } else {
+                console.error("Failed to create PR");
+              }
+            } catch (e) {
+              console.error("Error creating PR", e);
+            } finally {
+              setPrLoading(false);
+            }
+          }}
+          boardId={boardId}
+          cardTitle={cardsByList[prModalData.listId]?.find(c => c.id === prModalData.cardId)?.title || ""}
+          repoName={board.githubRepo}
         />
       )}
     </div>

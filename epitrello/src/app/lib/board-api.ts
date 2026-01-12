@@ -58,6 +58,7 @@ export type Board = {
   description?: string | null;
   tableauId: string;
   lists?: List[];
+  githubRepo?: string | null;
 };
 
 
