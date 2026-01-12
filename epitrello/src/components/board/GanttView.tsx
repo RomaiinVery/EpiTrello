@@ -1,11 +1,16 @@
 import { Task, ViewMode, Gantt } from "gantt-task-react";
 import "gantt-task-react/dist/index.css";
 import React, { useMemo, useState } from "react";
-import { Card, List } from "@/app/lib/board-api";
+import { Card, List, User } from "@/app/lib/board-api";
 
 interface GanttViewProps {
     lists: List[];
     cardsByList: Record<string, Card[]>;
+}
+
+// Extend Task interface to include members
+interface ExtendedTask extends Task {
+    members?: User[];
 }
 
 export function GanttView({ lists, cardsByList }: GanttViewProps) {
@@ -29,7 +34,7 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
         );
     };
 
-    // Custom row to only show Title
+    // Custom row to show Title + Assignees
     const TaskListTable: React.FC<{
         rowHeight: number;
         rowWidth: string;
@@ -43,33 +48,54 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
     }> = ({ rowHeight, tasks, fontFamily, fontSize }) => {
         return (
             <div style={{ fontFamily: fontFamily, fontSize: fontSize }}>
-                {tasks.map((t) => (
-                    <div
-                        key={t.id}
-                        style={{
-                            height: rowHeight,
-                            display: "flex",
-                            alignItems: "center",
-                            paddingLeft: "10px",
-                            borderBottom: "1px solid #e5e7eb",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                        }}
-                        title={t.name}
-                    >
-                        {t.name}
-                    </div>
-                ))}
+                {tasks.map((t) => {
+                    const task = t as ExtendedTask;
+                    return (
+                        <div
+                            key={t.id}
+                            style={{
+                                height: rowHeight,
+                                display: "flex",
+                                alignItems: "center",
+                                paddingLeft: "10px",
+                                paddingRight: "10px",
+                                borderBottom: "1px solid #e5e7eb",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                justifyContent: "space-between"
+                            }}
+                        >
+                            <div title={t.name} style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", marginRight: "8px" }}>
+                                {t.name}
+                            </div>
+                            <div className="flex -space-x-1 shrink-0">
+                                {task.members && task.members.map((member) => (
+                                    <div key={member.id} className="w-5 h-5 rounded-full overflow-hidden border border-white bg-gray-200" title={member.name || member.email}>
+                                        {member.profileImage ? (
+                                            <img src={member.profileImage} alt={member.name || "User"} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-600">
+                                                {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         );
     };
 
     const tasks: Task[] = useMemo(() => {
-        const allTasks: Task[] = [];
+        const allTasks: ExtendedTask[] = [];
 
         lists.forEach(list => {
             const listCards = cardsByList[list.id] || [];
+
+            // Determine common styles for this list (e.g. if it's "Doing")
+            const isDoingList = list.title.toLowerCase().includes("doing") || list.title.toLowerCase().includes("en cours");
 
             // Create tasks for cards
             listCards.forEach(card => {
@@ -82,6 +108,18 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
                         end.setDate(end.getDate() + 1);
                     }
 
+                    // Determine color
+                    let barColor = "#3b82f6"; // Default Blue
+                    let progressColor = "#2563eb";
+
+                    if (card.isDone) {
+                        barColor = "#10b981"; // Green
+                        progressColor = "#059669";
+                    } else if (isDoingList) {
+                        barColor = "#ef4444"; // Red
+                        progressColor = "#dc2626";
+                    }
+
                     allTasks.push({
                         start,
                         end,
@@ -90,7 +128,13 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
                         type: "task",
                         progress: card.isDone ? 100 : 0,
                         isDisabled: true, // Read-only for now
-                        styles: { progressColor: card.isDone ? "#10b981" : "#3b82f6", progressSelectedColor: "#059669" },
+                        styles: {
+                            progressColor: progressColor,
+                            progressSelectedColor: progressColor,
+                            backgroundColor: barColor,
+                            backgroundSelectedColor: barColor
+                        },
+                        members: card.members,
                     });
                 }
             });
