@@ -37,7 +37,7 @@ export default function BoardsByTableauPage() {
   const [createDescription, setCreateDescription] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
-  
+
   // Invitation state
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -74,6 +74,7 @@ export default function BoardsByTableauPage() {
     setBoards((prev) => prev.filter((b) => b.id !== deleteBoardId));
     setDeleteDialogOpen(false);
     setDeleteBoardId(null);
+    window.dispatchEvent(new Event("sidebarUpdated"));
   };
 
   const handleRename = async () => {
@@ -94,6 +95,7 @@ export default function BoardsByTableauPage() {
     setRenameOpen(false);
     setRenameBoardId(null);
     setNewTitle("");
+    window.dispatchEvent(new Event("sidebarUpdated"));
   };
 
   const handleCreate = async () => {
@@ -111,12 +113,13 @@ export default function BoardsByTableauPage() {
       setCreateOpen(false);
       setCreateTitle("");
       setCreateDescription("");
+      window.dispatchEvent(new Event("sidebarUpdated"));
     }
   };
 
   const handleInvite = async () => {
     if (!inviteEmail || !tableauId) return;
-    
+
     setInviting(true);
     setInviteError(null);
     setInviteSuccess(false);

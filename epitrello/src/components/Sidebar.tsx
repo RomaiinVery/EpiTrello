@@ -16,10 +16,11 @@ export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [tableaux, setTableaux] = useState<Tableau[]>([]);
+  const [expandedTableaux, setExpandedTableaux] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchData = () => {
     fetch("/api/tableaux")
       .then((res) => res.json())
       .then((data) => {
@@ -31,7 +32,18 @@ export function Sidebar() {
       })
       .catch(() => setTableaux([]))
       .finally(() => setIsLoading(false));
+  };
 
+  useEffect(() => {
+    fetchData();
+
+    // Listen for sidebar updates
+    const handleSidebarUpdate = () => fetchData();
+    window.addEventListener("sidebarUpdated", handleSidebarUpdate);
+    return () => window.removeEventListener("sidebarUpdated", handleSidebarUpdate);
+  }, []);
+
+  useEffect(() => {
     // Fetch profile image
     fetch("/api/user/profile-image")
       .then((res) => res.json())
@@ -40,7 +52,7 @@ export function Sidebar() {
           setProfileImage(data.profileImage);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Listen for profile image updates
@@ -56,6 +68,17 @@ export function Sidebar() {
 
   const isActive = (path: string) => pathname === path;
   const isTableauActive = (tableauId: string) => pathname.includes(`/tableaux/${tableauId}`);
+  const isBoardActive = (tableauId: string, boardId: string) => pathname === `/tableaux/${tableauId}/boards/${boardId}`;
+
+  const toggleTableau = (e: React.MouseEvent, tableauId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpandedTableaux((prev) =>
+      prev.includes(tableauId)
+        ? prev.filter((id) => id !== tableauId)
+        : [...prev, tableauId]
+    );
+  };
 
   const navItems = [
     { href: "/", label: "Accueil", icon: Home },
@@ -86,11 +109,10 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive(item.href)
-                    ? "bg-blue-50 text-blue-600"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                }`}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive(item.href)
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                  }`}
               >
                 <Icon className="w-5 h-5" />
                 {item.label}
@@ -125,30 +147,62 @@ export function Sidebar() {
           ) : (
             <div className="space-y-1">
               {tableaux.map((tableau) => (
-                <Link
-                  key={tableau.id}
-                  href={`/tableaux/${tableau.id}/boards`}
-                  className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
-                    isTableauActive(tableau.id)
+                <div key={tableau.id} className="mb-0.5">
+                  <div
+                    className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${isTableauActive(tableau.id)
                       ? "bg-blue-50 text-blue-600"
                       : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className={`w-2 h-2 rounded-full ${
-                      isTableauActive(tableau.id) ? "bg-blue-600" : "bg-gray-400"
-                    }`} />
-                    <span className="truncate font-medium">{tableau.title}</span>
+                      }`}
+                  >
+                    <Link
+                      href={`/tableaux/${tableau.id}/boards`}
+                      className="flex items-center gap-2 flex-1 min-w-0"
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${isTableauActive(tableau.id) ? "bg-blue-600" : "bg-gray-400"
+                          }`}
+                      />
+                      <span className="truncate font-medium">{tableau.title}</span>
+                    </Link>
+                    <div className="flex items-center gap-1">
+                      {tableau.boards && tableau.boards.length > 0 && (
+                        <>
+                          <span className="text-xs text-gray-500 px-1.5 py-0.5 bg-gray-100 rounded group-hover:bg-white transition-colors">
+                            {tableau.boards.length}
+                          </span>
+                          <button
+                            onClick={(e) => toggleTableau(e, tableau.id)}
+                            className="p-0.5 hover:bg-gray-200 rounded-sm transition-colors focus:outline-none"
+                          >
+                            <ChevronRight
+                              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${expandedTableaux.includes(tableau.id) ? "rotate-90" : ""
+                                }`}
+                            />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {tableau.boards && tableau.boards.length > 0 && (
-                      <span className="text-xs text-gray-500 px-1.5 py-0.5 bg-gray-100 rounded">
-                        {tableau.boards.length}
-                      </span>
+
+                  {expandedTableaux.includes(tableau.id) &&
+                    tableau.boards &&
+                    tableau.boards.length > 0 && (
+                      <div className="ml-4 mt-1 border-l-2 border-gray-100 pl-2 space-y-0.5">
+                        {tableau.boards.map((board) => (
+                          <Link
+                            key={board.id}
+                            href={`/tableaux/${tableau.id}/boards/${board.id}`}
+                            className={`block px-2 py-1.5 rounded text-sm truncate transition-colors ${isBoardActive(tableau.id, board.id)
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                              }`}
+                          >
+                            {board.title}
+                          </Link>
+                        ))}
+                      </div>
                     )}
-                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
@@ -193,7 +247,7 @@ export function Sidebar() {
           </div>
           <Settings className="w-4 h-4 text-gray-400" />
         </Link>
-        
+
         {/* New Tableau Button */}
         <div className="p-4">
           <Link
