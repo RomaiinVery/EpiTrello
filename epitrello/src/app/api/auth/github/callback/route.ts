@@ -62,11 +62,21 @@ export async function GET(request: Request) {
     }
 
     const githubUser = await userResponse.json();
+    const githubId = githubUser.id.toString();
+
+    // Check if this GitHub account is already linked to another user
+    const existingUser = await prisma.user.findUnique({
+      where: { githubId: githubId },
+    });
+
+    if (existingUser && existingUser.email !== session.user.email) {
+      return NextResponse.redirect(new URL("/settings?error=github_already_linked", request.url));
+    }
 
     await prisma.user.update({
       where: { email: session.user.email },
       data: {
-        githubId: githubUser.id.toString(),
+        githubId: githubId,
         githubAccessToken: accessToken,
         githubUsername: githubUser.login,
         githubAvatarUrl: githubUser.avatar_url,
