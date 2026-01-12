@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,10 +48,11 @@ export function CardModal({
     }
   }, [isOpen, cardId, boardId, listId]);
 
-  const fetchCardDetails = async () => {
+  const fetchCardDetails = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      // 1. Fetch Card
       const res = await fetch(
         `/api/boards/${boardId}/lists/${listId}/cards/${cardId}`
       );
@@ -62,45 +63,41 @@ export function CardModal({
       setCard(cardData);
       setTitle(cardData.title || "");
 
-      // Fetch user session for comments/permissions
-      fetchCurrentUser();
+      // 2. Fetch User Session & Board Members (Inlined)
+      try {
+        const userRes = await fetch("/api/auth/session");
+        if (userRes.ok) {
+          const session = await userRes.json();
+          if (session?.user) {
+            const boardRes = await fetch(`/api/boards/${boardId}`);
+            if (boardRes.ok) {
+              const boardData = await boardRes.json();
+              const allMembers: User[] = [];
+              if (boardData.user) {
+                allMembers.push({ id: boardData.user.id, email: boardData.user.email, name: boardData.user.name });
+              }
+              if (boardData.members) {
+                boardData.members.forEach((m: User) => {
+                  if (!allMembers.some(ex => ex.id === m.id)) allMembers.push(m);
+                });
+              }
+              const found = allMembers.find(m => m.email === session.user.email);
+              if (found) setCurrentUser(found);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching current user details", e);
+      }
+
     } catch (err) {
       setError("Erreur lors du chargement de la carte");
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [boardId, listId, cardId]);
 
-  const fetchCurrentUser = async () => {
-    try {
-      const userRes = await fetch("/api/auth/session");
-      if (userRes.ok) {
-        const session = await userRes.json();
-        if (session?.user) {
-          // Replicating original logic of matching email to board member for ID:
-          const boardRes = await fetch(`/api/boards/${boardId}`);
-          if (boardRes.ok) {
-            const boardData = await boardRes.json();
-            // Flatten members
-            const allMembers: User[] = [];
-            if (boardData.user) {
-              allMembers.push({ id: boardData.user.id, email: boardData.user.email, name: boardData.user.name });
-            }
-            if (boardData.members) {
-              boardData.members.forEach((m: User) => {
-                if (!allMembers.some(ex => ex.id === m.id)) allMembers.push(m);
-              });
-            }
-            const found = allMembers.find(m => m.email === session.user.email);
-            if (found) setCurrentUser(found);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching current user:", err);
-    }
-  };
 
   const handleSaveTitle = async () => {
     if (!title.trim()) {

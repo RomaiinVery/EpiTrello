@@ -37,9 +37,13 @@ export default function BoardsByTableauPage() {
   const [createDescription, setCreateDescription] = useState("");
   const [linkGithub, setLinkGithub] = useState(false);
   const [githubRepo, setGithubRepo] = useState("");
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   const [githubBranch, setGithubBranch] = useState("main");
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+
   const [isGithubLinked, setIsGithubLinked] = useState(false);
-  const [repos, setRepos] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [repos, setRepos] = useState<any[]>([]); // Keeping any for now to minimize changes, but could be typed
   const [reposLoading, setReposLoading] = useState(false);
   const [repoSearch, setRepoSearch] = useState("");
 
@@ -115,7 +119,7 @@ export default function BoardsByTableauPage() {
   const handleCreate = async () => {
     if (!createTitle || !tableauId) return;
 
-    const payload: any = {
+    const payload: { title: string; description: string; tableauId: string; githubRepo?: string; githubBranch?: string } = {
       title: createTitle,
       description: createDescription,
       tableauId
@@ -307,7 +311,7 @@ export default function BoardsByTableauPage() {
 
             {!isGithubLinked && (
               <p className="text-xs text-orange-500 ml-6">
-                Vous devez d'abord lier votre compte GitHub dans les paramètres.
+                Vous devez d&apos;abord lier votre compte GitHub dans les paramètres.
               </p>
             )}
 

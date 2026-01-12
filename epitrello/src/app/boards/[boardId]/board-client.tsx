@@ -1428,6 +1428,7 @@ export default function BoardClient({ boardId, tableauId, initialBoard, initialC
               setPrLoading(false);
             }
           }}
+          isCreating={prLoading}
           boardId={boardId}
           cardTitle={cardsByList[prModalData.listId]?.find(c => c.id === prModalData.cardId)?.title || ""}
           repoName={board.githubRepo}

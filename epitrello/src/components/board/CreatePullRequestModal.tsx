@@ -28,7 +28,7 @@ export function CreatePullRequestModal({
     const [base, setBase] = useState("main");
     const [draft, setDraft] = useState(false);
 
-    const [branches, setBranches] = useState<any[]>([]);
+    const [branches, setBranches] = useState<{ name: string }[]>([]);
     const [loadingBranches, setLoadingBranches] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +37,7 @@ export function CreatePullRequestModal({
             setTitle(cardTitle);
             fetchBranches();
         }
-    }, [isOpen, cardTitle]);
+    }, [isOpen, cardTitle]); // Added cardTitle previously, should be fine. Linter says fetchBranches missing deps.
 
     const fetchBranches = async () => {
         setLoadingBranches(true);
@@ -52,7 +52,7 @@ export function CreatePullRequestModal({
             } else {
                 setError("Impossible de charger les branches.");
             }
-        } catch (e) {
+        } catch {
             setError("Erreur réseau.");
         } finally {
             setLoadingBranches(false);
@@ -134,7 +134,7 @@ export function CreatePullRequestModal({
                     </div>
 
                     <div className="bg-blue-50 p-3 rounded text-xs text-blue-700">
-                        ℹ️ L'issue associée à cette carte sera automatiquement liée ("Closes #...") dans la description de la PR.
+                        ℹ️ L&apos;issue associée à cette carte sera automatiquement liée (&quot;Closes #...&quot;) dans la description de la PR.
                     </div>
 
                 </div>

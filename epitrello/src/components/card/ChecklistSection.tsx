@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import { CheckSquare, Edit2, Trash2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { Checklist, ChecklistItem } from "@/types";
+import { Checklist } from "@/types";
 
 interface ChecklistSectionProps {
     boardId: string;
@@ -12,6 +14,7 @@ interface ChecklistSectionProps {
     onUpdate: () => void;
     onActivityUpdate: () => void;
 }
+
 
 export function ChecklistSection({
     boardId,
@@ -33,7 +36,7 @@ export function ChecklistSection({
         fetchChecklists();
     }, [boardId, listId, cardId]);
 
-    const fetchChecklists = async () => {
+    const fetchChecklists = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(
@@ -48,7 +51,7 @@ export function ChecklistSection({
         } finally {
             setLoading(false);
         }
-    };
+    }, [boardId, listId, cardId]);
 
     const handleCreateChecklist = async () => {
         if (!newChecklistTitle.trim()) return;
