@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = url.origin;
   const redirectUri = `${origin}/api/auth/github/callback`;
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email,repo`;
 
   return NextResponse.json({ authUrl: githubAuthUrl });
 }

@@ -49,6 +49,8 @@ export type Card = {
   labels?: Label[];
   members?: User[];
   checklists?: Checklist[];
+  githubIssueNumber?: number | null;
+  githubIssueUrl?: string | null;
 };
 
 export type Board = {
@@ -57,6 +59,7 @@ export type Board = {
   description?: string | null;
   workspaceId: string;
   lists?: List[];
+  githubRepo?: string | null;
 };
 
 

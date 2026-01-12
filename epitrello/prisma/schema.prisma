@@ -51,6 +51,9 @@ model Board {
   title       String
   description String?
   createdAt   DateTime @default(now())
+  
+  githubRepo   String?
+  githubBranch String?
 
   lists      List[]
   labels     Label[]
@@ -90,6 +93,9 @@ model Card {
   startDate  DateTime?
   dueDate    DateTime?
   isDone     Boolean   @default(false)
+  
+  githubIssueNumber Int?
+  githubIssueUrl    String?
 
   labels     CardLabel[]
   members    CardMember[]

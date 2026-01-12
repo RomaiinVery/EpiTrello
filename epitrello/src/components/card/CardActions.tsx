@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import { Users, X, Calendar } from "lucide-react";
 import { LabelPicker } from "@/components/LabelPicker";
 import {
@@ -9,8 +11,6 @@ import {
 import { DatePicker } from "./DatePicker";
 import { Button } from "@/components/ui/button";
 import { Label, User, CardDetail } from "@/types";
-
-
 
 interface CardActionsProps {
     boardId: string;
@@ -44,7 +44,7 @@ export function CardActions({
         fetchBoardMembers();
     }, [boardId]);
 
-    const fetchBoardMembers = async () => {
+    const fetchBoardMembers = useCallback(async () => {
         try {
             const boardRes = await fetch(`/api/boards/${boardId}`);
             if (boardRes.ok) {
@@ -76,7 +76,7 @@ export function CardActions({
         } catch (err) {
             console.error("Error fetching board members:", err);
         }
-    };
+    }, [boardId]);
 
     const handleUnassignMember = async (memberId: string) => {
         try {

@@ -108,12 +108,47 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const nextPosition = lastCard ? lastCard.position + 1 : 0;
 
+    let githubIssueNumber = null;
+    let githubIssueUrl = null;
+
+    // GitHub Integration
+    if (board.githubRepo && user.githubAccessToken) {
+      try {
+        const githubRes = await fetch(`https://api.github.com/repos/${board.githubRepo}/issues`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${user.githubAccessToken}`,
+            Accept: "application/vnd.github.v3+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: title,
+            body: content || "",
+            labels: ["epitrello"]
+          }),
+        });
+
+        if (githubRes.ok) {
+          const issueData = await githubRes.json();
+          githubIssueNumber = issueData.number;
+          githubIssueUrl = issueData.html_url;
+        } else {
+          console.error("GitHub Issue Creation Failed:", await githubRes.text());
+          // Non-blocking: we continue creating the card even if GitHub fails, but maybe log it?
+        }
+      } catch (error) {
+        console.error("GitHub Integration Error:", error);
+      }
+    }
+
     const newCard = await prisma.card.create({
       data: {
         title,
         content: content ?? null,
         position: nextPosition,
         listId,
+        githubIssueNumber,
+        githubIssueUrl,
       },
     });
 

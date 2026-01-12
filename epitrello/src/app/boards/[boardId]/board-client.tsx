@@ -31,7 +31,8 @@ import { createPortal } from "react-dom";
 
 import { type List, type Card, type Board } from "@/app/lib/board-api";
 import { CardModal } from "@/components/CardModal";
-import { CheckSquare, Clock } from "lucide-react";
+import { CreatePullRequestModal } from "@/components/board/CreatePullRequestModal";
+import { CheckSquare, Clock, Github } from "lucide-react";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { GanttView } from "@/components/board/GanttView";
@@ -160,6 +161,19 @@ function CardItem({ card, onRename, onDelete, onClick }: {
               {format(new Date(card.dueDate), "d MMM", { locale: fr })}
             </span>
           </div>
+        )}
+        {card.githubIssueUrl && (
+          <a
+            href={card.githubIssueUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 ml-1 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            title="Voir l'issue GitHub"
+          >
+            <Github className="w-3 h-3" />
+            <span>#{card.githubIssueNumber}</span>
+          </a>
         )}
         {card.members && card.members.length > 0 && (
           <div className="flex items-center gap-1 mt-2">
@@ -379,6 +393,10 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   const [isMounted, setIsMounted] = useState(false);
 
   const [viewMode, setViewMode] = useState<"kanban" | "gantt">("kanban");
+  // PR Modal State
+  const [showPRModal, setShowPRModal] = useState(false);
+  const [prModalData, setPrModalData] = useState<{ listId: string; cardId: string; boardId: string } | null>(null);
+  const [prLoading, setPrLoading] = useState(false);
 
   const listIds = useMemo(() => (board?.lists || []).map(l => l.id), [board?.lists]);
 
@@ -925,37 +943,97 @@ function handleDragEnd(event: DragEndEvent) {
       }
     });
 
-    setTimeout(() => {
-      setCardsByList(currentState => {
-        const sourceListCards = currentState[activeListId];
-        const destListCards = currentState[overListId];
+    const isActiveACard = active.data.current?.type === "Card";
+    if (isActiveACard) {
+      const activeListId = activeCard?.listId; // Use snapshot from start
+      let overListId: string | null = null;
 
-        let cardsToUpdate: { id: string, position: number, listId: string }[] = [];
+      if (over.data.current?.type === "Card") {
+        overListId = over.data.current.card.listId;
+      } else if (over.data.current?.type === "List") {
+        overListId = over.id as string;
+      }
 
-        if (activeListId === overListId) {
-          cardsToUpdate = sourceListCards.map((card, index) => ({
-            id: card.id, position: index, listId: activeListId,
-          }));
-        } else {
-          cardsToUpdate = [
-            ...sourceListCards.map((card, index) => ({
-              id: card.id, position: index, listId: activeListId,
-            })),
-            ...destListCards.map((card, index) => ({
-              id: card.id, position: index, listId: overListId,
-            })),
-          ];
+      if (!activeListId || !overListId) return;
+
+      // Check if moved to "Doing" or "En cours"
+      const destList = board?.lists?.find(l => l.id === overListId);
+      if (destList && board?.githubRepo && activeListId !== overListId &&
+        (destList.title.toLowerCase().includes("doing") || destList.title.toLowerCase().includes("en cours"))) {
+
+        const cardId = active.data.current?.card.id;
+        if (cardId) {
+          setPrModalData({ listId: overListId, cardId, boardId });
+          setShowPRModal(true);
         }
+      }
 
-        fetch(`/api/boards/${boardId}/cards/reorder`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cards: cardsToUpdate }),
-        }).catch((err) => console.error("Failed to save card order", err));
+      setCardsByList((prev) => {
+        const sourceList = prev[activeListId];
+        const destList = prev[overListId];
+        if (!sourceList || !destList) return prev;
 
-        return currentState;
+        const activeIndex = sourceList.findIndex(c => c.id === activeId);
+        if (activeIndex === -1) {
+          const finalActiveIndex = destList.findIndex(c => c.id === activeId);
+          if (finalActiveIndex === -1) return prev;
+
+          let finalOverIndex: number;
+          if (over.id === activeId) {
+            finalOverIndex = finalActiveIndex;
+          } else {
+            finalOverIndex = destList.findIndex(c => c.id === overId);
+            if (finalOverIndex === -1) {
+              finalOverIndex = destList.length - 1;
+            }
+          }
+
+          const newDestList = arrayMove(destList, finalActiveIndex, finalOverIndex);
+          return { ...prev, [overListId]: newDestList };
+
+        } else {
+          const overIndex = destList.findIndex(c => c.id === overId);
+          if (overIndex === -1) return prev;
+
+          const newList = arrayMove(sourceList, activeIndex, overIndex);
+          return { ...prev, [activeListId]: newList };
+        }
       });
-    }, 0);
+
+      setTimeout(() => {
+        setCardsByList(currentState => {
+          const sourceListCards = currentState[activeListId];
+          const destListCards = currentState[overListId];
+
+          let cardsToUpdate: { id: string, position: number, listId: string }[] = [];
+
+          if (activeListId === overListId) {
+            cardsToUpdate = sourceListCards.map((card, index) => ({
+              id: card.id, position: index, listId: activeListId,
+            }));
+          } else {
+            cardsToUpdate = [
+              ...sourceListCards.map((card, index) => ({
+                id: card.id, position: index, listId: activeListId,
+              })),
+              ...destListCards.map((card, index) => ({
+                id: card.id, position: index, listId: overListId,
+              })),
+            ];
+          }
+
+          fetch(`/api/boards/${boardId}/cards/reorder`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cards: cardsToUpdate }),
+          }).catch((err) => console.error("Failed to save card order", err));
+
+          return currentState;
+        });
+      }, 0);
+    }
+    setActiveList(null);
+    setActiveCard(null);
   }
 }
 
@@ -1376,17 +1454,55 @@ return (
       </div>
     )}
 
-    {/* Card Modal */}
-    {showCardModal && selectedCardId && selectedListId && (
-      <CardModal
-        boardId={boardId}
-        cardId={selectedCardId}
-        listId={selectedListId}
-        isOpen={showCardModal}
-        onClose={handleCardModalClose}
-        onUpdate={handleCardUpdate}
-      />
-    )}
-  </div>
-);
+      {/* Card Modal */}
+      {showCardModal && selectedCardId && selectedListId && (
+        <CardModal
+          boardId={boardId}
+          cardId={selectedCardId}
+          listId={selectedListId}
+          isOpen={showCardModal}
+          onClose={handleCardModalClose}
+          onUpdate={handleCardUpdate}
+        />
+      )}
+
+      {board && board.githubRepo && prModalData && (
+        <CreatePullRequestModal
+          isOpen={showPRModal}
+          onClose={() => {
+            setShowPRModal(false);
+            setPrModalData(null);
+          }}
+          onConfirm={async (data) => {
+            if (!prModalData) return;
+            setPrLoading(true);
+            try {
+              const res = await fetch(`/api/boards/${boardId}/lists/${prModalData.listId}/cards/${prModalData.cardId}/github/pr`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+
+              if (res.ok) {
+                const pr = await res.json();
+                handleCardUpdate();
+                setShowPRModal(false);
+                setPrModalData(null);
+              } else {
+                console.error("Failed to create PR");
+              }
+            } catch (e) {
+              console.error("Error creating PR", e);
+            } finally {
+              setPrLoading(false);
+            }
+          }}
+          isCreating={prLoading}
+          boardId={boardId}
+          cardTitle={cardsByList[prModalData.listId]?.find(c => c.id === prModalData.cardId)?.title || ""}
+          repoName={board.githubRepo}
+        />
+      )}
+    </div>
+  );
 }

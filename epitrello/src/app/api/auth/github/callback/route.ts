@@ -22,6 +22,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Vous devez être connecté" }, { status: 401 });
   }
 
+  if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
+    console.error("GitHub credentials missing in .env");
+    return NextResponse.redirect(new URL("/settings?error=server_error", request.url));
+  }
+
   try {
     const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
@@ -38,8 +43,8 @@ export async function GET(request: Request) {
 
     const tokenData = await tokenResponse.json();
 
-    if (tokenData.error) {
-      console.error("Erreur GitHub Token:", tokenData.error);
+    if (tokenData.error || !tokenData.access_token) {
+      console.error("Error exchanging GitHub token:", tokenData);
       return NextResponse.redirect(new URL("/settings?error=github_token_error", request.url));
     }
 
@@ -50,6 +55,11 @@ export async function GET(request: Request) {
         Authorization: `Bearer ${accessToken}`,
       },
     });
+
+    if (!userResponse.ok) {
+      console.error("Error fetching GitHub user:", await userResponse.text());
+      return NextResponse.redirect(new URL("/settings?error=github_fetch_error", request.url));
+    }
 
     const githubUser = await userResponse.json();
 
@@ -63,11 +73,10 @@ export async function GET(request: Request) {
       },
     });
 
-    // 6. Succès : Redirection vers les settings
     return NextResponse.redirect(new URL("/settings?success=github_linked", request.url));
 
   } catch (error) {
-    console.error("Erreur liaison GitHub:", error);
+    console.error("GitHub linking error:", error);
     return NextResponse.redirect(new URL("/settings?error=server_error", request.url));
   }
 }
