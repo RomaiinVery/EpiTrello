@@ -66,7 +66,7 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
     };
 
     const tasks: Task[] = useMemo(() => {
-        let allTasks: Task[] = [];
+        const allTasks: Task[] = [];
 
         lists.forEach(list => {
             const listCards = cardsByList[list.id] || [];
