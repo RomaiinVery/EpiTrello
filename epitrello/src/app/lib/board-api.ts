@@ -48,6 +48,8 @@ export type Card = {
   labels?: Label[];
   members?: User[];
   checklists?: Checklist[];
+  githubIssueNumber?: number | null;
+  githubIssueUrl?: string | null;
 };
 
 export type Board = {

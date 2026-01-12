@@ -31,7 +31,7 @@ import { createPortal } from "react-dom";
 
 import { type List, type Card, type Board } from "@/app/lib/board-api";
 import { CardModal } from "@/components/CardModal";
-import { CheckSquare, Clock } from "lucide-react";
+import { CheckSquare, Clock, Github } from "lucide-react";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -144,12 +144,12 @@ function CardItem({ card, onRename, onDelete, onClick }: {
         {card.dueDate && (
           <div
             className={`mt-2 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 ${card.isDone
-                ? "bg-green-100 text-green-700"
-                : isPast(new Date(card.dueDate)) && !isToday(new Date(card.dueDate))
-                  ? "bg-red-100 text-red-700"
-                  : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-gray-100 text-gray-600"
+              ? "bg-green-100 text-green-700"
+              : isPast(new Date(card.dueDate)) && !isToday(new Date(card.dueDate))
+                ? "bg-red-100 text-red-700"
+                : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-gray-100 text-gray-600"
               }`}
             title={card.isDone ? "Terminée" : "Date d'échéance"}
           >
@@ -158,6 +158,19 @@ function CardItem({ card, onRename, onDelete, onClick }: {
               {format(new Date(card.dueDate), "d MMM", { locale: fr })}
             </span>
           </div>
+        )}
+        {card.githubIssueUrl && (
+          <a
+            href={card.githubIssueUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 ml-1 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            title="Voir l'issue GitHub"
+          >
+            <Github className="w-3 h-3" />
+            <span>#{card.githubIssueNumber}</span>
+          </a>
         )}
         {card.members && card.members.length > 0 && (
           <div className="flex items-center gap-1 mt-2">

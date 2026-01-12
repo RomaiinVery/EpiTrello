@@ -92,6 +92,9 @@ model Card {
   coverImage String?
   dueDate    DateTime?
   isDone     Boolean   @default(false)
+  
+  githubIssueNumber Int?
+  githubIssueUrl    String?
 
   labels     CardLabel[]
   members    CardMember[]
