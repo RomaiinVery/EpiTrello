@@ -2,12 +2,12 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { fr } from "date-fns/locale";
 
-interface DueDatePickerProps {
+interface DatePickerProps {
     selected?: Date;
     onSelect: (date: Date | undefined) => void;
 }
 
-export function DueDatePicker({ selected, onSelect }: DueDatePickerProps) {
+export function DatePicker({ selected, onSelect }: DatePickerProps) {
     return (
         <div className="p-3 bg-white rounded-lg shadow border">
             <DayPicker

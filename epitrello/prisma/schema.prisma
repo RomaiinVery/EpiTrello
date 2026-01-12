@@ -87,6 +87,7 @@ model Card {
   updatedAt  DateTime @updatedAt
   archived   Boolean  @default(false)
   coverImage String?
+  startDate  DateTime?
   dueDate    DateTime?
   isDone     Boolean   @default(false)
 
