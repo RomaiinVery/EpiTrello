@@ -110,7 +110,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
     const body = await request.json();
-    const { title, content, coverImage, dueDate, isDone } = body;
+    const { title, content, coverImage, dueDate, startDate, isDone } = body;
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
@@ -128,7 +128,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (title === undefined && content === undefined && coverImage === undefined && dueDate === undefined && isDone === undefined) {
+    if (title === undefined && content === undefined && coverImage === undefined && dueDate === undefined && startDate === undefined && isDone === undefined) {
       return NextResponse.json({ error: "No updateable fields provided." }, { status: 400 });
     }
 
@@ -159,6 +159,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
         ...(title !== undefined && { title }),
         ...(content !== undefined && { content }),
         ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
         ...(isDone !== undefined && { isDone }),
       },
       include: {
@@ -203,6 +204,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
     }
     if (dueDate !== undefined && dueDate !== oldCard.dueDate?.toISOString()) {
       changes.push("date d'échéance");
+    }
+    if (startDate !== undefined && startDate !== oldCard.startDate?.toISOString()) {
+      changes.push("date de début");
     }
     if (isDone !== undefined && isDone !== oldCard.isDone) {
       changes.push(isDone ? "marqué comme terminé" : "marqué comme non terminé");

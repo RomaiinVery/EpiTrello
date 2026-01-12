@@ -22,6 +22,7 @@ export type CardDetail = {
     updatedAt: string;
     archived: boolean;
     coverImage?: string | null;
+    startDate?: string | null;
     dueDate?: string | null;
     isDone?: boolean;
     labels?: Label[];

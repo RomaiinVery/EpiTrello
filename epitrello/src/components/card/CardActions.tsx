@@ -6,7 +6,7 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DueDatePicker } from "./DueDatePicker";
+import { DatePicker } from "./DatePicker";
 import { Button } from "@/components/ui/button";
 import { Label, User, CardDetail } from "@/types";
 
@@ -18,6 +18,7 @@ interface CardActionsProps {
     cardId: string;
     labels: Label[];
     members: User[];
+    startDate?: string | null;
     dueDate?: string | null;
     onUpdate: () => void;
     onCardUpdate: (newCard: CardDetail) => void;
@@ -30,6 +31,7 @@ export function CardActions({
     cardId,
     labels,
     members,
+    startDate,
     dueDate,
     onUpdate,
     onCardUpdate,
@@ -113,7 +115,29 @@ export function CardActions({
         }
     };
 
-    const handleDateSelect = async (date: Date | undefined) => {
+    const handleStartDateSelect = async (date: Date | undefined) => {
+        try {
+            const res = await fetch(
+                `/api/boards/${boardId}/lists/${listId}/cards/${cardId}`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ startDate: date }),
+                }
+            );
+
+            if (res.ok) {
+                const updatedCard = await res.json();
+                onCardUpdate(updatedCard);
+                onUpdate();
+                onActivityUpdate();
+            }
+        } catch (err) {
+            console.error("Error updating due date:", err);
+        }
+    };
+
+    const handleDueDateSelect = async (date: Date | undefined) => {
         try {
             const res = await fetch(
                 `/api/boards/${boardId}/lists/${listId}/cards/${cardId}`,
@@ -143,6 +167,28 @@ export function CardActions({
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <h3 className="text-sm font-semibold text-gray-700">Dates</h3>
                 </div>
+                <div className="mb-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-full justify-start">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                {startDate
+                                    ? new Date(startDate).toLocaleDateString("fr-FR", {
+                                        day: "numeric",
+                                        month: "long",
+                                        year: "numeric",
+                                    })
+                                    : "Ajouter une date de début"}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="p-0" align="start">
+                            <DatePicker
+                                selected={startDate ? new Date(startDate) : undefined}
+                                onSelect={handleStartDateSelect}
+                            />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
                 <div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -154,13 +200,13 @@ export function CardActions({
                                         month: "long",
                                         year: "numeric",
                                     })
-                                    : "Ajouter une date"}
+                                    : "Ajouter une date de fin"}
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="p-0" align="start">
-                            <DueDatePicker
+                            <DatePicker
                                 selected={dueDate ? new Date(dueDate) : undefined}
-                                onSelect={handleDateSelect}
+                                onSelect={handleDueDateSelect}
                             />
                         </DropdownMenuContent>
                     </DropdownMenu>

@@ -241,6 +241,7 @@ export function CardModal({
                       cardId={cardId}
                       labels={card.labels || []}
                       members={card.members || []}
+                      startDate={card.startDate}
                       dueDate={card.dueDate}
                       onUpdate={onUpdate}
                       onCardUpdate={handleCardUpdate}
