@@ -86,6 +86,8 @@ model Card {
   updatedAt  DateTime @updatedAt
   archived   Boolean  @default(false)
   coverImage String?
+  dueDate    DateTime?
+  isDone     Boolean   @default(false)
 
   labels     CardLabel[]
   members    CardMember[]
