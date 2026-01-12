@@ -43,6 +43,7 @@ export type Card = {
   listId: string;
   position: number;
   coverImage?: string | null;
+  startDate?: Date | null;
   dueDate?: Date | null;
   isDone?: boolean;
   labels?: Label[];
