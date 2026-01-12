@@ -43,6 +43,8 @@ export type Card = {
   listId: string;
   position: number;
   coverImage?: string | null;
+  dueDate?: Date | null;
+  isDone?: boolean;
   labels?: Label[];
   members?: User[];
   checklists?: Checklist[];
@@ -115,7 +117,7 @@ export async function fetchCards(boardId: string, listId: string): Promise<Card[
         },
       },
     });
-    
+
     // Format cards to include labels, members, and checklists as arrays
     return cards.map(card => ({
       ...card,

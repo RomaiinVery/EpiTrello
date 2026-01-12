@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signOut, useSession } from "next-auth/react"; 
 
 type SettingsState = {
@@ -44,6 +44,17 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [githubStatus, setGithubStatus] = useState<{
+    isLinked: boolean;
+    username: string | null;
+    avatarUrl: string | null;
+  }>({
+    isLinked: false,
+    username: null,
+    avatarUrl: null,
+  });
+  const [loadingGithub, setLoadingGithub] = useState(false);
+  const searchParams = useSearchParams();
 
   
     useEffect(() => {
@@ -63,10 +74,61 @@ export default function SettingsPage() {
             }
           })
           .catch(() => {});
+        // Fetch GitHub status
+        fetch("/api/user/github")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.isLinked !== undefined) {
+              setGithubStatus({
+                isLinked: data.isLinked,
+                username: data.username,
+                avatarUrl: data.avatarUrl,
+              });
+            }
+          })
+          .catch(() => {});
         } else if (status === "unauthenticated") {
             router.push("/auth");
         }
     }, [session, status, router]);
+
+    // Handle query params for GitHub linking success/error
+    useEffect(() => {
+      const success = searchParams.get("success");
+      const error = searchParams.get("error");
+
+      if (success === "github_linked") {
+        setMessage("Compte GitHub lié avec succès !");
+        setTimeout(() => setMessage(null), 5000);
+        // Refresh GitHub status
+        fetch("/api/user/github")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.isLinked !== undefined) {
+              setGithubStatus({
+                isLinked: data.isLinked,
+                username: data.username,
+                avatarUrl: data.avatarUrl,
+              });
+            }
+          })
+          .catch(() => {});
+        // Clean URL
+        router.replace("/settings");
+      } else if (error === "github_auth_failed") {
+        setMessage("Échec de l'authentification GitHub. Veuillez réessayer.");
+        setTimeout(() => setMessage(null), 5000);
+        router.replace("/settings");
+      } else if (error === "github_token_error") {
+        setMessage("Erreur lors de l'obtention du token GitHub. Veuillez réessayer.");
+        setTimeout(() => setMessage(null), 5000);
+        router.replace("/settings");
+      } else if (error === "server_error") {
+        setMessage("Erreur serveur lors de la liaison du compte GitHub.");
+        setTimeout(() => setMessage(null), 5000);
+        router.replace("/settings");
+      }
+    }, [searchParams, router]);
 
 
   function handleChange<K extends keyof SettingsState>(key: K, val: SettingsState[K]) {
@@ -171,6 +233,54 @@ export default function SettingsPage() {
       setMessage("Erreur réseau");
     } finally {
       setUploadingImage(false);
+    }
+  }
+
+  async function handleLinkGitHub() {
+    setLoadingGithub(true);
+    try {
+      const res = await fetch("/api/auth/github/authorize");
+      const data = await res.json();
+      
+      if (res.ok && data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        setMessage(data.error || "Erreur lors de l'initialisation de la connexion GitHub");
+        setLoadingGithub(false);
+      }
+    } catch {
+      setMessage("Erreur réseau lors de la connexion à GitHub");
+      setLoadingGithub(false);
+    }
+  }
+
+  async function handleUnlinkGitHub() {
+    if (!confirm("Êtes-vous sûr de vouloir délier votre compte GitHub ?")) {
+      return;
+    }
+
+    setLoadingGithub(true);
+    try {
+      const res = await fetch("/api/user/github", {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setGithubStatus({
+          isLinked: false,
+          username: null,
+          avatarUrl: null,
+        });
+        setMessage("Compte GitHub délié avec succès !");
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        setMessage(error.error || "Erreur lors de la suppression de la liaison");
+      }
+    } catch {
+      setMessage("Erreur réseau");
+    } finally {
+      setLoadingGithub(false);
     }
   }
 
@@ -414,6 +524,65 @@ export default function SettingsPage() {
                 Update Password
             </button>
           </form>
+        </section>
+
+        {/* SECTION 4: Connected Accounts */}
+        <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Connected Accounts</h2>
+          
+          <div className="space-y-4">
+            {/* GitHub Account */}
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">GitHub</h3>
+                  {githubStatus.isLinked ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      {githubStatus.avatarUrl && (
+                        <img
+                          src={githubStatus.avatarUrl}
+                          alt="GitHub"
+                          className="w-5 h-5 rounded-full"
+                        />
+                      )}
+                      <p className="text-sm text-gray-500">
+                        Connecté en tant que <span className="font-medium text-gray-700">@{githubStatus.username}</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Non connecté</p>
+                  )}
+                </div>
+              </div>
+              <div>
+                {githubStatus.isLinked ? (
+                  <button
+                    onClick={handleUnlinkGitHub}
+                    disabled={loadingGithub}
+                    className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingGithub ? "Déconnexion..." : "Délier"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleLinkGitHub}
+                    disabled={loadingGithub}
+                    className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                    </svg>
+                    {loadingGithub ? "Connexion..." : "Lier un compte"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
 
       </div>

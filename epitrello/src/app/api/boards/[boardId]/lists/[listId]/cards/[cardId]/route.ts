@@ -110,7 +110,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
     const body = await request.json();
-    const { title, content, coverImage } = body;
+    const { title, content, coverImage, dueDate, isDone } = body;
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
@@ -128,13 +128,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (title === undefined && content === undefined && coverImage !== undefined) {
-      return NextResponse.json({ error: "At least one of 'title' or 'content' must be provided." }, { status: 400 });
+    if (title === undefined && content === undefined && coverImage === undefined && dueDate === undefined && isDone === undefined) {
+      return NextResponse.json({ error: "No updateable fields provided." }, { status: 400 });
     }
 
     if (coverImage !== undefined) {
-      return NextResponse.json({ 
-        error: "coverImage cannot be updated via PUT. Use POST /cover to upload an image." 
+      return NextResponse.json({
+        error: "coverImage cannot be updated via PUT. Use POST /cover to upload an image."
       }, { status: 400 });
     }
 
@@ -158,6 +158,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       data: {
         ...(title !== undefined && { title }),
         ...(content !== undefined && { content }),
+        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+        ...(isDone !== undefined && { isDone }),
       },
       include: {
         list: {
@@ -199,11 +201,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
     if (content !== undefined && content !== oldCard.content) {
       changes.push("description");
     }
+    if (dueDate !== undefined && dueDate !== oldCard.dueDate?.toISOString()) {
+      changes.push("date d'échéance");
+    }
+    if (isDone !== undefined && isDone !== oldCard.isDone) {
+      changes.push(isDone ? "marqué comme terminé" : "marqué comme non terminé");
+    }
 
     if (changes.length > 0) {
       await logActivity({
         type: "card_updated",
-        description: `${user.name || user.email} a modifié ${changes.join(" et ")} de la carte "${updatedCard.title}"`,
+        description: `${user.name || user.email} a modifié ${changes.join(", ")} de la carte "${updatedCard.title}"`,
         userId: user.id,
         boardId,
         cardId,
