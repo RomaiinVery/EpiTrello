@@ -10,7 +10,7 @@ export async function GET() {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // @ts-expect-error: Prisma generated type mismatch
+
     const user = await prisma.user.findUnique({
         where: { email: session.user.email },
         select: { githubAccessToken: true },
