@@ -32,6 +32,7 @@ export type CardDetail = {
         boardId: string;
     };
     checklists?: Checklist[];
+    attachments?: Attachment[];
 };
 
 export type ChecklistItem = {
@@ -64,6 +65,7 @@ export type Comment = {
     user: User;
 };
 
+
 export type Activity = {
     id: string;
     type: string;
@@ -74,4 +76,16 @@ export type Activity = {
     createdAt: string;
     metadata: Record<string, string | number | boolean | null | undefined>;
     user: User;
+};
+
+export type Attachment = {
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+    cardId: string;
+    userId: string;
+    createdAt: string;
+    user?: User;
 };

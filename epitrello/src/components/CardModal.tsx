@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { CoverImage } from "@/components/card/CoverImage";
 import { DescriptionEditor } from "@/components/card/DescriptionEditor";
 import { ChecklistSection } from "@/components/card/ChecklistSection";
+import { AttachmentSection } from "@/components/card/AttachmentSection";
 import { CommentSection } from "@/components/card/CommentSection";
 import { ActivityLog } from "@/components/card/ActivityLog";
 import { CardActions } from "@/components/card/CardActions";
@@ -251,6 +252,15 @@ export function CardModal({
                       listId={listId}
                       cardId={cardId}
                       currentUser={currentUser}
+                      onUpdate={onUpdate}
+                      onActivityUpdate={triggerActivityUpdate}
+                    />
+
+
+                    <AttachmentSection
+                      boardId={boardId}
+                      listId={listId}
+                      cardId={cardId}
                       onUpdate={onUpdate}
                       onActivityUpdate={triggerActivityUpdate}
                     />

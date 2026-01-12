@@ -29,6 +29,7 @@ model User {
   assignedCards CardMember[]
   comments      Comment[]
   activities    Activity[]
+  attachments   Attachment[]
 }
 
 model Tableau {
@@ -94,6 +95,7 @@ model Card {
   comments   Comment[]
   activities Activity[]
   checklists Checklist[]
+  attachments Attachment[]
 }
 
 model Label {
@@ -138,6 +140,19 @@ model Comment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  type      String
+  size      Int
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model Activity {

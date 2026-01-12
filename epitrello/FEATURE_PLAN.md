@@ -109,13 +109,13 @@
 - [ ] **Frontend**: Show progress on card (e.g., "3/5")
 
 #### 2.4 Attachments
-- [ ] **Database**: Create `Attachment` model (id, name, url, type, cardId, userId, createdAt)
-- [ ] **Backend**: File upload API (handle images, PDFs, etc.)
-- [ ] **Backend**: API to manage attachments
-- [ ] **Frontend**: Attachments section in card modal
-- [ ] **Frontend**: Upload files (drag & drop or button)
-- [ ] **Frontend**: Display attachments (preview images, download links)
-- [ ] **Frontend**: Delete attachments
+- [x] **Database**: Create `Attachment` model (id, name, url, type, cardId, userId, createdAt)
+- [x] **Backend**: File upload API (handle images, PDFs, etc.)
+- [x] **Backend**: API to manage attachments
+- [x] **Frontend**: Attachments section in card modal
+- [x] **Frontend**: Upload files (drag & drop or button)
+- [x] **Frontend**: Display attachments (preview images, download links)
+- [x] **Frontend**: Delete attachments
 
 ---
 

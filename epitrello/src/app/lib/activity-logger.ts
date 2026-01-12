@@ -15,7 +15,9 @@ export type ActivityType =
   | "comment_updated"
   | "comment_deleted"
   | "cover_uploaded"
-  | "cover_removed";
+  | "cover_removed"
+  | "attachment_uploaded"
+  | "attachment_deleted";
 
 interface LogActivityParams {
   type: ActivityType;
