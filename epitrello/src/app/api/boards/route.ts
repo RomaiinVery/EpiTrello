@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { title, description, tableauId } = await req.json();
+  const { title, description, tableauId, githubRepo, githubBranch } = await req.json();
 
   if (!title || !tableauId) {
     return NextResponse.json({ error: "Title and tableauId are required" }, { status: 400 });
@@ -81,6 +81,8 @@ export async function POST(req: Request) {
       description,
       tableauId,
       userId: user.id,
+      githubRepo: githubRepo || null,
+      githubBranch: githubBranch || null,
       lists: {
         create: [
           { title: "To Do", position: 0 },

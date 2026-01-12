@@ -35,6 +35,14 @@ export default function BoardsByTableauPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
+  const [linkGithub, setLinkGithub] = useState(false);
+  const [githubRepo, setGithubRepo] = useState("");
+  const [githubBranch, setGithubBranch] = useState("main");
+  const [isGithubLinked, setIsGithubLinked] = useState(false);
+  const [repos, setRepos] = useState<any[]>([]);
+  const [reposLoading, setReposLoading] = useState(false);
+  const [repoSearch, setRepoSearch] = useState("");
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
 
@@ -61,6 +69,12 @@ export default function BoardsByTableauPage() {
     fetch(`/api/boards?tableauId=${tableauId}`)
       .then((res) => res.json())
       .then((data) => setBoards(data));
+
+    // Check GitHub status
+    fetch("/api/user/github")
+      .then(res => res.json())
+      .then(data => setIsGithubLinked(!!data.isLinked))
+      .catch(() => setIsGithubLinked(false));
   }, [tableauId, router]);
 
   const handleDelete = (id: string) => {
@@ -101,10 +115,21 @@ export default function BoardsByTableauPage() {
   const handleCreate = async () => {
     if (!createTitle || !tableauId) return;
 
+    const payload: any = {
+      title: createTitle,
+      description: createDescription,
+      tableauId
+    };
+
+    if (linkGithub && githubRepo) {
+      payload.githubRepo = githubRepo;
+      payload.githubBranch = githubBranch || "main";
+    }
+
     const res = await fetch("/api/boards", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: createTitle, description: createDescription, tableauId }),
+      body: JSON.stringify(payload),
     });
 
     if (res.ok) {
@@ -113,7 +138,24 @@ export default function BoardsByTableauPage() {
       setCreateOpen(false);
       setCreateTitle("");
       setCreateDescription("");
+      setLinkGithub(false);
+      setGithubRepo("");
       window.dispatchEvent(new Event("sidebarUpdated"));
+    }
+  };
+
+  const fetchRepos = async () => {
+    setReposLoading(true);
+    try {
+      const res = await fetch("/api/user/github/repos");
+      if (res.ok) {
+        const data = await res.json();
+        setRepos(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setReposLoading(false);
     }
   };
 
@@ -233,19 +275,88 @@ export default function BoardsByTableauPage() {
           <DialogHeader>
             <DialogTitle>Créer une nouvelle board</DialogTitle>
           </DialogHeader>
-          <Input
-            value={createTitle}
-            onChange={(e) => setCreateTitle(e.target.value)}
-            placeholder="Titre"
-            className="mb-4"
-            required
-          />
-          <Input
-            value={createDescription}
-            onChange={(e) => setCreateDescription(e.target.value)}
-            placeholder="Description (optionnelle)"
-            className="mb-4"
-          />
+          <div className="space-y-4 py-4">
+            <Input
+              value={createTitle}
+              onChange={(e) => setCreateTitle(e.target.value)}
+              placeholder="Titre"
+              required
+            />
+            <Input
+              value={createDescription}
+              onChange={(e) => setCreateDescription(e.target.value)}
+              placeholder="Description (optionnelle)"
+            />
+
+            <div className="flex items-center space-x-2 pt-2">
+              <input
+                type="checkbox"
+                id="linkGithub"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={linkGithub}
+                onChange={(e) => setLinkGithub(e.target.checked)}
+                disabled={!isGithubLinked}
+              />
+              <label
+                htmlFor="linkGithub"
+                className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${!isGithubLinked ? "text-gray-400" : "text-gray-700"}`}
+              >
+                Lier à un dépôt GitHub
+              </label>
+            </div>
+
+            {!isGithubLinked && (
+              <p className="text-xs text-orange-500 ml-6">
+                Vous devez d'abord lier votre compte GitHub dans les paramètres.
+              </p>
+            )}
+
+            {linkGithub && isGithubLinked && (
+              <div className="ml-6 space-y-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-500">Dépôt GitHub</label>
+                  {reposLoading ? (
+                    <div className="text-xs text-gray-400 py-2">Chargement des dépôts...</div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Filtrer les dépôts..."
+                          value={repoSearch}
+                          onChange={(e) => setRepoSearch(e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={fetchRepos}
+                          disabled={reposLoading}
+                          title="Actualiser la liste"
+                          className="h-8 w-8"
+                        >
+                          ↻
+                        </Button>
+                      </div>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={githubRepo}
+                        onChange={(e) => setGithubRepo(e.target.value)}
+                      >
+                        <option value="">Sélectionner un dépôt...</option>
+                        {repos
+                          .filter(r => r.full_name.toLowerCase().includes(repoSearch.toLowerCase()))
+                          .map((repo) => (
+                            <option key={repo.id} value={repo.full_name}>
+                              {repo.full_name} {repo.private && "🔒"}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <DialogFooter>
             <Button onClick={handleCreate} disabled={!createTitle}>OK</Button>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>

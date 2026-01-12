@@ -51,6 +51,9 @@ model Board {
   title       String
   description String?
   createdAt   DateTime @default(now())
+  
+  githubRepo   String?
+  githubBranch String?
 
   lists      List[]
   labels     Label[]
