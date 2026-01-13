@@ -1,149 +1,151 @@
-import { Task, ViewMode, Gantt } from "gantt-task-react";
-import "gantt-task-react/dist/index.css";
-import React, { useMemo, useState } from "react";
+import {
+    GanttFeature,
+    GanttProvider,
+    GanttSidebar,
+    GanttSidebarGroup,
+    GanttSidebarHeader,
+    GanttTimeline,
+    GanttHeader,
+    GanttFeatureList,
+    GanttFeatureRow,
+    GanttToday,
+    useGanttDragging,
+    GanttContext
+} from "@/components/ui/shadcn-io/gantt";
 import { Card, List, User } from "@/app/lib/board-api";
+import { useMemo, useContext, useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import { formatDistance, isSameDay, addDays } from "date-fns";
+import React from "react";
 
 interface GanttViewProps {
     lists: List[];
     cardsByList: Record<string, Card[]>;
 }
 
-// Extend Task interface to include members
-interface ExtendedTask extends Task {
+// Extended Feature to include members
+type ExtendedGanttFeature = GanttFeature & {
     members?: User[];
-}
+    cardId: string;
+    listId: string;
+};
+
+// Custom Sidebar Item to show assignees
+const CustomGanttSidebarItem = ({
+    feature,
+    className,
+}: {
+    feature: ExtendedGanttFeature;
+    className?: string;
+}) => {
+    const gantt = useContext(GanttContext);
+    const [, setDragging] = useGanttDragging();
+
+    // Logic copied from GanttSidebarItem for interaction
+    const handleClick = () => {
+        gantt.scrollToFeature?.(feature);
+    };
+
+    const tempEndAt = feature.endAt && isSameDay(feature.startAt, feature.endAt)
+        ? addDays(feature.endAt, 1)
+        : feature.endAt;
+
+    const duration = tempEndAt
+        ? formatDistance(feature.startAt, tempEndAt)
+        : "";
+
+    return (
+        <div
+            className={cn(
+                "relative flex items-center gap-2.5 p-2.5 text-xs hover:bg-secondary cursor-pointer border-b border-border/50",
+                className
+            )}
+            onClick={handleClick}
+            style={{ height: "var(--gantt-row-height)" }}
+        >
+            <div
+                className="pointer-events-none h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: feature.status.color }}
+            />
+            <p className="pointer-events-none flex-1 truncate text-left font-medium">
+                {feature.name}
+            </p>
+
+            {/* Assignees */}
+            <div className="flex -space-x-1 shrink-0 mr-2">
+                {feature.members && feature.members.map((member) => (
+                    <div key={member.id} className="w-5 h-5 rounded-full overflow-hidden border border-white bg-gray-200" title={member.name || member.email}>
+                        {member.profileImage ? (
+                            <img src={member.profileImage} alt={member.name || "User"} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-600">
+                                {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            <p className="pointer-events-none text-muted-foreground w-16 text-right truncate">
+                {duration}
+            </p>
+        </div>
+    );
+};
+
+const onAddItem = (date: Date) => {
+    alert("Add item" + date);
+};
 
 export function GanttView({ lists, cardsByList }: GanttViewProps) {
-    const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Day);
+    const data = useMemo(() => {
+        const groups: { list: List; features: ExtendedGanttFeature[] }[] = [];
 
-    // Custom header to only show Title
-    const TaskListHeader: React.FC<{ headerHeight: number; rowWidth: string; fontFamily: string; fontSize: string }> = ({ headerHeight, rowWidth, fontFamily, fontSize }) => {
-        return (
-            <div style={{
-                height: headerHeight,
-                fontFamily: fontFamily,
-                fontSize: fontSize,
-                borderBottom: "1px solid #e5e7eb",
-                display: "flex",
-                alignItems: "center",
-                paddingLeft: "10px",
-                fontWeight: "bold"
-            }}>
-                Tâche
-            </div>
-        );
-    };
-
-    // Custom row to show Title + Assignees
-    const TaskListTable: React.FC<{
-        rowHeight: number;
-        rowWidth: string;
-        fontFamily: string;
-        fontSize: string;
-        locale: string;
-        tasks: Task[];
-        selectedTaskId: string;
-        setSelectedTask: (taskId: string) => void;
-        onExpanderClick: (task: Task) => void;
-    }> = ({ rowHeight, tasks, fontFamily, fontSize }) => {
-        return (
-            <div style={{ fontFamily: fontFamily, fontSize: fontSize }}>
-                {tasks.map((t) => {
-                    const task = t as ExtendedTask;
-                    return (
-                        <div
-                            key={t.id}
-                            style={{
-                                height: rowHeight,
-                                display: "flex",
-                                alignItems: "center",
-                                paddingLeft: "10px",
-                                paddingRight: "10px",
-                                borderBottom: "1px solid #e5e7eb",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                justifyContent: "space-between"
-                            }}
-                        >
-                            <div title={t.name} style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", marginRight: "8px" }}>
-                                {t.name}
-                            </div>
-                            <div className="flex -space-x-1 shrink-0">
-                                {task.members && task.members.map((member) => (
-                                    <div key={member.id} className="w-5 h-5 rounded-full overflow-hidden border border-white bg-gray-200" title={member.name || member.email}>
-                                        {member.profileImage ? (
-                                            <img src={member.profileImage} alt={member.name || "User"} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-600">
-                                                {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
-
-    const tasks: Task[] = useMemo(() => {
-        const allTasks: ExtendedTask[] = [];
-
-        lists.forEach(list => {
+        lists.forEach((list) => {
             const listCards = cardsByList[list.id] || [];
-
-            // Determine common styles for this list (e.g. if it's "Doing")
             const isDoingList = list.title.toLowerCase().includes("doing") || list.title.toLowerCase().includes("en cours");
 
-            // Create tasks for cards
-            listCards.forEach(card => {
+            const features: ExtendedGanttFeature[] = [];
+
+            listCards.forEach((card) => {
                 if (card.startDate || card.dueDate) {
                     const start = card.startDate ? new Date(card.startDate) : (card.dueDate ? new Date(card.dueDate) : new Date());
-                    const end = card.dueDate ? new Date(card.dueDate) : (card.startDate ? new Date(card.startDate) : new Date());
+                    let end = card.dueDate ? new Date(card.dueDate) : (card.startDate ? new Date(card.startDate) : new Date());
 
-                    // If start == end, add 1 day duration for visibility
-                    if (start.getTime() === end.getTime()) {
-                        end.setDate(end.getDate() + 1);
+                    // Ensure end >= start
+                    if (end < start) end = start;
+
+                    // TODO: change colors based on the github issue status
+                    // with card.githubIssueUrl
+                    let color = "#6B7280";
+                    if (card.githubIssueUrl) {
+                        color = "#ffe6a0ff";
                     }
 
-                    // Determine color
-                    let barColor = "#3b82f6"; // Default Blue
-                    let progressColor = "#2563eb";
 
-                    if (card.isDone) {
-                        barColor = "#10b981"; // Green
-                        progressColor = "#059669";
-                    } else if (isDoingList) {
-                        barColor = "#ef4444"; // Red
-                        progressColor = "#dc2626";
-                    }
-
-                    allTasks.push({
-                        start,
-                        end,
-                        name: card.title,
+                    // status: { id: statusName.toLowerCase(), name: statusName, color },
+                    features.push({
                         id: card.id,
-                        type: "task",
-                        progress: card.isDone ? 100 : 0,
-                        isDisabled: true, // Read-only for now
-                        styles: {
-                            progressColor: progressColor,
-                            progressSelectedColor: progressColor,
-                            backgroundColor: barColor,
-                            backgroundSelectedColor: barColor
-                        },
+                        name: card.title,
+                        startAt: start,
+                        endAt: end,
                         members: card.members,
+                        status: { id: "todo", name: "Todo", color: color },
+                        cardId: card.id,
+                        listId: list.id
                     });
                 }
             });
+
+            if (features.length > 0) {
+                groups.push({ list, features });
+            }
         });
 
-        return allTasks;
+        return groups;
     }, [lists, cardsByList]);
 
-    if (tasks.length === 0) {
+    if (data.length === 0) {
         return (
             <div className="flex items-center justify-center h-64 text-gray-500">
                 Aucune tâche avec des dates à afficher.
@@ -152,23 +154,39 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
     }
 
     return (
-        <div className="h-full overflow-auto p-4 bg-white rounded-lg shadow">
-            <div className="mb-4 flex gap-2 justify-end">
-                <button onClick={() => setViewMode(ViewMode.Day)} className={`px-3 py-1 rounded ${viewMode === ViewMode.Day ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Jour</button>
-                <button onClick={() => setViewMode(ViewMode.Week)} className={`px-3 py-1 rounded ${viewMode === ViewMode.Week ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Semaine</button>
-                <button onClick={() => setViewMode(ViewMode.Month)} className={`px-3 py-1 rounded ${viewMode === ViewMode.Month ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Mois</button>
-            </div>
-            <Gantt
-                tasks={tasks}
-                viewMode={viewMode}
-                locale="fr"
-                columnWidth={viewMode === ViewMode.Month ? 80 : 40}
-                fontSize="10px"
-                barFill={70}
-                listCellWidth="300px" // Wider task list
-                TaskListHeader={TaskListHeader}
-                TaskListTable={TaskListTable}
-            />
+        <div className="h-full bg-background rounded-lg border shadow-sm overflow-hidden flex flex-col">
+            <GanttProvider className="border" zoom={75} range="daily" onAddItem={onAddItem}>
+                    <GanttSidebar>
+                        {data.map((group) => (
+                            <GanttSidebarGroup key={group.list.id} name={group.list.title}>
+                                {group.features.map((feature) => (
+                                    <CustomGanttSidebarItem key={feature.id} feature={feature} />
+                                ))}
+                            </GanttSidebarGroup>
+                        ))}
+                    </GanttSidebar>
+                    <GanttTimeline>
+                        <GanttHeader />
+                        <GanttFeatureList>
+                            {data.map((group) => (
+                                <div key={group.list.id} className="relative">
+                                    {/* This renders the rows for the group. 
+                                         We need to ensure the height matches the sidebar group. 
+                                         SidebarGroup height = header (rowHeight) + features * rowHeight.
+                                         Top position is tricky because GanttFeatureList expects absolute positioning or stacked divs.
+                                     */}
+                                    {/* Actually, GanttFeatureListGroup in the lib adds paddingTop. 
+                                         We can reuse or mimic it. 
+                                     */}
+                                    <div style={{ paddingTop: 'var(--gantt-row-height)' }}>
+                                        <GanttFeatureRow features={group.features} />
+                                    </div>
+                                </div>
+                            ))}
+                        </GanttFeatureList>
+                        <GanttToday />
+                    </GanttTimeline>
+            </GanttProvider>
         </div>
     );
 }
