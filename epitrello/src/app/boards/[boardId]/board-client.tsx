@@ -961,22 +961,9 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         // Check if moved to "Doing" or "En cours"
         const destList = board?.lists?.find(l => l.id === overListId);
 
-        // Debug Alert
-        // alert(`Debug: activeListId=${activeListId}, overListId=${overListId}, destListTitle=${destList?.title}, hasGithubRepo=${!!board?.githubRepo}`);
-
-        console.log("DEBUG DRAG: DragEnd", {
-          activeListId,
-          overListId,
-          destListTitle: destList?.title,
-          hasGithubRepo: !!board?.githubRepo,
-          cardId: active.data.current?.card.id
-        });
-
-        if (destList && board?.githubRepo && activeListId !== overListId &&
+        if (destList && board?.githubRepo && startListId && startListId !== overListId &&
           (destList.title.toLowerCase().includes("doing") || destList.title.toLowerCase().includes("en cours") || destList.title.toLowerCase().includes("going"))) {
-          // alert(`Debug: dest=${destList.title}, repo=${board.githubRepo}, cardId=${active.data.current?.card.id}`);
 
-          console.log("DEBUG DRAG: Triggering PR Modal condition met");
           const cardId = active.data.current?.card.id;
           if (cardId) {
             setPrModalData({ listId: overListId, cardId, boardId });
