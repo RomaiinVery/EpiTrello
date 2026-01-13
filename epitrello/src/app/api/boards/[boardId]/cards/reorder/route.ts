@@ -82,7 +82,6 @@ export async function PATCH(
     });
 
     const newListsMap = new Map(newLists.map(l => [l.id, l]));
-
     const transaction = cards.map((card) =>
       prisma.card.update({
         where: {
@@ -91,6 +90,7 @@ export async function PATCH(
         data: {
           position: card.position,
           listId: card.listId,
+          isDone: newListsMap.get(card.listId)?.title === "Done" ? true : false,
         },
       })
     );
