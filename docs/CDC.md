@@ -12,7 +12,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
 - Intégrer des flux de travail "Developer-First" (Liaison GitHub, Markdown).
 
 ### 1.2 Stack Technique
-- **Frontend :** Next.js 15 (App Router), React 19, TailwindCSS, Lucide Icons.
+- **Frontend :** Next.js 16 (App Router), React 19, TailwindCSS, Lucide Icons.
 - **Backend :** Next.js API Routes, Prisma ORM.
 - **Base de Données :** PostgreSQL.
 - **Authentification :** NextAuth v5 (Auth.js).
@@ -31,6 +31,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
 *État : Implémenté*
 
 *   **Inscription (Register)**
+    *   **J/H :** 1.5 
     *   **Route API :** `POST /api/register`
     *   **Fichier Contrôleur :** `src/app/api/register/route.ts`
     *   **Validation Request Body :**
@@ -57,6 +58,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
     *   **Stockage DB :** Table `User` (PostgreSQL).
 
 *   **Connexion (Login)**
+    *   **J/H :** 1
     *   **Route API :** `POST /api/auth/callback/credentials` (Géré par NextAuth)
     *   **Fichier Config :** `src/app/api/auth/[...nextauth]/route.ts`
     *   **Validation :**
@@ -69,6 +71,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
     *   **Modèle Utilisé :** `User` (Lecture uniquement).
 
 *   **Gestion de Profil (Avatar)**
+    *   **J/H :** 1
     *   **Fonctionnalité :** Upload et mise à jour de la photo de profil.
     *   **Stockage :** Local (`public/uploads/profiles`).
     *   **API Route :** `POST /api/user/profile-image`
@@ -77,6 +80,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
 
 ### 2.2 Structure Organisationnelle (Workspaces / Tableaux)
 *État : Implémenté*
+*   **Charge Estimée (Workspaces) :** 3.5 J/H
 
 *   **Lister les Tableaux**
     *   **Route API :** `GET /api/tableaux`
@@ -123,6 +127,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
         *   Retirer : `DELETE /api/tableaux/[tableauId]/members`
 
 *   **Gestion des Projets (Boards)**
+    *   **Charge Estimée :** 3 J/H
     *   **Modèle Prisma :**
         ```prisma
         model Board {
@@ -180,6 +185,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
 
 ### 2.3 Gestion des Listes (Colonnes)
 *État : Implémenté*
+*   **Charge Estimée :** 4 J/H
 
 *   **Modèle Prisma `List` :**
     *   Fields: `id`, `title`, `position` (Int), `boardId`.
@@ -197,6 +203,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
 
 ### 2.4 Gestion des Cartes (Tâches)
 *État : Implémenté*
+*   **Charge Estimée :** 5 J/H
 
 *   **Modèle Prisma `Card` :**
     *   Fields: `id`, `title`, `content` (desc), `position`, `listId`, `coverImage`, `archived`.
@@ -219,6 +226,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
 
 ### 2.5 Sous-Systèmes de la Carte
 *État : Implémenté*
+*   **Charge Estimée :** 14 J/H (Labels, Checklists, Comments, Attachments, Activity)
 
 *   **Labels (Étiquettes)**
     *   **Route API :** `POST /api/boards/[boardId]/labels`
@@ -256,9 +264,11 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
 
 
 ### 2.6 Routes Utilitaires
+*   **Charge Estimée :** 0.5 J/H
 *   **Test API :** `GET /api/test-route`
 
 ### 2.7 Sécurité & Permissions (ACL)
+*   **Charge Estimée :** 3 J/H
 *   **Hiérarchie des Rôles**
     *   **Propriétaire du Board (Admin)** : Créateur du board.
         *   *Droits :* Tout faire (Supprimer Board, Inviter/Bannir membres, Supprimer n'importe quel commentaire/carte/liste).
@@ -282,6 +292,7 @@ Ce document détaille les spécifications fonctionnelles et techniques de la pla
 ## 3. Expérience Utilisateur & Flux (UX Flows)
 
 Cette section décrit le comportement attendu de l'interface pour chaque facette de l'application, en mettant l'accent sur la fluidité et le retour visuel.
+**Charge Estimée Globale (UX/UI & Optimistic Updates) :** 10 J/H
 
 ### 3.1 Authentification & Onboarding
 *   **Flux d'Inscription**
@@ -359,6 +370,7 @@ L'objectif est de transformer EpiTrello en une "Power App" dépassant les standa
 
 ### 4.1 Moteur d'Automatisation (Code-First "RobzBot")
 *Concept : Permettre des actions en chaîne sans code pour l'utilisateur.*
+*   **Charge Estimée :** 20 J/H
 
 *   **Modèle de Donnée : `AutomationRule`**
     ```prisma
@@ -381,6 +393,7 @@ L'objectif est de transformer EpiTrello en une "Power App" dépassant les standa
 
 ### 4.2 Vue Chronologique (Gantt Interactif)
 *Concept : Visualiser la durée des tâches sur une timeline.*
+*   **Charge Estimée :** 20 J/H
 
 *   **Pré-requis DB :**
     *   Ajout de champs `startDate` (DateTime) et `dueDate` (DateTime) au modèle `Card`.
@@ -393,6 +406,7 @@ L'objectif est de transformer EpiTrello en une "Power App" dépassant les standa
 
 ### 4.3 Assistant IA Intégré (EpiAI)
 *Concept : Un co-pilote pour la gestion de projet.*
+*   **Charge Estimée :** 10 J/H
 
 *   **Fonctionnalités :**
     1.  **"Smart Tagging"** : Analyse le `content` de la carte et suggère des labels existants.
@@ -405,6 +419,7 @@ L'objectif est de transformer EpiTrello en une "Power App" dépassant les standa
 
 ### 4.4 Notifications Temps Réel (Server-Sent Events)
 *Concept : Plus de rafraîchissement manuel.*
+*   **Charge Estimée :** 15 J/H
 
 *   **Architecture SSE (Server-Sent Events) :**
     *   Plus léger que WebSockets pour ce use-case (Unidirectionnel Server -> Client).
@@ -418,6 +433,7 @@ L'objectif est de transformer EpiTrello en une "Power App" dépassant les standa
 
 ### 4.5 Mode "Focus" (Pomodoro Intégré)
 *Concept : Lier gestion de tâche et productivité personnelle.*
+*   **Charge Estimée :** 5 J/H
 
 *   **Fonctionnalité :**
     *   Bouton "Start Focus" sur une carte.
@@ -427,3 +443,26 @@ L'objectif est de transformer EpiTrello en une "Power App" dépassant les standa
 *   **Stockage :**
     *   Modèle `TimeLog` : `{ cardId, userId, durationSeconds, startedAt }`.
     *   Dashboard statistique personnel ("Temps de focus cette semaine").
+
+---
+
+## 5. Qualité, Tests & Déploiement
+
+Cette section couvre les tâches transverses nécessaires pour garantir la stabilité et la mise en production du projet.
+
+*   **Tests End-to-End (E2E) & Unitaires**
+    *   **Charge Estimée :** 8 J/H
+    *   **Scope :**
+        *   Tests unitaires API (Jest/Vitest).
+        *   Tests E2E critiques (Playwright) : Inscription, Login, Création Board, DnD.
+*   **Documentation & Refactoring**
+    *   **Charge Estimée :** 3 J/H
+    *   **Scope :** Documentation API (Swagger/OpenAPI), Nettoyage de code, Optimisation performance.
+*   **Déploiement & DevOps**
+    *   **Charge Estimée :** 2.5 J/H
+    *   **Scope :**
+        *   Configuration Vercel Pro.
+        *   Base de données Neon/Supabase (PostgreSQL).
+        *   CI/CD simple (GitHub Actions).
+
+**TOTAL PROJET : 130 J/H**
