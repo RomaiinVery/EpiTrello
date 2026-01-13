@@ -167,7 +167,7 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
                     if (end < start) end = start;
 
                     let color = "#6B7280"; // Default Gray
-                    let statusName = "Tâche";
+                    let statusName = "Task";
                     let statusId = "task";
 
                     if (card.githubIssueUrl) {
@@ -252,16 +252,10 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
                     <GanttFeatureList>
                         {data.map((group) => (
                             <div key={group.list.id} className="relative">
-                                {/* This renders the rows for the group. 
-                                         We need to ensure the height matches the sidebar group. 
-                                         SidebarGroup height = header (rowHeight) + features * rowHeight.
-                                         Top position is tricky because GanttFeatureList expects absolute positioning or stacked divs.
-                                     */}
-                                {/* Actually, GanttFeatureListGroup in the lib adds paddingTop. 
-                                         We can reuse or mimic it. 
-                                     */}
                                 <div style={{ paddingTop: 'var(--gantt-row-height)' }}>
-                                    <GanttFeatureRow features={group.features} />
+                                    {group.features.map((feature) => (
+                                        <GanttFeatureRow key={feature.id} features={[feature]} />
+                                    ))}
                                 </div>
                             </div>
                         ))}

@@ -1206,11 +1206,39 @@ export const GanttProvider: FC<GanttProviderProps> = ({
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollLeft =
-        scrollRef.current.scrollWidth / 2 - scrollRef.current.clientWidth / 2;
+      const today = new Date();
+      const timelineStartDate = new Date(timelineData[0].year, 0, 1);
+
+      // Construct a temporary context for getOffset
+      const tempContext = {
+        zoom,
+        range,
+        columnWidth,
+        sidebarWidth: 0, // Not relevant for this calc
+        headerHeight,
+        rowHeight,
+        onAddItem,
+        placeholderLength: 2,
+        timelineData,
+        ref: scrollRef,
+        scrollToFeature: undefined
+      };
+
+      const offset = getOffset(today, timelineStartDate, tempContext);
+
+      // Center the view on today: subtract half the client width
+      const targetScroll = offset - (scrollRef.current.clientWidth / 2);
+
+      scrollRef.current.scrollLeft = Math.max(0, targetScroll);
       setScrollX(scrollRef.current.scrollLeft);
     }
-  }, [setScrollX]);
+  }, [setScrollX]); // Only run once on mount (or when dependencies change if I added them, but empty dep array or stable deps is better for "initial" scroll)
+  // Wait, the original effect had `[setScrollX]`.
+  // I should probably depend on `timelineData` (initial), `zoom`, `range` to be safe if they change?
+  // But `timelineData` is state.
+  // The original effect was intended to run once. I'll keep it simple but correct.
+  // Actually, I should probably check if it's the *initial* render.
+  // But this effect runs after mount.
 
   // Update sidebar width when DOM is ready
   useEffect(() => {
