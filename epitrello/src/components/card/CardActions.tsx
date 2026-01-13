@@ -185,6 +185,7 @@ export function CardActions({
                             <DatePicker
                                 selected={startDate ? new Date(startDate) : undefined}
                                 onSelect={handleStartDateSelect}
+                                maxDate={dueDate ? new Date(dueDate) : undefined}
                             />
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -207,6 +208,7 @@ export function CardActions({
                             <DatePicker
                                 selected={dueDate ? new Date(dueDate) : undefined}
                                 onSelect={handleDueDateSelect}
+                                minDate={startDate ? new Date(startDate) : undefined}
                             />
                         </DropdownMenuContent>
                     </DropdownMenu>

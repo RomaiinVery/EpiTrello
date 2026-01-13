@@ -213,16 +213,16 @@ export function CardModal({
             <>
               {card && (
                 <>
-                  <CoverImage
-                    boardId={boardId}
-                    listId={listId}
-                    cardId={cardId}
-                    coverImage={card.coverImage}
-                    onUpdate={onUpdate}
-                    onCardUpdate={handleCardUpdate}
-                  />
-
                   <div className="p-6 space-y-6">
+                    <CoverImage
+                      boardId={boardId}
+                      listId={listId}
+                      cardId={cardId}
+                      coverImage={card.coverImage}
+                      onUpdate={onUpdate}
+                      onCardUpdate={handleCardUpdate}
+                    />
+
                     <DescriptionEditor
                       boardId={boardId}
                       listId={listId}
