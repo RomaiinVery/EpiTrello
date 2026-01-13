@@ -112,8 +112,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     let githubIssueUrl = null;
 
     // GitHub Integration
+    console.log("DEBUG GITHUB: Checking integration...");
+    console.log("DEBUG GITHUB: Board Repo:", board.githubRepo);
+    console.log("DEBUG GITHUB: User Token Present:", !!user.githubAccessToken);
+
     if (board.githubRepo && user.githubAccessToken) {
       try {
+        console.log("DEBUG GITHUB: Attempting to create issue...");
         const githubRes = await fetch(`https://api.github.com/repos/${board.githubRepo}/issues`, {
           method: "POST",
           headers: {
@@ -128,17 +133,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           }),
         });
 
+        console.log("DEBUG GITHUB: Response Status:", githubRes.status);
+
         if (githubRes.ok) {
           const issueData = await githubRes.json();
+          console.log("DEBUG GITHUB: Issue Created:", issueData.html_url);
           githubIssueNumber = issueData.number;
           githubIssueUrl = issueData.html_url;
         } else {
-          console.error("GitHub Issue Creation Failed:", await githubRes.text());
-          // Non-blocking: we continue creating the card even if GitHub fails, but maybe log it?
+          const errorText = await githubRes.text();
+          console.error("DEBUG GITHUB: Failed -", errorText);
         }
       } catch (error) {
-        console.error("GitHub Integration Error:", error);
+        console.error("DEBUG GITHUB: Exception -", error);
       }
+    } else {
+      console.log("DEBUG GITHUB: Skipping integration. Missing repo or token.");
     }
 
     const newCard = await prisma.card.create({

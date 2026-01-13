@@ -145,15 +145,14 @@ function CardItem({ card, onRename, onDelete, onClick }: {
         )}
         {card.dueDate && (
           <div
-            className={`mt-2 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 ${
-  card.isDone
-    ? "bg-green-100 text-green-700"
-    : isPast(new Date(card.dueDate)) && !isToday(new Date(card.dueDate))
-      ? "bg-red-100 text-red-700"
-      : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
-        ? "bg-yellow-100 text-yellow-700"
-        : "bg-gray-100 text-gray-600"
-} `}
+            className={`mt-2 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 ${card.isDone
+              ? "bg-green-100 text-green-700"
+              : isPast(new Date(card.dueDate)) && !isToday(new Date(card.dueDate))
+                ? "bg-red-100 text-red-700"
+                : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-gray-100 text-gray-600"
+              } `}
             title={card.isDone ? "Terminée" : "Date d'échéance"}
           >
             <Clock className="w-3 h-3" />
@@ -390,6 +389,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
   const [activeList, setActiveList] = useState<List | null>(null);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
+  const [startListId, setStartListId] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   const [viewMode, setViewMode] = useState<"kanban" | "gantt">("kanban");
@@ -425,527 +425,483 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     try {
       const nextPosition = (board?.lists?.length || 0);
 
-      const res = await fetch(`/ api / boards / ${ boardId }/lists`, {
-method: "POST",
-  headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ title: newListTitle, position: nextPosition }),
+      const res = await fetch(`/ api / boards / ${boardId}/lists`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newListTitle, position: nextPosition }),
       });
-if (!res.ok) {
-  const data = await res.json().catch(() => ({}));
-  setError(data.error || "Erreur lors de l'ajout de la liste");
-  setAddingList(false);
-  return;
-}
-const newList = await res.json();
-setBoard((prev) =>
-  prev
-    ? { ...prev, lists: [...(prev.lists || []), newList] }
-    : prev
-);
-setCardsByList((prev) => ({ ...prev, [newList.id]: [] }));
-setShowDialog(false);
-setNewListTitle("");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Erreur lors de l'ajout de la liste");
+        setAddingList(false);
+        return;
+      }
+      const newList = await res.json();
+      setBoard((prev) =>
+        prev
+          ? { ...prev, lists: [...(prev.lists || []), newList] }
+          : prev
+      );
+      setCardsByList((prev) => ({ ...prev, [newList.id]: [] }));
+      setShowDialog(false);
+      setNewListTitle("");
     } catch {
-  setError("Erreur réseau");
-}
-setAddingList(false);
+      setError("Erreur réseau");
+    }
+    setAddingList(false);
   };
 
-const handleRename = (listId: string) => {
-  if (!board || !board.lists) return;
-  const list = board.lists.find((l) => l.id === listId);
-  if (!list) return;
-  setListToRename(list);
-  setRenameTitle(list.title);
-  setRenameError(null);
-  setShowRenameDialog(true);
-};
-const handleRenameCancel = () => {
-  setShowRenameDialog(false);
-  setRenameTitle("");
-  setListToRename(null);
-  setRenameError(null);
-};
-const handleRenameConfirm = async () => {
-  if (!renameTitle.trim()) {
-    setRenameError("Le titre ne peut pas être vide");
-    return;
-  }
-  if (!listToRename) return;
-  setRenaming(true);
-  setRenameError(null);
-  try {
-    const res = await fetch(`/api/boards/${boardId}/lists/${listToRename.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: renameTitle }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setRenameError(data.error || "Erreur lors du renommage");
-      setRenaming(false);
-      return;
-    }
-    const updatedList = await res.json();
-    setBoard((prev) => {
-      if (!prev || !prev.lists) return prev;
-      const newLists = prev.lists.map((l) =>
-        l.id === updatedList.id ? updatedList : l
-      );
-      return { ...prev, lists: newLists };
-    });
+  const handleRename = (listId: string) => {
+    if (!board || !board.lists) return;
+    const list = board.lists.find((l) => l.id === listId);
+    if (!list) return;
+    setListToRename(list);
+    setRenameTitle(list.title);
+    setRenameError(null);
+    setShowRenameDialog(true);
+  };
+  const handleRenameCancel = () => {
     setShowRenameDialog(false);
     setRenameTitle("");
     setListToRename(null);
-  } catch {
-    setRenameError("Erreur réseau");
-  }
-  setRenaming(false);
-};
-
-const handleDelete = (listId: string) => {
-  if (!board || !board.lists) return;
-  const list = board.lists.find((l) => l.id === listId);
-  if (!list) return;
-  setListToDelete(list);
-  setDeleteError(null);
-  setShowDeleteDialog(true);
-};
-const handleDeleteCancel = () => {
-  setShowDeleteDialog(false);
-  setListToDelete(null);
-  setDeleteError(null);
-};
-const handleDeleteConfirm = async () => {
-  if (!listToDelete) return;
-  setDeleting(true);
-  setDeleteError(null);
-  try {
-    const res = await fetch(`/api/boards/${boardId}/lists/${listToDelete.id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setDeleteError(data.error || "Erreur lors de la suppression");
-      setDeleting(false);
+    setRenameError(null);
+  };
+  const handleRenameConfirm = async () => {
+    if (!renameTitle.trim()) {
+      setRenameError("Le titre ne peut pas être vide");
       return;
     }
-    setBoard((prev) => {
-      if (!prev || !prev.lists) return prev;
-      const newLists = prev.lists.filter((l) => l.id !== listToDelete.id);
-      return { ...prev, lists: newLists };
-    });
-    setCardsByList((prev) => {
-      const newCardsByList = { ...prev };
-      delete newCardsByList[listToDelete.id];
-      return newCardsByList;
-    });
+    if (!listToRename) return;
+    setRenaming(true);
+    setRenameError(null);
+    try {
+      const res = await fetch(`/api/boards/${boardId}/lists/${listToRename.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: renameTitle }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRenameError(data.error || "Erreur lors du renommage");
+        setRenaming(false);
+        return;
+      }
+      const updatedList = await res.json();
+      setBoard((prev) => {
+        if (!prev || !prev.lists) return prev;
+        const newLists = prev.lists.map((l) =>
+          l.id === updatedList.id ? updatedList : l
+        );
+        return { ...prev, lists: newLists };
+      });
+      setShowRenameDialog(false);
+      setRenameTitle("");
+      setListToRename(null);
+    } catch {
+      setRenameError("Erreur réseau");
+    }
+    setRenaming(false);
+  };
+
+  const handleDelete = (listId: string) => {
+    if (!board || !board.lists) return;
+    const list = board.lists.find((l) => l.id === listId);
+    if (!list) return;
+    setListToDelete(list);
+    setDeleteError(null);
+    setShowDeleteDialog(true);
+  };
+  const handleDeleteCancel = () => {
     setShowDeleteDialog(false);
     setListToDelete(null);
-  } catch {
-    setDeleteError("Erreur réseau");
-  }
-  setDeleting(false);
-};
-
-const handleAddCardClick = (list: List) => {
-  setListForNewCard(list);
-  setCardTitle("");
-  setCardContent("");
-  setAddCardError(null);
-  setShowAddCardDialog(true);
-};
-const handleAddCardCancel = () => {
-  setShowAddCardDialog(false);
-  setCardTitle("");
-  setCardContent("");
-  setAddCardError(null);
-  setListForNewCard(null);
-};
-const handleAddCardConfirm = async () => {
-  if (!cardTitle.trim()) {
-    setAddCardError("Le titre ne peut pas être vide");
-    return;
-  }
-  if (!listForNewCard) return;
-  setAddingCard(true);
-  setAddCardError(null);
-  try {
-    const res = await fetch(`/api/boards/${boardId}/lists/${listForNewCard.id}/cards`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: cardTitle, content: cardContent }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setAddCardError(data.error || "Erreur lors de l'ajout de la carte");
-      setAddingCard(false);
-      return;
+    setDeleteError(null);
+  };
+  const handleDeleteConfirm = async () => {
+    if (!listToDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/boards/${boardId}/lists/${listToDelete.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteError(data.error || "Erreur lors de la suppression");
+        setDeleting(false);
+        return;
+      }
+      setBoard((prev) => {
+        if (!prev || !prev.lists) return prev;
+        const newLists = prev.lists.filter((l) => l.id !== listToDelete.id);
+        return { ...prev, lists: newLists };
+      });
+      setCardsByList((prev) => {
+        const newCardsByList = { ...prev };
+        delete newCardsByList[listToDelete.id];
+        return newCardsByList;
+      });
+      setShowDeleteDialog(false);
+      setListToDelete(null);
+    } catch {
+      setDeleteError("Erreur réseau");
     }
-    const newCard = await res.json();
-    setCardsByList((prev) => {
-      const prevCards = prev[listForNewCard.id] || [];
-      return { ...prev, [listForNewCard.id]: [...prevCards, { ...newCard, listId: listForNewCard.id }] };
-    });
+    setDeleting(false);
+  };
+
+  const handleAddCardClick = (list: List) => {
+    setListForNewCard(list);
+    setCardTitle("");
+    setCardContent("");
+    setAddCardError(null);
+    setShowAddCardDialog(true);
+  };
+  const handleAddCardCancel = () => {
     setShowAddCardDialog(false);
     setCardTitle("");
     setCardContent("");
+    setAddCardError(null);
     setListForNewCard(null);
-  } catch {
-    setAddCardError("Erreur réseau");
-  }
-  setAddingCard(false);
-};
-
-const handleRenameCard = (listId: string, cardId: string) => {
-  const card = cardsByList[listId]?.find((c) => c.id === cardId);
-  if (!card) return;
-  setCardToRename(card);
-  setListForCardAction(listId);
-  setRenameCardTitle(card.title);
-  setRenameCardError(null);
-  setShowRenameCardDialog(true);
-};
-const handleRenameCardCancel = () => {
-  setShowRenameCardDialog(false);
-  setCardToRename(null);
-  setRenameCardTitle("");
-  setRenameCardError(null);
-};
-const handleRenameCardConfirm = async () => {
-  if (!cardToRename || !listForCardAction) return;
-  if (!renameCardTitle.trim()) {
-    setRenameCardError("Le titre ne peut pas être vide");
-    return;
-  }
-  setRenamingCard(true);
-  setRenameCardError(null);
-  try {
-    const res = await fetch(
-      `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToRename.id}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: renameCardTitle }),
-      }
-    );
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setRenameCardError(data.error || "Erreur lors du renommage");
-      setRenamingCard(false);
+  };
+  const handleAddCardConfirm = async () => {
+    if (!cardTitle.trim()) {
+      setAddCardError("Le titre ne peut pas être vide");
       return;
     }
-    const updatedCard = await res.json();
-    setCardsByList((prev) => {
-      const updatedCards = prev[listForCardAction].map((c) =>
-        c.id === updatedCard.id ? { ...updatedCard, listId: listForCardAction } : c
-      );
-      return { ...prev, [listForCardAction]: updatedCards };
-    });
+    if (!listForNewCard) return;
+    setAddingCard(true);
+    setAddCardError(null);
+    try {
+      const res = await fetch(`/api/boards/${boardId}/lists/${listForNewCard.id}/cards`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: cardTitle, content: cardContent }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setAddCardError(data.error || "Erreur lors de l'ajout de la carte");
+        setAddingCard(false);
+        return;
+      }
+      const newCard = await res.json();
+      setCardsByList((prev) => {
+        const prevCards = prev[listForNewCard.id] || [];
+        return { ...prev, [listForNewCard.id]: [...prevCards, { ...newCard, listId: listForNewCard.id }] };
+      });
+      setShowAddCardDialog(false);
+      setCardTitle("");
+      setCardContent("");
+      setListForNewCard(null);
+    } catch {
+      setAddCardError("Erreur réseau");
+    }
+    setAddingCard(false);
+  };
+
+  const handleRenameCard = (listId: string, cardId: string) => {
+    const card = cardsByList[listId]?.find((c) => c.id === cardId);
+    if (!card) return;
+    setCardToRename(card);
+    setListForCardAction(listId);
+    setRenameCardTitle(card.title);
+    setRenameCardError(null);
+    setShowRenameCardDialog(true);
+  };
+  const handleRenameCardCancel = () => {
     setShowRenameCardDialog(false);
     setCardToRename(null);
     setRenameCardTitle("");
-  } catch {
-    setRenameCardError("Erreur réseau");
-  }
-  setListForCardAction(null);
-  setRenamingCard(false);
-};
-
-const handleDeleteCard = (listId: string, cardId: string) => {
-  const card = cardsByList[listId]?.find((c) => c.id === cardId);
-  if (!card) return;
-  setCardToDelete(card);
-  setListForCardAction(listId);
-  setShowDeleteCardDialog(true);
-};
-const handleDeleteCardCancel = () => {
-  setShowDeleteCardDialog(false);
-  setCardToDelete(null);
-  setDeleteCardError(null);
-};
-const handleDeleteCardConfirm = async () => {
-  if (!cardToDelete || !listForCardAction) return;
-  setDeletingCard(true);
-  setDeleteCardError(null);
-  try {
-    const res = await fetch(
-      `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToDelete.id}`,
-      {
-        method: "DELETE",
-      }
-    );
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setDeleteCardError(data.error || "Erreur lors de la suppression");
-      setDeletingCard(false);
+    setRenameCardError(null);
+  };
+  const handleRenameCardConfirm = async () => {
+    if (!cardToRename || !listForCardAction) return;
+    if (!renameCardTitle.trim()) {
+      setRenameCardError("Le titre ne peut pas être vide");
       return;
     }
-    setCardsByList((prev) => {
-      const filtered = prev[listForCardAction].filter(
-        (c) => c.id !== cardToDelete.id
+    setRenamingCard(true);
+    setRenameCardError(null);
+    try {
+      const res = await fetch(
+        `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToRename.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: renameCardTitle }),
+        }
       );
-      return { ...prev, [listForCardAction]: filtered };
-    });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRenameCardError(data.error || "Erreur lors du renommage");
+        setRenamingCard(false);
+        return;
+      }
+      const updatedCard = await res.json();
+      setCardsByList((prev) => {
+        const updatedCards = prev[listForCardAction].map((c) =>
+          c.id === updatedCard.id ? { ...updatedCard, listId: listForCardAction } : c
+        );
+        return { ...prev, [listForCardAction]: updatedCards };
+      });
+      setShowRenameCardDialog(false);
+      setCardToRename(null);
+      setRenameCardTitle("");
+    } catch {
+      setRenameCardError("Erreur réseau");
+    }
+    setListForCardAction(null);
+    setRenamingCard(false);
+  };
+
+  const handleDeleteCard = (listId: string, cardId: string) => {
+    const card = cardsByList[listId]?.find((c) => c.id === cardId);
+    if (!card) return;
+    setCardToDelete(card);
+    setListForCardAction(listId);
+    setShowDeleteCardDialog(true);
+  };
+  const handleDeleteCardCancel = () => {
     setShowDeleteCardDialog(false);
     setCardToDelete(null);
-  } catch {
-    setDeleteCardError("Erreur réseau");
-  }
-  setListForCardAction(null);
-  setDeletingCard(false);
-};
+    setDeleteCardError(null);
+  };
+  const handleDeleteCardConfirm = async () => {
+    if (!cardToDelete || !listForCardAction) return;
+    setDeletingCard(true);
+    setDeleteCardError(null);
+    try {
+      const res = await fetch(
+        `/api/boards/${boardId}/lists/${listForCardAction}/cards/${cardToDelete.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteCardError(data.error || "Erreur lors de la suppression");
+        setDeletingCard(false);
+        return;
+      }
+      setCardsByList((prev) => {
+        const filtered = prev[listForCardAction].filter(
+          (c) => c.id !== cardToDelete.id
+        );
+        return { ...prev, [listForCardAction]: filtered };
+      });
+      setShowDeleteCardDialog(false);
+      setCardToDelete(null);
+    } catch {
+      setDeleteCardError("Erreur réseau");
+    }
+    setListForCardAction(null);
+    setDeletingCard(false);
+  };
 
-const handleShareClick = () => {
-  setShowShareDialog(true);
-  setShareEmail("");
-  setShareError(null);
-  setShareSuccess(false);
-};
+  const handleShareClick = () => {
+    setShowShareDialog(true);
+    setShareEmail("");
+    setShareError(null);
+    setShareSuccess(false);
+  };
 
-const handleShareCancel = () => {
-  setShowShareDialog(false);
-  setShareEmail("");
-  setShareError(null);
-  setShareSuccess(false);
-};
+  const handleShareCancel = () => {
+    setShowShareDialog(false);
+    setShareEmail("");
+    setShareError(null);
+    setShareSuccess(false);
+  };
 
-const handleShareConfirm = async () => {
-  if (!shareEmail.trim()) {
-    setShareError("L'email ne peut pas être vide");
-    return;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(shareEmail.trim())) {
-    setShareError("Veuillez entrer une adresse email valide");
-    return;
-  }
-
-  setSharing(true);
-  setShareError(null);
-  setShareSuccess(false);
-
-  try {
-    const res = await fetch(`/api/boards/${boardId}/members`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: shareEmail.trim() }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setShareError(data.error || "Erreur lors du partage du tableau");
-      setSharing(false);
+  const handleShareConfirm = async () => {
+    if (!shareEmail.trim()) {
+      setShareError("L'email ne peut pas être vide");
       return;
     }
 
-    setShareSuccess(true);
-    setShareEmail("");
-
-    setTimeout(() => {
-      setShowShareDialog(false);
-      setShareSuccess(false);
-    }, 1500);
-  } catch {
-    setShareError("Erreur réseau");
-  }
-  setSharing(false);
-};
-
-const handleCardClick = (listId: string, cardId: string) => {
-  setSelectedCardId(cardId);
-  setSelectedListId(listId);
-  setShowCardModal(true);
-};
-
-const handleCardModalClose = () => {
-  setShowCardModal(false);
-  setSelectedCardId(null);
-  setSelectedListId(null);
-};
-
-const handleCardUpdate = () => {
-  fetchBoardData();
-};
-
-const fetchBoardData = async () => {
-  try {
-    const res = await fetch(`/api/boards/${boardId}`);
-    if (res.ok) {
-      const boardData = await res.json();
-      setBoard((prev) => prev ? { ...prev, ...boardData } : boardData);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(shareEmail.trim())) {
+      setShareError("Veuillez entrer une adresse email valide");
+      return;
     }
 
-    const listsRes = await fetch(`/api/boards/${boardId}/lists`);
-    if (listsRes.ok) {
-      const listsData = await listsRes.json();
-      setBoard((prev) => prev ? { ...prev, lists: listsData } : prev);
+    setSharing(true);
+    setShareError(null);
+    setShareSuccess(false);
 
-      const newCardsByList: Record<string, Card[]> = {};
-      for (const list of listsData) {
-        const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);
-        if (cardsRes.ok) {
-          const cardsData = await cardsRes.json();
-          newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
-        }
-      }
-      setCardsByList((prev) => ({ ...prev, ...newCardsByList }));
-    }
-  } catch (err) {
-    console.error("Error refreshing board data:", err);
-  }
-};
-
-const sensors = useSensors(
-  useSensor(PointerSensor, {
-    activationConstraint: {
-      distance: 10,
-    },
-  })
-);
-
-function handleDragStart(event: DragStartEvent) {
-  const { active } = event;
-  const { data } = active;
-
-  if (data.current?.type === "List") {
-    setActiveList(data.current.list);
-  }
-  if (data.current?.type === "Card") {
-    setActiveCard(data.current.card);
-  }
-}
-
-function handleDragOver(event: DragOverEvent) {
-  const { active, over } = event;
-  if (!over) return;
-
-  const activeId = active.id;
-  const overId = over.id;
-
-  if (activeId === overId) return;
-
-  const isActiveACard = active.data.current?.type === "Card";
-  if (!isActiveACard) return;
-
-  const activeListId = active.data.current?.card.listId;
-
-  let overListId: string | null = null;
-  if (over.data.current?.type === "Card") {
-    overListId = over.data.current.card.listId;
-  } else if (over.data.current?.type === "List") {
-    overListId = over.id as string;
-  }
-
-  if (!overListId || !activeListId || activeListId === overListId) {
-    return;
-  }
-
-  setCardsByList((prev) => {
-    const sourceList = prev[activeListId];
-    const destList = prev[overListId];
-
-    if (!sourceList || !destList) {
-      return prev;
-    }
-
-    const activeIndex = sourceList.findIndex(c => c.id === activeId);
-    if (activeIndex === -1) {
-      return prev;
-    }
-
-    const newCardsState = { ...prev };
-
-    const [movedCard] = newCardsState[activeListId].splice(activeIndex, 1);
-
-    movedCard.listId = overListId;
-
-    newCardsState[overListId].push(movedCard);
-
-    return newCardsState;
-  });
-}
-
-function handleDragEnd(event: DragEndEvent) {
-  setActiveList(null);
-  setActiveCard(null);
-
-  const { active, over } = event;
-  if (!over) return;
-
-  const activeId = active.id;
-  const overId = over.id;
-
-  const isActiveAList = active.data.current?.type === "List";
-
-  if (isActiveAList && activeId !== overId) {
-    setBoard((prev) => {
-      if (!prev || !prev.lists) return prev;
-      const activeIndex = prev.lists.findIndex((l) => l.id === activeId);
-      const overIndex = prev.lists.findIndex((l) => l.id === overId);
-      const newLists = arrayMove(prev.lists, activeIndex, overIndex);
-
-      const listsToUpdate = newLists.map((list, index) => ({ id: list.id, position: index }));
-      fetch(`/api/boards/${boardId}/lists/reorder`, {
-        method: "PATCH",
+    try {
+      const res = await fetch(`/api/boards/${boardId}/members`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lists: listsToUpdate }),
-      }).catch((err) => console.error("Failed to save list order", err));
+        body: JSON.stringify({ email: shareEmail.trim() }),
+      });
 
-      return { ...prev, lists: newLists };
-    });
-    return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setShareError(data.error || "Erreur lors du partage du tableau");
+        setSharing(false);
+        return;
+      }
+
+      setShareSuccess(true);
+      setShareEmail("");
+
+      setTimeout(() => {
+        setShowShareDialog(false);
+        setShareSuccess(false);
+      }, 1500);
+    } catch {
+      setShareError("Erreur réseau");
+    }
+    setSharing(false);
+  };
+
+  const handleCardClick = (listId: string, cardId: string) => {
+    setSelectedCardId(cardId);
+    setSelectedListId(listId);
+    setShowCardModal(true);
+  };
+
+  const handleCardModalClose = () => {
+    setShowCardModal(false);
+    setSelectedCardId(null);
+    setSelectedListId(null);
+  };
+
+  const handleCardUpdate = () => {
+    fetchBoardData();
+  };
+
+  const fetchBoardData = async () => {
+    try {
+      const res = await fetch(`/api/boards/${boardId}`);
+      if (res.ok) {
+        const boardData = await res.json();
+        setBoard((prev) => prev ? { ...prev, ...boardData } : boardData);
+      }
+
+      const listsRes = await fetch(`/api/boards/${boardId}/lists`);
+      if (listsRes.ok) {
+        const listsData = await listsRes.json();
+        setBoard((prev) => prev ? { ...prev, lists: listsData } : prev);
+
+        const newCardsByList: Record<string, Card[]> = {};
+        for (const list of listsData) {
+          const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);
+          if (cardsRes.ok) {
+            const cardsData = await cardsRes.json();
+            newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
+          }
+        }
+        setCardsByList((prev) => ({ ...prev, ...newCardsByList }));
+      }
+    } catch (err) {
+      console.error("Error refreshing board data:", err);
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    })
+  );
+
+  function handleDragStart(event: DragStartEvent) {
+    const { active } = event;
+    const { data } = active;
+
+    if (data.current?.type === "List") {
+      setActiveList(data.current.list);
+    }
+    if (data.current?.type === "Card") {
+      setActiveCard(data.current.card);
+      setStartListId(data.current.card.listId);
+    }
   }
 
-  const isActiveACard = active.data.current?.type === "Card";
-  if (isActiveACard) {
-    const activeListId = active.data.current?.card.listId;
-    let overListId: string | null = null;
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over) return;
 
+    const activeId = active.id;
+    const overId = over.id;
+
+    if (activeId === overId) return;
+
+    const isActiveACard = active.data.current?.type === "Card";
+    if (!isActiveACard) return;
+
+    const activeListId = active.data.current?.card.listId;
+
+    let overListId: string | null = null;
     if (over.data.current?.type === "Card") {
       overListId = over.data.current.card.listId;
     } else if (over.data.current?.type === "List") {
       overListId = over.id as string;
     }
 
-    if (!activeListId || !overListId) return;
+    if (!overListId || !activeListId || activeListId === overListId) {
+      return;
+    }
 
     setCardsByList((prev) => {
       const sourceList = prev[activeListId];
       const destList = prev[overListId];
-      if (!sourceList || !destList) return prev;
+
+      if (!sourceList || !destList) {
+        return prev;
+      }
 
       const activeIndex = sourceList.findIndex(c => c.id === activeId);
       if (activeIndex === -1) {
-        const finalActiveIndex = destList.findIndex(c => c.id === activeId);
-        if (finalActiveIndex === -1) return prev;
-
-        let finalOverIndex: number;
-        if (over.id === activeId) {
-          finalOverIndex = finalActiveIndex;
-        } else {
-          finalOverIndex = destList.findIndex(c => c.id === overId);
-          if (finalOverIndex === -1) {
-            finalOverIndex = destList.length - 1;
-          }
-        }
-
-        const newDestList = arrayMove(destList, finalActiveIndex, finalOverIndex);
-        return { ...prev, [overListId]: newDestList };
-
-      } else {
-        const overIndex = destList.findIndex(c => c.id === overId);
-        if (overIndex === -1) return prev;
-
-        const newList = arrayMove(sourceList, activeIndex, overIndex);
-        return { ...prev, [activeListId]: newList };
+        return prev;
       }
+
+      const newCardsState = { ...prev };
+
+      const [movedCard] = newCardsState[activeListId].splice(activeIndex, 1);
+
+      movedCard.listId = overListId;
+
+      newCardsState[overListId].push(movedCard);
+
+      return newCardsState;
     });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveList(null);
+    setActiveCard(null);
+
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    const isActiveAList = active.data.current?.type === "List";
+
+    if (isActiveAList && activeId !== overId) {
+      setBoard((prev) => {
+        if (!prev || !prev.lists) return prev;
+        const activeIndex = prev.lists.findIndex((l) => l.id === activeId);
+        const overIndex = prev.lists.findIndex((l) => l.id === overId);
+        const newLists = arrayMove(prev.lists, activeIndex, overIndex);
+
+        const listsToUpdate = newLists.map((list, index) => ({ id: list.id, position: index }));
+        fetch(`/api/boards/${boardId}/lists/reorder`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lists: listsToUpdate }),
+        }).catch((err) => console.error("Failed to save list order", err));
+
+        return { ...prev, lists: newLists };
+      });
+      return;
+    }
 
     const isActiveACard = active.data.current?.type === "Card";
     if (isActiveACard) {
-      const activeListId = activeCard?.listId; // Use snapshot from start
+      const activeListId = active.data.current?.card.listId;
       let overListId: string | null = null;
 
       if (over.data.current?.type === "Card") {
@@ -955,18 +911,6 @@ function handleDragEnd(event: DragEndEvent) {
       }
 
       if (!activeListId || !overListId) return;
-
-      // Check if moved to "Doing" or "En cours"
-      const destList = board?.lists?.find(l => l.id === overListId);
-      if (destList && board?.githubRepo && activeListId !== overListId &&
-        (destList.title.toLowerCase().includes("doing") || destList.title.toLowerCase().includes("en cours"))) {
-
-        const cardId = active.data.current?.card.id;
-        if (cardId) {
-          setPrModalData({ listId: overListId, cardId, boardId });
-          setShowPRModal(true);
-        }
-      }
 
       setCardsByList((prev) => {
         const sourceList = prev[activeListId];
@@ -1000,48 +944,140 @@ function handleDragEnd(event: DragEndEvent) {
         }
       });
 
-      setTimeout(() => {
-        setCardsByList(currentState => {
-          const sourceListCards = currentState[activeListId];
-          const destListCards = currentState[overListId];
+      const isActiveACard = active.data.current?.type === "Card";
+      if (isActiveACard) {
+        // Use data from event, falling back to state if needed, but event data is fresher
+        const activeListId = active.data.current?.card.listId || activeCard?.listId;
+        let overListId: string | null = null;
 
-          let cardsToUpdate: { id: string, position: number, listId: string }[] = [];
+        if (over.data.current?.type === "Card") {
+          overListId = over.data.current.card.listId;
+        } else if (over.data.current?.type === "List") {
+          overListId = over.id as string;
+        }
 
-          if (activeListId === overListId) {
-            cardsToUpdate = sourceListCards.map((card, index) => ({
-              id: card.id, position: index, listId: activeListId,
-            }));
-          } else {
-            cardsToUpdate = [
-              ...sourceListCards.map((card, index) => ({
-                id: card.id, position: index, listId: activeListId,
-              })),
-              ...destListCards.map((card, index) => ({
-                id: card.id, position: index, listId: overListId,
-              })),
-            ];
-          }
+        if (!activeListId || !overListId) return;
 
-          fetch(`/api/boards/${boardId}/cards/reorder`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cards: cardsToUpdate }),
-          }).catch((err) => console.error("Failed to save card order", err));
+        // Check if moved to "Doing" or "En cours"
+        const destList = board?.lists?.find(l => l.id === overListId);
 
-          return currentState;
+        // Debug Alert
+        // alert(`Debug: activeListId=${activeListId}, overListId=${overListId}, destListTitle=${destList?.title}, hasGithubRepo=${!!board?.githubRepo}`);
+
+        console.log("DEBUG DRAG: DragEnd", {
+          activeListId,
+          overListId,
+          destListTitle: destList?.title,
+          hasGithubRepo: !!board?.githubRepo,
+          cardId: active.data.current?.card.id
         });
-      }, 0);
+
+        if (destList && board?.githubRepo && activeListId !== overListId &&
+          (destList.title.toLowerCase().includes("doing") || destList.title.toLowerCase().includes("en cours") || destList.title.toLowerCase().includes("going"))) {
+          // alert(`Debug: dest=${destList.title}, repo=${board.githubRepo}, cardId=${active.data.current?.card.id}`);
+
+          console.log("DEBUG DRAG: Triggering PR Modal condition met");
+          const cardId = active.data.current?.card.id;
+          if (cardId) {
+            setPrModalData({ listId: overListId, cardId, boardId });
+            setShowPRModal(true);
+          }
+        }
+
+        setCardsByList((prev) => {
+          const sourceList = prev[activeListId];
+          const destList = prev[overListId];
+          if (!sourceList || !destList) return prev;
+
+          const activeIndex = sourceList.findIndex(c => c.id === activeId);
+          if (activeIndex === -1) {
+            const finalActiveIndex = destList.findIndex(c => c.id === activeId);
+            if (finalActiveIndex === -1) return prev;
+
+            let finalOverIndex: number;
+            if (over.id === activeId) {
+              finalOverIndex = finalActiveIndex;
+            } else {
+              finalOverIndex = destList.findIndex(c => c.id === overId);
+              if (finalOverIndex === -1) {
+                finalOverIndex = destList.length - 1;
+              }
+            }
+
+            const newDestList = arrayMove(destList, finalActiveIndex, finalOverIndex);
+            return { ...prev, [overListId]: newDestList };
+
+          } else {
+            const overIndex = destList.findIndex(c => c.id === overId);
+            if (overIndex === -1) return prev;
+
+            const newList = arrayMove(sourceList, activeIndex, overIndex);
+            return { ...prev, [activeListId]: newList };
+          }
+        });
+
+        setTimeout(() => {
+          setCardsByList(currentState => {
+            const sourceListCards = currentState[activeListId];
+            const destListCards = currentState[overListId];
+
+            let cardsToUpdate: { id: string, position: number, listId: string }[] = [];
+
+            if (activeListId === overListId) {
+              cardsToUpdate = sourceListCards.map((card, index) => ({
+                id: card.id, position: index, listId: activeListId,
+              }));
+            } else {
+              cardsToUpdate = [
+                ...sourceListCards.map((card, index) => ({
+                  id: card.id, position: index, listId: activeListId,
+                })),
+                ...destListCards.map((card, index) => ({
+                  id: card.id, position: index, listId: overListId,
+                })),
+              ];
+            }
+
+            fetch(`/api/boards/${boardId}/cards/reorder`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ cards: cardsToUpdate }),
+            }).catch((err) => console.error("Failed to save card order", err));
+
+            return currentState;
+          });
+        }, 0);
+      }
+      setActiveList(null);
+      setActiveCard(null);
+      setStartListId(null);
     }
-    setActiveList(null);
-    setActiveCard(null);
   }
-}
 
-if (!board) {
-  return <div>Erreur lors du chargement du tableau.</div>
-}
+  if (!board) {
+    return <div>Erreur lors du chargement du tableau.</div>
+  }
 
-if (!isMounted) {
+  if (!isMounted) {
+    return (
+      <div className="p-6 h-full flex flex-col">
+        <Link
+          href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
+          className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
+        >
+          ← Retour aux boards
+        </Link>
+        <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
+        {board.description && (
+          <p className="text-gray-600 mb-4">{board.description}</p>
+        )}
+        <hr className="my-4" />
+        <div className="flex-1">
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 h-full flex flex-col">
       <Link
@@ -1050,409 +1086,390 @@ if (!isMounted) {
       >
         ← Retour aux boards
       </Link>
-      <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
-      {board.description && (
-        <p className="text-gray-600 mb-4">{board.description}</p>
-      )}
+
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
+          {board.description && (
+            <p className="text-gray-600 mb-4">{board.description}</p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+            >
+              Kanban
+            </button>
+            <button
+              onClick={() => setViewMode("gantt")}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "gantt" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+            >
+              Gantt
+            </button>
+          </div>
+          <button
+            onClick={handleShareClick}
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            type="button"
+          >
+            Partager
+          </button>
+        </div>
+      </div>
+
       <hr className="my-4" />
-      <div className="flex-1">
-      </div>
-    </div>
-  );
-}
 
-return (
-  <div className="p-6 h-full flex flex-col">
-    <Link
-      href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
-      className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
-    >
-      ← Retour aux boards
-    </Link>
-
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex-1">
-        <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
-        {board.description && (
-          <p className="text-gray-600 mb-4">{board.description}</p>
-        )}
-      </div>
-      <div className="flex gap-2">
-        <div className="bg-gray-100 p-1 rounded-lg flex items-center">
-          <button
-            onClick={() => setViewMode("kanban")}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
-          >
-            Kanban
-          </button>
-          <button
-            onClick={() => setViewMode("gantt")}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "gantt" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
-          >
-            Gantt
-          </button>
-        </div>
-        <button
-          onClick={handleShareClick}
-          className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-          type="button"
+      {viewMode === "kanban" ? (
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
         >
-          Partager
-        </button>
-      </div>
-    </div>
+          <div className="flex gap-4 overflow-x-auto pb-4 flex-1 items-start">
+            <SortableContext items={listIds} strategy={horizontalListSortingStrategy}>
+              {board.lists && board.lists.length > 0 ? (
+                board.lists.map((list) => (
+                  <ListContainer
+                    key={list.id}
+                    list={list}
+                    cards={cardsByList[list.id] || []}
+                    onRenameList={handleRename}
+                    onDeleteList={handleDelete}
+                    onAddCard={handleAddCardClick}
+                    onRenameCard={handleRenameCard}
+                    onDeleteCard={handleDeleteCard}
+                    onCardClick={handleCardClick}
+                  />
+                ))
+              ) : (
+                <div className="text-gray-400 italic">
+                  Aucune liste pour le moment
+                </div>
+              )}
+            </SortableContext>
 
-    <hr className="my-4" />
-
-    {viewMode === "kanban" ? (
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-4 overflow-x-auto pb-4 flex-1 items-start">
-          <SortableContext items={listIds} strategy={horizontalListSortingStrategy}>
-            {board.lists && board.lists.length > 0 ? (
-              board.lists.map((list) => (
-                <ListContainer
-                  key={list.id}
-                  list={list}
-                  cards={cardsByList[list.id] || []}
-                  onRenameList={handleRename}
-                  onDeleteList={handleDelete}
-                  onAddCard={handleAddCardClick}
-                  onRenameCard={handleRenameCard}
-                  onDeleteCard={handleDeleteCard}
-                  onCardClick={handleCardClick}
-                />
-              ))
-            ) : (
-              <div className="text-gray-400 italic">
-                Aucune liste pour le moment
-              </div>
-            )}
-          </SortableContext>
-
-          <div className="w-64 min-w-[16rem]">
-            <button
-              onClick={handleAddListClick}
-              className="flex items-center justify-center h-full w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors"
-              type="button"
-            >
-              + Ajouter une liste
-            </button>
-          </div>
-        </div>
-
-        {isMounted ? createPortal(
-          <DragOverlay>
-            {activeList && (
-              <div className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
-                <h2 className="font-semibold text-gray-800">{activeList.title}</h2>
-              </div>
-            )}
-            {activeCard && (
-              <div className="bg-white rounded shadow p-2 mb-2 w-64 opacity-90">
-                <h3 className="font-semibold text-gray-700">{activeCard.title}</h3>
-                {activeCard.content && (
-                  <p className="text-gray-600 text-sm">{activeCard.content}</p>
-                )}
-              </div>
-            )}
-          </DragOverlay>,
-          document.body
-        ) : null}
-
-      </DndContext>
-    ) : (
-      <GanttView lists={board.lists || []} cardsByList={cardsByList} />
-    )}
-
-    {showDialog && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-          <h3 className="text-lg font-semibold mb-3">Ajouter une liste</h3>
-          <input
-            type="text"
-            className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Titre de la liste"
-            value={newListTitle}
-            onChange={(e) => setNewListTitle(e.target.value)}
-            disabled={addingList}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleDialogConfirm();
-            }}
-          />
-          {error && (
-            <div className="text-red-500 text-sm mb-2">{error}</div>
-          )}
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={handleDialogCancel}
-              disabled={addingList}
-              type="button"
-            >
-              Annuler
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-              onClick={handleDialogConfirm}
-              disabled={addingList}
-              type="button"
-            >
-              {addingList ? "Ajout..." : "Ajouter"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showRenameDialog && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-          <h3 className="text-lg font-semibold mb-3">Renommer la liste</h3>
-          <input
-            type="text"
-            className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Nouveau titre"
-            value={renameTitle}
-            onChange={(e) => setRenameTitle(e.target.value)}
-            disabled={renaming}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleRenameConfirm();
-            }}
-          />
-          {renameError && (
-            <div className="text-red-500 text-sm mb-2">{renameError}</div>
-          )}
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={handleRenameCancel}
-              disabled={renaming}
-              type="button"
-            >
-              Annuler
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-              onClick={handleRenameConfirm}
-              disabled={renaming}
-              type="button"
-            >
-              {renaming ? "Renommage..." : "Renommer"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showDeleteDialog && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-          <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
-          <p className="mb-4">
-            Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
-          </p>
-          {deleteError && (
-            <div className="text-red-500 text-sm mb-2">{deleteError}</div>
-          )}
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={handleDeleteCancel}
-              disabled={deleting}
-              type="button"
-            >
-              Annuler
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
-              onClick={handleDeleteConfirm}
-              disabled={deleting}
-              type="button"
-            >
-              {deleting ? "Suppression..." : "Supprimer"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showAddCardDialog && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-          <h3 className="text-lg font-semibold mb-3">Ajouter une carte</h3>
-          <input
-            type="text"
-            className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Titre de la carte"
-            value={cardTitle}
-            onChange={(e) => setCardTitle(e.target.value)}
-            disabled={addingCard}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAddCardConfirm();
-            }}
-          />
-          <textarea
-            className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-            placeholder="Contenu (optionnel)"
-            value={cardContent}
-            onChange={(e) => setCardContent(e.target.value)}
-            disabled={addingCard}
-            rows={3}
-          />
-          {addCardError && (
-            <div className="text-red-500 text-sm mb-2">{addCardError}</div>
-          )}
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={handleAddCardCancel}
-              disabled={addingCard}
-              type="button"
-            >
-              Annuler
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-              onClick={handleAddCardConfirm}
-              disabled={addingCard}
-              type="button"
-            >
-              {addingCard ? "Ajout..." : "Ajouter"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showRenameCardDialog && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-          <h3 className="text-lg font-semibold mb-3">Renommer la carte</h3>
-          <input
-            type="text"
-            className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Nouveau titre"
-            value={renameCardTitle}
-            onChange={(e) => setRenameCardTitle(e.target.value)}
-            disabled={renamingCard}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleRenameCardConfirm();
-            }}
-          />
-          {renameCardError && (
-            <div className="text-red-500 text-sm mb-2">{renameCardError}</div>
-          )}
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={handleRenameCardCancel}
-              disabled={renamingCard}
-              type="button"
-            >
-              Annuler
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-              onClick={handleRenameCardConfirm}
-              disabled={renamingCard}
-              type="button"
-            >
-              {renamingCard ? "Renommage..." : "Renommer"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showDeleteCardDialog && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-          <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
-          <p className="mb-4">
-            Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
-          </p>
-          {deleteCardError && (
-            <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
-          )}
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={handleDeleteCardCancel}
-              disabled={deletingCard}
-              type="button"
-            >
-              Annuler
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
-              onClick={handleDeleteCardConfirm}
-              disabled={deletingCard}
-              type="button"
-            >
-              {deletingCard ? "Suppression..." : "Supprimer"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showShareDialog && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-          <h3 className="text-lg font-semibold mb-3">Partager le tableau</h3>
-          <p className="text-sm text-gray-600 mb-3">
-            Entrez l&apos;adresse email de l&apos;utilisateur à inviter
-          </p>
-          <input
-            type="email"
-            className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="email@exemple.com"
-            value={shareEmail}
-            onChange={(e) => setShareEmail(e.target.value)}
-            disabled={sharing}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !sharing) handleShareConfirm();
-            }}
-          />
-          {shareError && (
-            <div className="text-red-500 text-sm mb-2">{shareError}</div>
-          )}
-          {shareSuccess && (
-            <div className="text-green-600 text-sm mb-2">
-              Tableau partagé avec succès !
+            <div className="w-64 min-w-[16rem]">
+              <button
+                onClick={handleAddListClick}
+                className="flex items-center justify-center h-full w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors"
+                type="button"
+              >
+                + Ajouter une liste
+              </button>
             </div>
-          )}
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={handleShareCancel}
-              disabled={sharing}
-              type="button"
-            >
-              Annuler
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-              onClick={handleShareConfirm}
-              disabled={sharing}
-              type="button"
-            >
-              {sharing ? "Partage..." : "Partager"}
-            </button>
+          </div>
+
+          {isMounted ? createPortal(
+            <DragOverlay>
+              {activeList && (
+                <div className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
+                  <h2 className="font-semibold text-gray-800">{activeList.title}</h2>
+                </div>
+              )}
+              {activeCard && (
+                <div className="bg-white rounded shadow p-2 mb-2 w-64 opacity-90">
+                  <h3 className="font-semibold text-gray-700">{activeCard.title}</h3>
+                  {activeCard.content && (
+                    <p className="text-gray-600 text-sm">{activeCard.content}</p>
+                  )}
+                </div>
+              )}
+            </DragOverlay>,
+            document.body
+          ) : null}
+
+        </DndContext>
+      ) : (
+        <GanttView lists={board.lists || []} cardsByList={cardsByList} />
+      )}
+
+      {showDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Ajouter une liste</h3>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Titre de la liste"
+              value={newListTitle}
+              onChange={(e) => setNewListTitle(e.target.value)}
+              disabled={addingList}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleDialogConfirm();
+              }}
+            />
+            {error && (
+              <div className="text-red-500 text-sm mb-2">{error}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleDialogCancel}
+                disabled={addingList}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                onClick={handleDialogConfirm}
+                disabled={addingList}
+                type="button"
+              >
+                {addingList ? "Ajout..." : "Ajouter"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
+
+      {showRenameDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Renommer la liste</h3>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Nouveau titre"
+              value={renameTitle}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              disabled={renaming}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameConfirm();
+              }}
+            />
+            {renameError && (
+              <div className="text-red-500 text-sm mb-2">{renameError}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleRenameCancel}
+                disabled={renaming}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                onClick={handleRenameConfirm}
+                disabled={renaming}
+                type="button"
+              >
+                {renaming ? "Renommage..." : "Renommer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
+            <p className="mb-4">
+              Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
+            </p>
+            {deleteError && (
+              <div className="text-red-500 text-sm mb-2">{deleteError}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleDeleteCancel}
+                disabled={deleting}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                type="button"
+              >
+                {deleting ? "Suppression..." : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddCardDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Ajouter une carte</h3>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Titre de la carte"
+              value={cardTitle}
+              onChange={(e) => setCardTitle(e.target.value)}
+              disabled={addingCard}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddCardConfirm();
+              }}
+            />
+            <textarea
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+              placeholder="Contenu (optionnel)"
+              value={cardContent}
+              onChange={(e) => setCardContent(e.target.value)}
+              disabled={addingCard}
+              rows={3}
+            />
+            {addCardError && (
+              <div className="text-red-500 text-sm mb-2">{addCardError}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleAddCardCancel}
+                disabled={addingCard}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                onClick={handleAddCardConfirm}
+                disabled={addingCard}
+                type="button"
+              >
+                {addingCard ? "Ajout..." : "Ajouter"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRenameCardDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Renommer la carte</h3>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Nouveau titre"
+              value={renameCardTitle}
+              onChange={(e) => setRenameCardTitle(e.target.value)}
+              disabled={renamingCard}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameCardConfirm();
+              }}
+            />
+            {renameCardError && (
+              <div className="text-red-500 text-sm mb-2">{renameCardError}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleRenameCardCancel}
+                disabled={renamingCard}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                onClick={handleRenameCardConfirm}
+                disabled={renamingCard}
+                type="button"
+              >
+                {renamingCard ? "Renommage..." : "Renommer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteCardDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
+            <p className="mb-4">
+              Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
+            </p>
+            {deleteCardError && (
+              <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleDeleteCardCancel}
+                disabled={deletingCard}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                onClick={handleDeleteCardConfirm}
+                disabled={deletingCard}
+                type="button"
+              >
+                {deletingCard ? "Suppression..." : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showShareDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-3">Partager le tableau</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Entrez l&apos;adresse email de l&apos;utilisateur à inviter
+            </p>
+            <input
+              type="email"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="email@exemple.com"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+              disabled={sharing}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !sharing) handleShareConfirm();
+              }}
+            />
+            {shareError && (
+              <div className="text-red-500 text-sm mb-2">{shareError}</div>
+            )}
+            {shareSuccess && (
+              <div className="text-green-600 text-sm mb-2">
+                Tableau partagé avec succès !
+              </div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleShareCancel}
+                disabled={sharing}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                onClick={handleShareConfirm}
+                disabled={sharing}
+                type="button"
+              >
+                {sharing ? "Partage..." : "Partager"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Card Modal */}
       {showCardModal && selectedCardId && selectedListId && (

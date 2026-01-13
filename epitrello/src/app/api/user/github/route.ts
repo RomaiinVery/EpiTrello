@@ -16,11 +16,40 @@ export async function GET() {
         githubId: true,
         githubUsername: true,
         githubAvatarUrl: true,
+        githubAccessToken: true,
       },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Verify token validity if connected
+    if (user.githubId && user.githubAccessToken) {
+      const verifyRes = await fetch("https://api.github.com/user", {
+        headers: {
+          Authorization: `Bearer ${user.githubAccessToken}`,
+        },
+      });
+
+      if (verifyRes.status === 401) {
+        // Token is invalid, unlink account
+        await prisma.user.update({
+          where: { email: session.user.email },
+          data: {
+            githubId: null,
+            githubAccessToken: null,
+            githubUsername: null,
+            githubAvatarUrl: null,
+          },
+        });
+
+        return NextResponse.json({
+          isLinked: false,
+          username: null,
+          avatarUrl: null,
+        });
+      }
     }
 
     return NextResponse.json({

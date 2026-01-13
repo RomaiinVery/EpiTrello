@@ -73,6 +73,13 @@ export default function BoardsByWorkspacePage() {
     fetch(`/api/boards?workspaceId=${workspaceId}`)
       .then((res) => res.json())
       .then((data) => setBoards(data));
+
+    fetch("/api/user/github")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.isLinked) setIsGithubLinked(true);
+      })
+      .catch(() => { });
   }, [workspaceId, router]);
 
   const handleDelete = (id: string) => {
@@ -113,10 +120,10 @@ export default function BoardsByWorkspacePage() {
   const handleCreate = async () => {
     if (!createTitle || !workspaceId) return;
 
-    const payload: { title: string; description: string; tableauId: string; githubRepo?: string; githubBranch?: string } = {
+    const payload: { title: string; description: string; workspaceId: string; githubRepo?: string; githubBranch?: string } = {
       title: createTitle,
       description: createDescription,
-      tableauId: workspaceId,
+      workspaceId,
     };
 
     if (linkGithub && githubRepo) {
@@ -127,7 +134,7 @@ export default function BoardsByWorkspacePage() {
     const res = await fetch("/api/boards", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: createTitle, description: createDescription, workspaceId }),
+      body: JSON.stringify(payload),
     });
 
     if (res.ok) {
