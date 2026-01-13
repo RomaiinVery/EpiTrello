@@ -157,6 +157,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         content: content ?? null,
         position: nextPosition,
         listId,
+        isDone: list.title === "Done" ? true : false,
         githubIssueNumber,
         githubIssueUrl,
       },

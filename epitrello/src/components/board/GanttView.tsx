@@ -118,8 +118,8 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
                     // TODO: change colors based on the github issue status
                     // with card.githubIssueUrl
                     let color = "#6B7280";
-                    if (card.githubIssueUrl) {
-                        color = "#ffe6a0ff";
+                    if (list.title.toLowerCase().includes("done")) {
+                        color = "green";
                     }
 
 
