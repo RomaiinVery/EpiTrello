@@ -85,3 +85,45 @@ export const sendVerificationCode = async (to: string, code: string) => {
   }
 };
 
+
+export const sendPasswordResetEmail = async (to: string, resetLink: string) => {
+  // ALWAYS Log code to console for development/debugging 
+  console.log("==================================================");
+  console.log("🔑 RESET LINK: " + resetLink);
+  console.log("Sent to: " + to);
+  console.log("==================================================");
+
+  if (!process.env.SMTP_HOST) {
+    console.warn("⚠️ SMTP_HOST not defined. Email will not be sent via Nodemailer.");
+    return true; // Simulate success
+  }
+
+  
+  try {
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to,
+      subject: "Réinitialisation de votre mot de passe - EpiTrello",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb; text-align: center;">Réinitialisation de mot de passe</h2>
+          <p>Bonjour,</p>
+          <p>Vous avez demandé la réinitialisation de votre mot de passe EpiTrello. Cliquez sur le lien ci-dessous pour en définir un nouveau :</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Réinitialiser mon mot de passe
+            </a>
+          </div>
+          <p>Ce lien est valable pendant 1 heure.</p>
+          <p style="color: #666; font-size: 14px; text-align: center; margin-top: 40px;">Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
+        </div>
+      `,
+    });
+
+    console.log(`Email de réinitialisation envoyé à ${to}`);
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de réinitialisation:", error);
+    return false;
+  }
+};
