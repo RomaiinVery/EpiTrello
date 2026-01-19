@@ -13,6 +13,8 @@ model User {
   password     String
   name         String?
   profileImage String?
+  emailVerified DateTime?
+  verificationCode String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
