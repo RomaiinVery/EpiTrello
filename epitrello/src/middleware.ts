@@ -12,8 +12,7 @@ export async function middleware(req: NextRequest) {
     publicPaths.includes(pathname) ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/register") ||
-    pathname.startsWith("/auth/forgot-password") ||
-    pathname.startsWith("/auth/reset-password");
+    pathname.startsWith("/api/verify");
 
   if (!token && !isPublicPath) {
     const url = new URL("/auth", req.url);
