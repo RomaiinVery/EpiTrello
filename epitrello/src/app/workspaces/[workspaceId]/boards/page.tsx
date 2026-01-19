@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InviteMemberModal } from "@/components/modals/InviteMemberModal";
 
 type Board = { id: string; title: string; description?: string };
 type Workspace = { id: string; title: string };
@@ -49,13 +50,6 @@ export default function BoardsByWorkspacePage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
-
-  // Invitation state
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviting, setInviting] = useState(false);
-  const [inviteError, setInviteError] = useState<string | null>(null);
-  const [inviteSuccess, setInviteSuccess] = useState(false);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -164,38 +158,6 @@ export default function BoardsByWorkspacePage() {
     }
   };
 
-  const handleInvite = async () => {
-    if (!inviteEmail || !workspaceId) return;
-
-    setInviting(true);
-    setInviteError(null);
-    setInviteSuccess(false);
-
-    try {
-      const res = await fetch(`/api/workspaces/${workspaceId}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail }),
-      });
-
-      if (res.ok) {
-        setInviteSuccess(true);
-        setInviteEmail("");
-        setTimeout(() => {
-          setInviteOpen(false);
-          setInviteSuccess(false);
-        }, 1500);
-      } else {
-        const data = await res.json();
-        setInviteError(data.error || "Une erreur est survenue");
-      }
-    } catch (err) {
-      console.error(err);
-      setInviteError("Erreur réseau");
-    }
-    setInviting(false);
-  };
-
   if (!workspaceId) return null;
 
   return (
@@ -207,9 +169,10 @@ export default function BoardsByWorkspacePage() {
           </Link>
           <div className="flex items-center gap-4 mt-2">
             <h1 className="text-2xl font-semibold">{workspace?.title || "Workspace"}</h1>
-            <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)}>
-              Inviter un membre
-            </Button>
+            <InviteMemberModal
+              workspaceId={workspaceId}
+              resourceTitle={workspace?.title || "Workspace"}
+            />
           </div>
         </div>
         <Button onClick={() => setCreateOpen(true)}>Créer une board</Button>
@@ -388,40 +351,6 @@ export default function BoardsByWorkspacePage() {
             </Button>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Annuler
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Invite Dialog */}
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Inviter un membre au workspace</DialogTitle>
-          </DialogHeader>
-          <div className="mb-4">
-            <p className="text-sm text-gray-500 mb-2">
-              Le membre aura accès à toutes les boards de ce workspace.
-            </p>
-            <Input
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="Email du membre"
-              type="email"
-            />
-            {inviteError && (
-              <p className="text-red-500 text-sm mt-2">{inviteError}</p>
-            )}
-            {inviteSuccess && (
-              <p className="text-green-500 text-sm mt-2">Invitation envoyée avec succès !</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button onClick={handleInvite} disabled={!inviteEmail || inviting}>
-              {inviting ? "Envoi..." : "Inviter"}
-            </Button>
-            <Button variant="outline" onClick={() => setInviteOpen(false)}>
-              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>

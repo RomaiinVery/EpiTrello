@@ -16,8 +16,21 @@ export const sendInvitationEmail = async (
   to: string,
   inviterName: string,
   workspaceTitle: string,
-  inviteLink: string
+  inviteLink: string,
+  role: string
 ) => {
+  // ALWAYS Log code to console for development/debugging 
+  console.log("==================================================");
+  console.log("📨 INVITE LINK: " + inviteLink);
+  console.log("Role: " + role);
+  console.log("Sent to: " + to);
+  console.log("==================================================");
+
+  if (!process.env.SMTP_HOST) {
+    console.warn("⚠️ SMTP_HOST not defined. Email will not be sent via Nodemailer.");
+    return true; // Simulate success
+  }
+
   try {
     await transporter.sendMail({
       from: FROM_EMAIL,
@@ -27,14 +40,14 @@ export const sendInvitationEmail = async (
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
           <h2 style="color: #2563eb;">Vous avez été invité !</h2>
           <p>Bonjour,</p>
-          <p><strong>${inviterName}</strong> vous a invité à rejoindre le workspace <strong>"${workspaceTitle}"</strong> sur EpiTrello.</p>
-          <p>En acceptant cette invitation, vous aurez accès à tous les boards de ce workspace.</p>
+          <p><strong>${inviterName}</strong> vous a invité à rejoindre le workspace <strong>"${workspaceTitle}"</strong> en tant que <strong>${role === 'EDITOR' ? 'Éditeur' : 'Observateur'}</strong> sur EpiTrello.</p>
+          <p>En acceptant cette invitation, vous aurez accès à ce workspace.</p>
           <div style="margin: 30px 0;">
             <a href="${inviteLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-              Accéder au workspace
+              Accepter l'invitation
             </a>
           </div>
-          <p style="color: #666; font-size: 14px;">Si vous ne possédez pas encore de compte, vous devrez en créer un avec cette adresse email (${to}).</p>
+          <p style="color: #666; font-size: 14px;">Si vous ne possédez pas encore de compte, vous devrez en créer un ou vous connecter.</p>
         </div>
       `,
     });
@@ -98,7 +111,7 @@ export const sendPasswordResetEmail = async (to: string, resetLink: string) => {
     return true; // Simulate success
   }
 
-  
+
   try {
     await transporter.sendMail({
       from: FROM_EMAIL,

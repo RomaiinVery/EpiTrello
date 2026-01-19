@@ -40,8 +40,12 @@ export async function POST(
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
   }
 
-  // Vérifier si l'utilisateur est propriétaire
-  if (workspace.userId !== user.id) {
+  // Vérifier si l'utilisateur est propriétaire ou Admin
+  // (Assuming only owner or ADMIN role can add members)
+  const isOwner = workspace.userId === user.id;
+  const isWorkspaceAdmin = workspace.members.some(m => m.userId === user.id && m.role === "ADMIN");
+
+  if (!isOwner && !isWorkspaceAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -57,19 +61,18 @@ export async function POST(
     return NextResponse.json({ error: "User is already the owner" }, { status: 400 });
   }
 
-  const isAlreadyMember = workspace.members.some((m) => m.id === userToInvite.id);
+  const isAlreadyMember = workspace.members.some((m) => m.userId === userToInvite.id);
   if (isAlreadyMember) {
     return NextResponse.json({ error: "User is already a member" }, { status: 400 });
   }
 
   // Ajouter le membre au workspace
-  await prisma.workspace.update({
-    where: { id: workspaceId },
+  await prisma.workspaceMember.create({
     data: {
-      members: {
-        connect: { id: userToInvite.id },
-      },
-    },
+      workspaceId,
+      userId: userToInvite.id,
+      role: "VIEWER", // Default role
+    }
   });
 
   // Ajouter le membre à tous les boards du workspace
@@ -77,21 +80,33 @@ export async function POST(
     where: { workspaceId },
   });
 
+  // Note: Usually we might not auto-add to all boards if permissions are granular, but keeping existing logic.
+  // Using explicit BoardMember creation.
   for (const board of boards) {
-    await prisma.board.update({
-      where: { id: board.id },
-      data: {
-        members: {
-          connect: { id: userToInvite.id },
-        },
-      },
+    // Check if already board member to avoid crash
+    const existingBoardMember = await prisma.boardMember.findUnique({
+      where: {
+        boardId_userId: {
+          boardId: board.id,
+          userId: userToInvite.id
+        }
+      }
     });
+
+    if (!existingBoardMember) {
+      await prisma.boardMember.create({
+        data: {
+          boardId: board.id,
+          userId: userToInvite.id,
+          role: "VIEWER"
+        }
+      });
+    }
   }
 
   // Envoyer l'email d'invitation
-  // On ne bloque pas la réponse si l'email échoue
   const inviteLink = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/workspaces/${workspaceId}/boards`;
-  sendInvitationEmail(email, user.name || user.email, workspace.title, inviteLink).catch(console.error);
+  sendInvitationEmail(email, user.name || user.email, workspace.title, inviteLink, "VIEWER").catch(console.error);
 
   return NextResponse.json({ message: "Member added successfully" });
 }
@@ -114,8 +129,15 @@ export async function GET(
       members: {
         select: {
           id: true,
-          name: true,
-          email: true,
+          role: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              profileImage: true,
+            }
+          }
         },
       },
       user: {
@@ -123,6 +145,7 @@ export async function GET(
           id: true,
           name: true,
           email: true,
+          profileImage: true,
         },
       },
     },
@@ -132,12 +155,11 @@ export async function GET(
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
   }
 
-  // Vérifier l'accès (propriétaire ou membre)
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const isOwner = workspace.userId === user.id;
-  const isMember = workspace.members.some((m) => m.id === user.id);
+  const isMember = workspace.members.some((m) => m.user.id === user.id);
 
   if (!isOwner && !isMember) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -145,7 +167,11 @@ export async function GET(
 
   return NextResponse.json({
     owner: workspace.user,
-    members: workspace.members,
+    members: workspace.members.map(m => ({
+      ...m.user,
+      role: m.role,
+      memberId: m.id // WorkspaceMember ID
+    })),
   });
 }
 
@@ -184,36 +210,36 @@ export async function DELETE(
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
   }
 
-  // Seul le propriétaire peut supprimer un membre (ou le membre lui-même pour se retirer ?)
-  if (workspace.userId !== user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Seul le propriétaire ou un Admin peut supprimer un membre
+  const isOwner = workspace.userId === user.id;
+  const isWorkspaceAdmin = workspace.members.some(m => m.userId === user.id && m.role === "ADMIN");
+
+  if (!isOwner && !isWorkspaceAdmin) {
+    // User can allow leaving themselves? Maybe.
+    if (userIdToRemove !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   // Retirer le membre du workspace
-  await prisma.workspace.update({
-    where: { id: workspaceId },
-    data: {
-      members: {
-        disconnect: { id: userIdToRemove },
-      },
-    },
+  await prisma.workspaceMember.deleteMany({
+    where: {
+      workspaceId: workspaceId,
+      userId: userIdToRemove
+    }
   });
 
-  // Retirer le membre des boards du workspace ?
-  // Logique : si on perd l'accès au workspace, on perd l'accès aux boards hérités.
-
+  // Retirer le membre des boards du workspace
   const boards = await prisma.board.findMany({
     where: { workspaceId },
   });
 
   for (const board of boards) {
-    await prisma.board.update({
-      where: { id: board.id },
-      data: {
-        members: {
-          disconnect: { id: userIdToRemove },
-        },
-      },
+    await prisma.boardMember.deleteMany({
+      where: {
+        boardId: board.id,
+        userId: userIdToRemove
+      }
     });
   }
 

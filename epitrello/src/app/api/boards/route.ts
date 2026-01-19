@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       workspaceId,
       OR: [
         { userId: user.id },
-        { members: { some: { id: user.id } } }
+        { members: { some: { userId: user.id } } }
       ]
     },
     orderBy: {
@@ -35,7 +35,13 @@ export async function GET(req: Request) {
     },
     include: {
       members: {
-        select: { id: true, name: true, email: true }
+        select: {
+          id: true,
+          role: true,
+          user: {
+            select: { id: true, name: true, email: true, profileImage: true }
+          }
+        }
       },
       user: {
         select: { id: true, name: true, email: true }
