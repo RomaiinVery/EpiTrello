@@ -1,8 +1,16 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
 
-const FROM_EMAIL = "onboarding@resend.dev"; // Default for testing. Replace with verified domain later.
+const FROM_EMAIL = process.env.SMTP_FROM_EMAIL || '"EpiTrello" <no-reply@epitrello.com>';
 
 export const sendInvitationEmail = async (
   to: string,
@@ -11,7 +19,7 @@ export const sendInvitationEmail = async (
   inviteLink: string
 ) => {
   try {
-    await resend.emails.send({
+    await transporter.sendMail({
       from: FROM_EMAIL,
       to,
       subject: `Invitation à rejoindre le workspace "${workspaceTitle}" sur EpiTrello`,
@@ -45,13 +53,13 @@ export const sendVerificationCode = async (to: string, code: string) => {
   console.log("Sent to: " + to);
   console.log("==================================================");
 
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("⚠️ RESEND_API_KEY not defined. Email will not be sent via Resend API.");
+  if (!process.env.SMTP_HOST) {
+    console.warn("⚠️ SMTP_HOST not defined. Email will not be sent via Nodemailer.");
     return true; // Simulate success
   }
 
   try {
-    const { error } = await resend.emails.send({
+    await transporter.sendMail({
       from: FROM_EMAIL,
       to,
       subject: "Vérifiez votre adresse email - EpiTrello",
@@ -69,11 +77,6 @@ export const sendVerificationCode = async (to: string, code: string) => {
       `,
     });
 
-    if (error) {
-      console.error("Resend API Error:", error);
-      return false;
-    }
-
     console.log(`Email de vérification envoyé à ${to}`);
     return true;
   } catch (error) {
@@ -81,3 +84,4 @@ export const sendVerificationCode = async (to: string, code: string) => {
     return false;
   }
 };
+
