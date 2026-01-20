@@ -184,10 +184,10 @@ export async function acceptInvitation(token: string) {
 
         // Return destination path
         if (invite.workspaceId) {
-            return { success: true, redirectUrl: `/workspace/${invite.workspaceId}` };
+            return { success: true, redirectUrl: `/workspaces/${invite.workspaceId}/boards` };
         }
 
-        return { success: true, redirectUrl: `/dashboard` };
+        return { success: true, redirectUrl: `/workspaces` };
 
     } catch (e) {
         console.error(e);

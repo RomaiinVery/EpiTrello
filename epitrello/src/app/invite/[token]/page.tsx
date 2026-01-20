@@ -43,8 +43,8 @@ export default async function InvitationPage({
                         </h2>
                         <p className="text-gray-600">{result.error}</p>
                         <div className="pt-4">
-                            <Link href="/dashboard">
-                                <Button variant="outline">Retour au tableau de bord</Button>
+                            <Link href="/workspaces">
+                                <Button variant="outline">Retour aux workspaces</Button>
                             </Link>
                         </div>
                     </div>

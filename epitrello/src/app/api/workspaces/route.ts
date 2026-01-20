@@ -18,7 +18,12 @@ export async function GET() {
   }
 
   const workspaces = await prisma.workspace.findMany({
-    where: { userId: user.id },
+    where: {
+      OR: [
+        { userId: user.id },
+        { members: { some: { userId: user.id } } },
+      ],
+    },
     orderBy: { createdAt: "desc" },
     include: {
       boards: {

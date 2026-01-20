@@ -22,7 +22,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ workspac
   const { workspaceId } = await params;
 
   const workspace = await prisma.workspace.findFirst({
-    where: { id: workspaceId, userId: user.id },
+    where: {
+      id: workspaceId,
+      OR: [
+        { userId: user.id },
+        { members: { some: { userId: user.id } } },
+      ],
+    },
     include: {
       boards: {
         select: { id: true, title: true, description: true, createdAt: true },
