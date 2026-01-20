@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import { sendInvitationEmail } from "@/app/lib/email";
 
-const prisma = new PrismaClient();
+import { prisma } from "@/app/lib/prisma";
 
 // POST: Ajouter un membre au workspace
 export async function POST(

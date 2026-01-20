@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { logActivity } from "@/app/lib/activity-logger";
 
-const prisma = new PrismaClient();
+import { prisma } from "@/app/lib/prisma";
 
 type CardUpdateData = {
   id: string;

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../auth/[...nextauth]/route";
 import { logActivity } from "@/app/lib/activity-logger";
 
-const prisma = new PrismaClient();
+import { prisma } from "@/app/lib/prisma";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ boardId: string; listId: string }> }) {
   const { listId } = await params;
