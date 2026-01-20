@@ -34,6 +34,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ workspac
         select: { id: true, title: true, description: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       },
+      members: {
+        where: { userId: user.id }
+      }
     },
   });
 
@@ -41,7 +44,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ workspac
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
   }
 
-  return NextResponse.json(workspace);
+  const currentUserRole = workspace.userId === user.id
+    ? "OWNER"
+    : (workspace.members[0]?.role || "VIEWER");
+
+  return NextResponse.json({ ...workspace, currentUserRole });
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ workspaceId: string }> }) {

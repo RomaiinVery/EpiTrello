@@ -37,11 +37,12 @@ import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { GanttView } from "@/components/board/GanttView";
 
-function CardItem({ card, onRename, onDelete, onClick }: {
+function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
   card: Card;
   onRename: (listId: string, cardId: string) => void;
   onDelete: (listId: string, cardId: string) => void;
   onClick: (listId: string, cardId: string) => void;
+  currentUserRole?: string;
 }) {
   const {
     setNodeRef,
@@ -56,6 +57,7 @@ function CardItem({ card, onRename, onDelete, onClick }: {
       type: "Card",
       card,
     },
+    disabled: currentUserRole === "VIEWER",
   });
 
   const style = {
@@ -100,29 +102,31 @@ function CardItem({ card, onRename, onDelete, onClick }: {
           >
             {card.title}
           </h3>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                aria-label="Menu"
-                type="button"
-                onClick={(e) => e.stopPropagation()}
-              >
-                &#x22EE;
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onRename(card.listId, card.id)}>
-                Renommer
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onClick(card.listId, card.id)}>
-                Modifier
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(card.listId, card.id)}>
-                Supprimer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {currentUserRole !== "VIEWER" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                  aria-label="Menu"
+                  type="button"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  &#x22EE;
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onRename(card.listId, card.id)}>
+                  Renommer
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onClick(card.listId, card.id)}>
+                  Modifier
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(card.listId, card.id)}>
+                  Supprimer
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         {card.content && (
           <p className="text-gray-600 text-sm line-clamp-2">{card.content}</p>
@@ -230,7 +234,7 @@ function isLabelColorLight(color: string): boolean {
   return brightness > 155;
 }
 
-function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard, onCardClick }: {
+function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard, onCardClick, currentUserRole }: {
   list: List;
   cards: Card[];
   onRenameList: (listId: string) => void;
@@ -239,6 +243,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
   onRenameCard: (listId: string, cardId: string) => void;
   onDeleteCard: (listId: string, cardId: string) => void;
   onCardClick: (listId: string, cardId: string) => void;
+  currentUserRole?: string;
 }) {
   const {
     setNodeRef,
@@ -253,6 +258,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
       type: "List",
       list,
     },
+    disabled: currentUserRole === "VIEWER",
   });
 
   const style = {
@@ -278,31 +284,33 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
       style={style}
       className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-sm relative flex flex-col max-h-[calc(100vh-12rem)]"
     >
-      <div {...attributes} {...listeners} className="flex justify-between items-center mb-2 cursor-grab active:cursor-grabbing">
+      <div {...attributes} {...listeners} className={`flex justify-between items-center mb-2 ${currentUserRole === "VIEWER" ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}>
         <h2 className="font-semibold text-gray-800">{list.title}</h2>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="text-gray-500 hover:text-gray-700 focus:outline-none"
-              aria-label="Menu"
-              type="button"
-            >
-              &#x22EE;
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onRenameList(list.id)}>
-              Renommer
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDeleteList(list.id)}>
-              Supprimer
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {currentUserRole !== "VIEWER" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label="Menu"
+                type="button"
+              >
+                &#x22EE;
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onRenameList(list.id)}>
+                Renommer
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDeleteList(list.id)}>
+                Supprimer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       <div className="flex-grow overflow-y-auto mb-2">
-        <SortableContext items={cardsMemo.map(c => c.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={cardsMemo.map(c => c.id)} strategy={verticalListSortingStrategy} disabled={currentUserRole === "VIEWER"}>
           {cardsMemo.length > 0 ? (
             cardsMemo.map((card) => (
               <CardItem
@@ -311,6 +319,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
                 onRename={onRenameCard}
                 onDelete={onDeleteCard}
                 onClick={onCardClick}
+                currentUserRole={currentUserRole}
               />
             ))
           ) : (
@@ -320,9 +329,13 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
       </div>
 
       <button
-        onClick={() => onAddCard(list)}
-        className="mt-auto flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors py-1"
+        onClick={() => {
+          if (currentUserRole === "VIEWER") return;
+          onAddCard(list)
+        }}
+        className={`mt-auto flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 transition-colors py-1 ${currentUserRole === "VIEWER" ? "opacity-50 cursor-not-allowed" : "hover:text-gray-700 hover:border-gray-400"}`}
         type="button"
+        disabled={currentUserRole === "VIEWER"}
       >
         + Ajouter une carte
       </button>
@@ -335,9 +348,10 @@ interface BoardClientProps {
   workspaceId?: string;
   initialBoard: Board;
   initialCardsByList: Record<string, Card[]>;
+  currentUserRole?: string;
 }
 
-export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList }: BoardClientProps) {
+export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList, currentUserRole = "VIEWER" }: BoardClientProps) {
 
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>(initialCardsByList);
@@ -377,11 +391,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   const [deletingCard, setDeletingCard] = useState(false);
   const [deleteCardError, setDeleteCardError] = useState<string | null>(null);
 
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [shareEmail, setShareEmail] = useState("");
-  const [sharing, setSharing] = useState(false);
-  const [shareError, setShareError] = useState<string | null>(null);
-  const [shareSuccess, setShareSuccess] = useState(false);
+
 
   const [showCardModal, setShowCardModal] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -425,7 +435,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     try {
       const nextPosition = (board?.lists?.length || 0);
 
-      const res = await fetch(`/ api / boards / ${boardId}/lists`, {
+      const res = await fetch(`/api/boards/${boardId}/lists`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: newListTitle, position: nextPosition }),
@@ -696,62 +706,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     setDeletingCard(false);
   };
 
-  const handleShareClick = () => {
-    setShowShareDialog(true);
-    setShareEmail("");
-    setShareError(null);
-    setShareSuccess(false);
-  };
 
-  const handleShareCancel = () => {
-    setShowShareDialog(false);
-    setShareEmail("");
-    setShareError(null);
-    setShareSuccess(false);
-  };
-
-  const handleShareConfirm = async () => {
-    if (!shareEmail.trim()) {
-      setShareError("L'email ne peut pas être vide");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(shareEmail.trim())) {
-      setShareError("Veuillez entrer une adresse email valide");
-      return;
-    }
-
-    setSharing(true);
-    setShareError(null);
-    setShareSuccess(false);
-
-    try {
-      const res = await fetch(`/api/boards/${boardId}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: shareEmail.trim() }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setShareError(data.error || "Erreur lors du partage du tableau");
-        setSharing(false);
-        return;
-      }
-
-      setShareSuccess(true);
-      setShareEmail("");
-
-      setTimeout(() => {
-        setShowShareDialog(false);
-        setShareSuccess(false);
-      }, 1500);
-    } catch {
-      setShareError("Erreur réseau");
-    }
-    setSharing(false);
-  };
 
   const handleCardClick = (listId: string, cardId: string) => {
     setSelectedCardId(cardId);
@@ -1096,13 +1051,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               Gantt
             </button>
           </div>
-          <button
-            onClick={handleShareClick}
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            type="button"
-          >
-            Partager
-          </button>
+
         </div>
       </div>
 
@@ -1115,10 +1064,14 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4 flex-1 items-start">
-            <SortableContext items={listIds} strategy={horizontalListSortingStrategy}>
-              {board.lists && board.lists.length > 0 ? (
-                board.lists.map((list) => (
+          <div className="flex-1 overflow-x-auto overflow-y-hidden">
+            <div className="flex h-full gap-4 pb-4 px-4 min-w-fit">
+              <SortableContext
+                items={listIds}
+                strategy={horizontalListSortingStrategy}
+                disabled={currentUserRole === "VIEWER"}
+              >
+                {board?.lists?.map((list) => (
                   <ListContainer
                     key={list.id}
                     list={list}
@@ -1129,23 +1082,20 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
                     onRenameCard={handleRenameCard}
                     onDeleteCard={handleDeleteCard}
                     onCardClick={handleCardClick}
+                    currentUserRole={currentUserRole}
                   />
-                ))
-              ) : (
-                <div className="text-gray-400 italic">
-                  Aucune liste pour le moment
-                </div>
-              )}
-            </SortableContext>
+                ))}
+              </SortableContext>
 
-            <div className="w-64 min-w-[16rem]">
-              <button
-                onClick={handleAddListClick}
-                className="flex items-center justify-center h-full w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors"
-                type="button"
-              >
-                + Ajouter une liste
-              </button>
+              {currentUserRole !== "VIEWER" && (
+                <button
+                  onClick={handleAddListClick}
+                  className="w-64 min-w-[16rem] h-12 bg-gray-200/50 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-medium transition-colors"
+                  type="button"
+                >
+                  + Ajouter une liste
+                </button>
+              )}
             </div>
           </div>
 
@@ -1409,54 +1359,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         </div>
       )}
 
-      {showShareDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Partager le tableau</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Entrez l&apos;adresse email de l&apos;utilisateur à inviter
-            </p>
-            <input
-              type="email"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="email@exemple.com"
-              value={shareEmail}
-              onChange={(e) => setShareEmail(e.target.value)}
-              disabled={sharing}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !sharing) handleShareConfirm();
-              }}
-            />
-            {shareError && (
-              <div className="text-red-500 text-sm mb-2">{shareError}</div>
-            )}
-            {shareSuccess && (
-              <div className="text-green-600 text-sm mb-2">
-                Tableau partagé avec succès !
-              </div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleShareCancel}
-                disabled={sharing}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleShareConfirm}
-                disabled={sharing}
-                type="button"
-              >
-                {sharing ? "Partage..." : "Partager"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Card Modal */}
       {showCardModal && selectedCardId && selectedListId && (
@@ -1467,6 +1370,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
           isOpen={showCardModal}
           onClose={handleCardModalClose}
           onUpdate={handleCardUpdate}
+          currentUserRole={currentUserRole}
         />
       )}
 

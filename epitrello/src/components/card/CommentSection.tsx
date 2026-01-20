@@ -12,6 +12,7 @@ interface CommentSectionProps {
     currentUser: User | null;
     onUpdate: () => void;
     onActivityUpdate: () => void;
+    readOnly?: boolean;
 }
 
 export function CommentSection({
@@ -21,6 +22,7 @@ export function CommentSection({
     currentUser,
     onUpdate,
     onActivityUpdate,
+    readOnly = false,
 }: CommentSectionProps) {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState("");
@@ -48,6 +50,7 @@ export function CommentSection({
     }, [boardId, listId, cardId]);
 
     const handlePostComment = async () => {
+        if (readOnly) return;
         if (!newComment.trim()) return;
 
         setPostingComment(true);
@@ -81,6 +84,7 @@ export function CommentSection({
     };
 
     const handleEditComment = async (commentId: string) => {
+        if (readOnly) return;
         if (!editingCommentContent.trim()) return;
 
         try {
@@ -112,6 +116,7 @@ export function CommentSection({
     };
 
     const handleDeleteComment = async (commentId: string) => {
+        if (readOnly) return;
         if (!confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")) return;
 
         try {
@@ -148,33 +153,35 @@ export function CommentSection({
             {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
 
             {/* Add Comment Form */}
-            <div className="mb-4">
-                <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Écrire un commentaire..."
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none min-h-[80px]"
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                            e.preventDefault();
-                            handlePostComment();
-                        }
-                    }}
-                    disabled={postingComment}
-                />
-                <div className="flex justify-between items-center mt-2">
-                    <p className="text-xs text-gray-500">
-                        Appuyez sur Cmd/Ctrl + Entrée pour publier
-                    </p>
-                    <Button
-                        size="sm"
-                        onClick={handlePostComment}
-                        disabled={postingComment || !newComment.trim()}
-                    >
-                        {postingComment ? "Publication..." : "Publier"}
-                    </Button>
+            {!readOnly && (
+                <div className="mb-4">
+                    <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Écrire un commentaire..."
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none min-h-[80px]"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                                e.preventDefault();
+                                handlePostComment();
+                            }
+                        }}
+                        disabled={postingComment}
+                    />
+                    <div className="flex justify-between items-center mt-2">
+                        <p className="text-xs text-gray-500">
+                            Appuyez sur Cmd/Ctrl + Entrée pour publier
+                        </p>
+                        <Button
+                            size="sm"
+                            onClick={handlePostComment}
+                            disabled={postingComment || !newComment.trim()}
+                        >
+                            {postingComment ? "Publication..." : "Publier"}
+                        </Button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Comments List */}
             <div className="space-y-3">
@@ -208,7 +215,7 @@ export function CommentSection({
                                         </p>
                                     </div>
                                 </div>
-                                {currentUser && comment.userId === currentUser.id && (
+                                {currentUser && comment.userId === currentUser.id && !readOnly && (
                                     <div className="flex gap-1">
                                         {editingCommentId === comment.id ? (
                                             <>

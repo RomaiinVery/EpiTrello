@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { InviteMemberModal } from "@/components/modals/InviteMemberModal";
 
 type Board = { id: string; title: string; description?: string };
-type Workspace = { id: string; title: string };
+type Workspace = { id: string; title: string; currentUserRole?: string };
 
 export default function BoardsByWorkspacePage() {
   const params = useParams<{ workspaceId: string }>();
@@ -61,7 +61,11 @@ export default function BoardsByWorkspacePage() {
           router.replace("/workspaces");
           return;
         }
-        setWorkspace({ id: data.id, title: data.title });
+        setWorkspace({
+          id: data.id,
+          title: data.title,
+          currentUserRole: data.currentUserRole
+        });
       });
 
     fetch(`/api/boards?workspaceId=${workspaceId}`)
@@ -169,13 +173,17 @@ export default function BoardsByWorkspacePage() {
           </Link>
           <div className="flex items-center gap-4 mt-2">
             <h1 className="text-2xl font-semibold">{workspace?.title || "Workspace"}</h1>
-            <InviteMemberModal
-              workspaceId={workspaceId}
-              resourceTitle={workspace?.title || "Workspace"}
-            />
+            {workspace?.currentUserRole && workspace.currentUserRole !== "VIEWER" && (
+              <InviteMemberModal
+                workspaceId={workspaceId}
+                resourceTitle={workspace?.title || "Workspace"}
+              />
+            )}
           </div>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>Créer une board</Button>
+        {workspace?.currentUserRole && workspace.currentUserRole !== "VIEWER" && (
+          <Button onClick={() => setCreateOpen(true)}>Créer une board</Button>
+        )}
       </div>
       <ul className="space-y-2">
         {boards.map((b) => (
@@ -190,25 +198,27 @@ export default function BoardsByWorkspacePage() {
               )}
             </Link>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="text-gray-400 hover:text-gray-700 text-xl">
-                  ⋯
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => {
-                  setRenameBoardId(b.id);
-                  setNewTitle(b.title);
-                  setRenameOpen(true);
-                }}>
-                  Renommer
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDelete(b.id)}>
-                  Supprimer
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {workspace?.currentUserRole && workspace.currentUserRole !== "VIEWER" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="text-gray-400 hover:text-gray-700 text-xl">
+                    ⋯
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => {
+                    setRenameBoardId(b.id);
+                    setNewTitle(b.title);
+                    setRenameOpen(true);
+                  }}>
+                    Renommer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDelete(b.id)}>
+                    Supprimer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </li>
         ))}
       </ul>
