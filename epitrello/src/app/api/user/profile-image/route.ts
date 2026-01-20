@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { v2 as cloudinary } from "cloudinary";
 
 import { prisma } from "@/app/lib/prisma";
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function GET() {
   try {
@@ -80,24 +89,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Convert file to buffer and then to data URI for Base64 upload
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64Data = buffer.toString("base64");
+    const fileUri = `data:${file.type};base64,${base64Data}`;
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), "public", "uploads", "profiles");
-    await mkdir(uploadsDir, { recursive: true });
+    // Upload to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(fileUri, {
+      folder: "epitrello/profiles",
+      public_id: `user_${user.id}`, // Overwrite existing image for this user
+      overwrite: true,
+      transformation: [
+        { width: 400, height: 400, crop: "fill", gravity: "face" }, // Auto-crop to face
+        { quality: "auto", fetch_format: "auto" }
+      ]
+    });
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const ext = file.name.split(".").pop();
-    const filename = `${user.id}-${timestamp}.${ext}`;
-    const filepath = join(uploadsDir, filename);
-
-    // Write file
-    await writeFile(filepath, buffer);
+    const imageUrl = uploadResponse.secure_url;
 
     // Update user profile image in database
-    const imageUrl = `/uploads/profiles/${filename}`;
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: { profileImage: imageUrl },
@@ -109,7 +120,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: "Profile image uploaded successfully",
       profileImage: imageUrl,
       user: updatedUser,
@@ -138,6 +149,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // If implementing cleanup, we would delete from Cloudinary here:
+    // cloudinary.uploader.destroy(`epitrello/profiles/user_${user.id}`);
+
     // Update user to remove profile image
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
@@ -162,4 +176,6 @@ export async function DELETE(req: Request) {
     );
   }
 }
+
+
 

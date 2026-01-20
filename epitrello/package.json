@@ -24,6 +24,7 @@
     "@uidotdev/usehooks": "^2.4.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "jotai": "^2.16.1",
