@@ -13,6 +13,7 @@ interface ChecklistSectionProps {
     cardId: string;
     onUpdate: () => void;
     onActivityUpdate: () => void;
+    readOnly?: boolean;
 }
 
 
@@ -22,6 +23,7 @@ export function ChecklistSection({
     cardId,
     onUpdate,
     onActivityUpdate,
+    readOnly = false,
 }: ChecklistSectionProps) {
     const [checklists, setChecklists] = useState<Checklist[]>([]);
     const [loading, setLoading] = useState(false);
@@ -54,6 +56,7 @@ export function ChecklistSection({
     }, [boardId, listId, cardId]);
 
     const handleCreateChecklist = async () => {
+        if (readOnly) return;
         if (!newChecklistTitle.trim()) return;
 
         setCreatingChecklist(true);
@@ -87,6 +90,7 @@ export function ChecklistSection({
     };
 
     const handleUpdateChecklist = async (checklistId: string) => {
+        if (readOnly) return;
         if (!editingChecklistTitle.trim()) return;
 
         try {
@@ -118,6 +122,7 @@ export function ChecklistSection({
     };
 
     const handleDeleteChecklist = async (checklistId: string) => {
+        if (readOnly) return;
         if (!confirm("Êtes-vous sûr de vouloir supprimer cette checklist ?")) return;
 
         try {
@@ -142,6 +147,7 @@ export function ChecklistSection({
     };
 
     const handleCreateItem = async (checklistId: string) => {
+        if (readOnly) return;
         const text = newItemTexts[checklistId];
         if (!text || !text.trim()) return;
 
@@ -181,6 +187,7 @@ export function ChecklistSection({
         itemId: string,
         checked: boolean
     ) => {
+        if (readOnly) return;
         try {
             const res = await fetch(
                 `/api/boards/${boardId}/lists/${listId}/cards/${cardId}/checklists/${checklistId}/items/${itemId}`,
@@ -217,6 +224,7 @@ export function ChecklistSection({
     };
 
     const handleDeleteItem = async (checklistId: string, itemId: string) => {
+        if (readOnly) return;
         try {
             const res = await fetch(
                 `/api/boards/${boardId}/lists/${listId}/cards/${cardId}/checklists/${checklistId}/items/${itemId}`,
@@ -327,25 +335,27 @@ export function ChecklistSection({
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex gap-1">
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingChecklistId(checklist.id);
-                                                        setEditingChecklistTitle(checklist.title);
-                                                    }}
-                                                    className="text-gray-400 hover:text-blue-600 transition-colors"
-                                                    aria-label="Modifier"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteChecklist(checklist.id)}
-                                                    className="text-gray-400 hover:text-red-600 transition-colors"
-                                                    aria-label="Supprimer"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                            {!readOnly && (
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingChecklistId(checklist.id);
+                                                            setEditingChecklistTitle(checklist.title);
+                                                        }}
+                                                        className="text-gray-400 hover:text-blue-600 transition-colors"
+                                                        aria-label="Modifier"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteChecklist(checklist.id)}
+                                                        className="text-gray-400 hover:text-red-600 transition-colors"
+                                                        aria-label="Supprimer"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </>
                                     )}
                                 </div>
@@ -364,6 +374,7 @@ export function ChecklistSection({
                                                     handleToggleItem(checklist.id, item.id, item.checked)
                                                 }
                                                 className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                disabled={readOnly}
                                             />
                                             <span
                                                 className={`flex-1 ${item.checked
@@ -373,77 +384,83 @@ export function ChecklistSection({
                                             >
                                                 {item.text}
                                             </span>
-                                            <button
-                                                onClick={() => handleDeleteItem(checklist.id, item.id)}
-                                                className="text-gray-400 hover:text-red-600 transition-colors"
-                                                aria-label="Supprimer"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
+                                            {!readOnly && (
+                                                <button
+                                                    onClick={() => handleDeleteItem(checklist.id, item.id)}
+                                                    className="text-gray-400 hover:text-red-600 transition-colors"
+                                                    aria-label="Supprimer"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
 
                                 {/* Add Item */}
-                                <div className="mt-2 flex items-center gap-2">
-                                    <Input
-                                        value={newItemTexts[checklist.id] || ""}
-                                        onChange={(e) =>
-                                            setNewItemTexts({
-                                                ...newItemTexts,
-                                                [checklist.id]: e.target.value,
-                                            })
-                                        }
-                                        placeholder="Ajouter un élément..."
-                                        className="flex-1 text-sm"
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault();
-                                                handleCreateItem(checklist.id);
+                                {!readOnly && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <Input
+                                            value={newItemTexts[checklist.id] || ""}
+                                            onChange={(e) =>
+                                                setNewItemTexts({
+                                                    ...newItemTexts,
+                                                    [checklist.id]: e.target.value,
+                                                })
                                             }
-                                        }}
-                                    />
-                                    <Button
-                                        size="sm"
-                                        onClick={() => handleCreateItem(checklist.id)}
-                                        disabled={!newItemTexts[checklist.id]?.trim()}
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </Button>
-                                </div>
+                                            placeholder="Ajouter un élément..."
+                                            className="flex-1 text-sm"
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    handleCreateItem(checklist.id);
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={() => handleCreateItem(checklist.id)}
+                                            disabled={!newItemTexts[checklist.id]?.trim()}
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
 
                     {/* Create New Checklist */}
-                    <div className="border border-dashed border-gray-300 rounded-lg p-3">
-                        <div className="flex items-center gap-2">
-                            <Input
-                                value={newChecklistTitle}
-                                onChange={(e) => setNewChecklistTitle(e.target.value)}
-                                placeholder="Ajouter une checklist..."
-                                className="flex-1 text-sm"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        handleCreateChecklist();
-                                    }
-                                }}
-                                disabled={creatingChecklist}
-                            />
-                            <Button
-                                size="sm"
-                                onClick={handleCreateChecklist}
-                                disabled={creatingChecklist || !newChecklistTitle.trim()}
-                            >
-                                {creatingChecklist ? (
-                                    "Création..."
-                                ) : (
-                                    <Plus className="w-4 h-4" />
-                                )}
-                            </Button>
+                    {!readOnly && (
+                        <div className="border border-dashed border-gray-300 rounded-lg p-3">
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    value={newChecklistTitle}
+                                    onChange={(e) => setNewChecklistTitle(e.target.value)}
+                                    placeholder="Ajouter une checklist..."
+                                    className="flex-1 text-sm"
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            handleCreateChecklist();
+                                        }
+                                    }}
+                                    disabled={creatingChecklist}
+                                />
+                                <Button
+                                    size="sm"
+                                    onClick={handleCreateChecklist}
+                                    disabled={creatingChecklist || !newChecklistTitle.trim()}
+                                >
+                                    {creatingChecklist ? (
+                                        "Création..."
+                                    ) : (
+                                        <Plus className="w-4 h-4" />
+                                    )}
+                                </Button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
         </div>

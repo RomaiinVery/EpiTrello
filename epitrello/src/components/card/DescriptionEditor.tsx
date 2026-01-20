@@ -10,6 +10,7 @@ interface DescriptionEditorProps {
     initialDescription?: string | null;
     onUpdate: () => void;
     onCardUpdate: (newCard: CardDetail) => void;
+    readOnly?: boolean;
 }
 
 export function DescriptionEditor({
@@ -19,6 +20,7 @@ export function DescriptionEditor({
     initialDescription,
     onUpdate,
     onCardUpdate,
+    readOnly = false,
 }: DescriptionEditorProps) {
     const [description, setDescription] = useState(initialDescription || "");
     const [isEditing, setIsEditing] = useState(false);
@@ -66,6 +68,28 @@ export function DescriptionEditor({
             setDescription(initialDescription || "");
         }
     };
+
+    if (readOnly) {
+        return (
+            <div>
+                <div className="flex items-center gap-2 mb-2">
+                    <AlignLeft className="w-4 h-4 text-gray-500" />
+                    <h3 className="text-sm font-semibold text-gray-700">Description</h3>
+                </div>
+                <div className="min-h-[60px] p-3 bg-gray-50 rounded">
+                    {initialDescription ? (
+                        <p className="text-gray-700 whitespace-pre-wrap">
+                            {initialDescription}
+                        </p>
+                    ) : (
+                        <p className="text-gray-400 italic">
+                            Aucune description.
+                        </p>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>

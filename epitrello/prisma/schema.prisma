@@ -7,6 +7,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -26,10 +32,11 @@ model User {
   githubAvatarUrl   String?
 
   workspaces Workspace[]
-  sharedWorkspaces Workspace[] @relation("WorkspaceMembers")
+  workspaceMemberships WorkspaceMember[]
+  
   boards   Board[]
+  boardMemberships  BoardMember[]
 
-  sharedBoards  Board[]      @relation("BoardMembers")
   assignedCards CardMember[]
   comments      Comment[]
   activities    Activity[]
@@ -45,9 +52,21 @@ model Workspace {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  members User[] @relation("WorkspaceMembers")
+  members WorkspaceMember[]
 
   boards Board[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role      @default(VIEWER)
+  joinedAt    DateTime  @default(now())
+
+  @@unique([workspaceId, userId])
 }
 
 model Board {
@@ -69,7 +88,38 @@ model Board {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  members User[] @relation("BoardMembers")
+  members BoardMember[]
+}
+
+model BoardMember {
+  id        String   @id @default(cuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @default(VIEWER)
+  joinedAt  DateTime @default(now())
+
+  @@unique([boardId, userId])
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  role      Role     @default(VIEWER)
+  
+  workspaceId String?
+  
+  boardId     String?
+  
+  inviterId String
+  
+  status    String   @default("PENDING") // PENDING, ACCEPTED
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([token])
 }
 
 model List {

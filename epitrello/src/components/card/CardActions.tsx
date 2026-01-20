@@ -23,6 +23,7 @@ interface CardActionsProps {
     onUpdate: () => void;
     onCardUpdate: (newCard: CardDetail) => void;
     onActivityUpdate: () => void;
+    readOnly?: boolean;
 }
 
 export function CardActions({
@@ -36,6 +37,7 @@ export function CardActions({
     onUpdate,
     onCardUpdate,
     onActivityUpdate,
+    readOnly = false,
 }: CardActionsProps) {
     const [boardMembers, setBoardMembers] = useState<User[]>([]);
     const [isAssigningMember, setIsAssigningMember] = useState(false);
@@ -79,6 +81,7 @@ export function CardActions({
     }, [boardId]);
 
     const handleUnassignMember = async (memberId: string) => {
+        if (readOnly) return;
         try {
             const res = await fetch(
                 `/api/boards/${boardId}/lists/${listId}/cards/${cardId}/members?userId=${memberId}`,
@@ -94,6 +97,7 @@ export function CardActions({
     };
 
     const handleAssignMember = async (userId: string) => {
+        if (readOnly) return;
         setIsAssigningMember(true);
         try {
             const res = await fetch(
@@ -116,6 +120,7 @@ export function CardActions({
     };
 
     const handleStartDateSelect = async (date: Date | undefined) => {
+        if (readOnly) return;
         try {
             const res = await fetch(
                 `/api/boards/${boardId}/lists/${listId}/cards/${cardId}`,
@@ -138,6 +143,7 @@ export function CardActions({
     };
 
     const handleDueDateSelect = async (date: Date | undefined) => {
+        if (readOnly) return;
         try {
             const res = await fetch(
                 `/api/boards/${boardId}/lists/${listId}/cards/${cardId}`,
@@ -170,7 +176,7 @@ export function CardActions({
                 <div className="mb-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-full justify-start">
+                            <Button variant="outline" size="sm" className="w-full justify-start" disabled={readOnly}>
                                 <Calendar className="w-4 h-4 mr-2" />
                                 {startDate
                                     ? new Date(startDate).toLocaleDateString("fr-FR", {
@@ -181,19 +187,21 @@ export function CardActions({
                                     : "Ajouter une date de début"}
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="p-0" align="start">
-                            <DatePicker
-                                selected={startDate ? new Date(startDate) : undefined}
-                                onSelect={handleStartDateSelect}
-                                maxDate={dueDate ? new Date(dueDate) : undefined}
-                            />
-                        </DropdownMenuContent>
+                        {!readOnly && (
+                            <DropdownMenuContent className="p-0" align="start">
+                                <DatePicker
+                                    selected={startDate ? new Date(startDate) : undefined}
+                                    onSelect={handleStartDateSelect}
+                                    maxDate={dueDate ? new Date(dueDate) : undefined}
+                                />
+                            </DropdownMenuContent>
+                        )}
                     </DropdownMenu>
                 </div>
                 <div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-full justify-start">
+                            <Button variant="outline" size="sm" className="w-full justify-start" disabled={readOnly}>
                                 <Calendar className="w-4 h-4 mr-2" />
                                 {dueDate
                                     ? new Date(dueDate).toLocaleDateString("fr-FR", {
@@ -204,13 +212,15 @@ export function CardActions({
                                     : "Ajouter une date de fin"}
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="p-0" align="start">
-                            <DatePicker
-                                selected={dueDate ? new Date(dueDate) : undefined}
-                                onSelect={handleDueDateSelect}
-                                minDate={startDate ? new Date(startDate) : undefined}
-                            />
-                        </DropdownMenuContent>
+                        {!readOnly && (
+                            <DropdownMenuContent className="p-0" align="start">
+                                <DatePicker
+                                    selected={dueDate ? new Date(dueDate) : undefined}
+                                    onSelect={handleDueDateSelect}
+                                    minDate={startDate ? new Date(startDate) : undefined}
+                                />
+                            </DropdownMenuContent>
+                        )}
                     </DropdownMenu>
                 </div>
             </div>
@@ -224,6 +234,7 @@ export function CardActions({
                     onLabelsChange={(newLabels) => {
                         onUpdate();
                     }}
+                    readOnly={readOnly}
                 />
             </div>
 
@@ -259,13 +270,15 @@ export function CardActions({
                                     <span className="text-sm text-gray-700">
                                         {member.name || member.email}
                                     </span>
-                                    <button
-                                        onClick={() => handleUnassignMember(member.id)}
-                                        className="ml-1 text-gray-400 hover:text-red-600 transition-colors"
-                                        aria-label="Retirer le membre"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
+                                    {!readOnly &&
+                                        <button
+                                            onClick={() => handleUnassignMember(member.id)}
+                                            className="ml-1 text-gray-400 hover:text-red-600 transition-colors"
+                                            aria-label="Retirer le membre"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    }
                                 </div>
                             ))}
                         </div>
@@ -280,7 +293,7 @@ export function CardActions({
                             onChange={(e) => {
                                 if (e.target.value) handleAssignMember(e.target.value);
                             }}
-                            disabled={isAssigningMember}
+                            disabled={isAssigningMember || readOnly}
                             className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                         >
                             <option value="">Assigner un membre...</option>

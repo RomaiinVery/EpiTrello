@@ -9,6 +9,7 @@ interface AttachmentSectionProps {
     cardId: string;
     onUpdate: () => void;
     onActivityUpdate: () => void;
+    readOnly?: boolean;
 }
 
 export function AttachmentSection({
@@ -17,6 +18,7 @@ export function AttachmentSection({
     cardId,
     onUpdate,
     onActivityUpdate,
+    readOnly = false,
 }: AttachmentSectionProps) {
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [loading, setLoading] = useState(false);
@@ -46,6 +48,7 @@ export function AttachmentSection({
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (readOnly) return;
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -93,6 +96,7 @@ export function AttachmentSection({
     };
 
     const handleDelete = async (attachmentId: string) => {
+        if (readOnly) return;
         if (!confirm("Êtes-vous sûr de vouloir supprimer cette pièce jointe ?")) return;
 
         try {
@@ -188,13 +192,15 @@ export function AttachmentSection({
                             >
                                 <Download className="w-4 h-4" />
                             </a>
-                            <button
-                                onClick={() => handleDelete(attachment.id)}
-                                className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50"
-                                title="Supprimer"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
+                            {!readOnly && (
+                                <button
+                                    onClick={() => handleDelete(attachment.id)}
+                                    className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50"
+                                    title="Supprimer"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -206,23 +212,25 @@ export function AttachmentSection({
                 )}
             </div>
 
-            <div className="mt-2">
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                />
-                <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    {uploading ? "Upload..." : "Ajouter une pièce jointe"}
-                </Button>
-            </div>
+            {!readOnly && (
+                <div className="mt-2">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                    />
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        {uploading ? "Upload..." : "Ajouter une pièce jointe"}
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
