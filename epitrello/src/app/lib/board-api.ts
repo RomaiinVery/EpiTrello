@@ -6,6 +6,12 @@ export type List = {
   position: number;
 };
 
+export type Members = {
+  id : string;
+  role: string;
+  user: User;
+}
+
 export type Label = {
   id: string;
   name: string;
@@ -55,6 +61,7 @@ export type Card = {
 
 export type Board = {
   id: string;
+  members: Members[];
   title: string;
   description?: string | null;
   workspaceId: string;
@@ -67,6 +74,20 @@ export async function fetchBoard(boardId: string): Promise<Board | null> {
   try {
     const board = await prisma.board.findUnique({
       where: { id: boardId },
+      include: {
+        members: {
+          include: {
+            user: {
+              select:{
+                id: true,
+                email: true,
+                name: true,
+                profileImage: true,
+              }
+            }
+          }
+        }
+      }
     });
     return board;
   } catch (error) {
