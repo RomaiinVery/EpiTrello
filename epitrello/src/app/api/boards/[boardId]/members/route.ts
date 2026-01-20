@@ -1,10 +1,9 @@
 // src/app/api/boards/[boardId]/members/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 
-const prisma = new PrismaClient();
+import { prisma } from "@/app/lib/prisma";
 
 export async function POST(req: Request, { params }: { params: Promise<{ boardId: string }> }) {
   const session = await getServerSession(authOptions);
