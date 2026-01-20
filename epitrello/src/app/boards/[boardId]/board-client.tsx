@@ -36,6 +36,7 @@ import { CheckSquare, Clock, Github } from "lucide-react";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { GanttView } from "@/components/board/GanttView";
+import { MemberAvatar } from "../memberAvatar";
 
 function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
   card: Card;
@@ -1036,20 +1037,32 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
             <p className="text-gray-600 mb-4">{board.description}</p>
           )}
         </div>
-        <div className="flex gap-2">
-          <div className="bg-gray-100 p-1 rounded-lg flex items-center">
-            <button
-              onClick={() => setViewMode("kanban")}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
-            >
-              Kanban
-            </button>
-            <button
-              onClick={() => setViewMode("gantt")}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "gantt" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
-            >
-              Gantt
-            </button>
+        <div>
+          <div className="flex items-center gap-2 mb-4 px-4">
+            <div className="flex -space-x-2 ml-4">
+              {board.user && (
+                <MemberAvatar key={board.user.id} member={{ user: board.user, id: board.user.id, role: 'OWNER' }} />
+              )}
+              {board.members?.map(member => (
+                <MemberAvatar key={member.id} member={member} />
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+              >
+                Kanban
+              </button>
+              <button
+                onClick={() => setViewMode("gantt")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "gantt" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+              >
+                Gantt
+              </button>
+            </div>
           </div>
 
         </div>

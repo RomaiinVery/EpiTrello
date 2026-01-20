@@ -7,7 +7,7 @@ export type List = {
 };
 
 export type Members = {
-  id : string;
+  id: string;
   role: string;
   user: User;
 }
@@ -67,6 +67,7 @@ export type Board = {
   workspaceId: string;
   lists?: List[];
   githubRepo?: string | null;
+  user?: User;
 };
 
 
@@ -78,13 +79,21 @@ export async function fetchBoard(boardId: string): Promise<Board | null> {
         members: {
           include: {
             user: {
-              select:{
+              select: {
                 id: true,
                 email: true,
                 name: true,
                 profileImage: true,
               }
             }
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            profileImage: true,
           }
         }
       }

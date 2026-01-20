@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InviteMemberModal } from "@/components/modals/InviteMemberModal";
+import { WorkspaceMembersMenu } from "@/components/workspace/WorkspaceMembersMenu";
 
 type Board = { id: string; title: string; description?: string };
 type Workspace = { id: string; title: string; currentUserRole?: string };
@@ -177,6 +178,12 @@ export default function BoardsByWorkspacePage() {
               <InviteMemberModal
                 workspaceId={workspaceId}
                 resourceTitle={workspace?.title || "Workspace"}
+              />
+            )}
+            {workspace?.currentUserRole && (
+              <WorkspaceMembersMenu
+                workspaceId={workspaceId}
+                currentUserRole={workspace.currentUserRole}
               />
             )}
           </div>
