@@ -36,6 +36,7 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [removingId, setRemovingId] = useState<string | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -59,12 +60,32 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
         }
     };
 
-    const handleRemoveMember = async (membershipId: string) => {
-        // Implement delete API call if needed later
-        // For now we just focus on display as per request 'voir les users'
-        // But adding the button structure for future use or if user wants it now.
-        // Let's stick to 'voir' for the prompt requirement but I'll leave the UI ready.
-        alert("Suppression non implémentée pour l'instant");
+    const handleRequestRemove = (membershipId: string) => {
+        setConfirmDeleteId(membershipId);
+    };
+
+    const handleCancelRemove = () => {
+        setConfirmDeleteId(null);
+    };
+
+    const handleConfirmRemove = async (membershipId: string) => {
+        setRemovingId(membershipId);
+        try {
+            const res = await fetch(`/api/workspaces/${workspaceId}/members/${membershipId}`, {
+                method: "DELETE"
+            });
+
+            if (res.ok) {
+                setMembers(prev => prev.filter(m => m.id !== membershipId));
+            } else {
+                alert("Erreur lors de la suppression");
+            }
+        } catch (e) {
+            alert("Erreur réseau");
+        } finally {
+            setRemovingId(null);
+            setConfirmDeleteId(null);
+        }
     };
 
     return (
@@ -120,35 +141,70 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
                             <p className="text-center text-sm text-gray-500 py-2">Aucun autre membre.</p>
                         ) : (
                             members.map((member) => (
-                                <div key={member.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
-                                            {member.user.profileImage ? (
-                                                <img src={member.user.profileImage} alt={member.user.name || ""} className="h-full w-full object-cover" />
-                                            ) : (
-                                                <span className="text-xs font-bold text-gray-600">{(member.user.name || member.user.email)[0].toUpperCase()}</span>
-                                            )}
+                                <div key={member.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors min-h-[56px]">
+                                    {confirmDeleteId === member.id ? (
+                                        <div className="flex items-center justify-between w-full bg-red-50 p-2 -m-2 rounded-lg animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="text-sm text-red-700 font-medium">
+                                                Retirer ce membre ?
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={handleCancelRemove}
+                                                    disabled={removingId === member.id}
+                                                    className="h-7 px-2 hover:bg-red-100 text-red-700 hover:text-red-800"
+                                                >
+                                                    Annuler
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => handleConfirmRemove(member.id)}
+                                                    disabled={removingId === member.id}
+                                                    className="h-7 px-2"
+                                                >
+                                                    {removingId === member.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirmer"}
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900">{member.user.name || "Utilisateur"}</div>
-                                            <div className="text-xs text-gray-500">{member.user.email}</div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${member.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                                                member.role === 'EDITOR' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-gray-100 text-gray-600'
-                                            }`}>
-                                            {member.role === 'VIEWER' ? 'Observateur' :
-                                                member.role === 'EDITOR' ? 'Éditeur' : 'Admin'}
-                                        </span>
-                                        {/* Only show delete if current user is owner or admin (logic simplified here) */}
-                                        {currentUserRole === 'OWNER' && (
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600" onClick={() => handleRemoveMember(member.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+                                                    {member.user.profileImage ? (
+                                                        <img src={member.user.profileImage} alt={member.user.name || ""} className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-xs font-bold text-gray-600">{(member.user.name || member.user.email)[0].toUpperCase()}</span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-medium text-gray-900">{member.user.name || "Utilisateur"}</div>
+                                                    <div className="text-xs text-gray-500">{member.user.email}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${member.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+                                                    member.role === 'EDITOR' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                    {member.role === 'VIEWER' ? 'Observateur' :
+                                                        member.role === 'EDITOR' ? 'Éditeur' : 'Admin'}
+                                                </span>
+                                                {/* Only show delete if current user is owner or admin (logic simplified here) */}
+                                                {currentUserRole === 'OWNER' && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-gray-400 hover:text-red-600"
+                                                        onClick={() => handleRequestRemove(member.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             ))
                         )}
