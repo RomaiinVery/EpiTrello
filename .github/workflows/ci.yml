@@ -32,7 +32,7 @@ jobs:
           cd epitrello
           npx prisma generate
         env:
-          DATABASE_URL: "postgresql://user:password@localhost:5432/db"
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Run Linter
         run: |
@@ -44,7 +44,7 @@ jobs:
           cd epitrello
           npm run build
         env:
-          DATABASE_URL: "postgresql://user:password@localhost:5432/db"
-          NEXTAUTH_SECRET: "dummy_secret_for_build"
-          NEXTAUTH_URL: "http://localhost:3000"
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
 
