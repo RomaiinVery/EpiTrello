@@ -27,8 +27,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ boardId:
       members: {
         select: {
           id: true,
-          email: true,
-          name: true,
+          role: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              profileImage: true,
+            }
+          }
         },
       },
       user: {
@@ -46,7 +53,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ boardId:
   }
 
   const isOwner = board.userId === user.id;
-  const isMember = board.members.some(member => member.id === user.id);
+  const isMember = board.members.some(member => member.user.id === user.id);
 
   if (!isOwner && !isMember) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

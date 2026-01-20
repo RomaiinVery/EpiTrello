@@ -28,6 +28,7 @@ interface LogActivityParams {
   metadata?: Record<string, string | number | boolean | null | undefined>;
 }
 
+
 export async function logActivity({
   type,
   description,

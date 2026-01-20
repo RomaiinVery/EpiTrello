@@ -17,6 +17,7 @@ interface LabelPickerProps {
   cardId: string;
   selectedLabels: Label[];
   onLabelsChange: (labels: Label[]) => void;
+  readOnly?: boolean;
 }
 
 const PRESET_COLORS = [
@@ -32,7 +33,7 @@ const PRESET_COLORS = [
   "#344563", // Black
 ];
 
-export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }: LabelPickerProps) {
+export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, readOnly = false }: LabelPickerProps) {
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -61,6 +62,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
   };
 
   const handleCreateLabel = async () => {
+    if (readOnly) return;
     if (!newLabelName.trim()) {
       setError("Le nom de l'étiquette ne peut pas être vide");
       return;
@@ -90,7 +92,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
       setLabels((prev) => [...prev, newLabel]);
       setNewLabelName("");
       setShowCreate(false);
-      
+
       // Automatically add the new label to the card
       handleToggleLabel(newLabel);
     } catch {
@@ -101,6 +103,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
   };
 
   const handleToggleLabel = async (label: Label) => {
+    if (readOnly) return;
     const isSelected = selectedLabels.some(l => l.id === label.id);
 
     try {
@@ -149,13 +152,15 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
               style={{ backgroundColor: label.color }}
             >
               <span>{label.name}</span>
-              <button
-                onClick={() => handleToggleLabel(label)}
-                className="hover:bg-black/20 rounded p-0.5"
-                type="button"
-              >
-                <X className="w-3 h-3" />
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => handleToggleLabel(label)}
+                  className="hover:bg-black/20 rounded p-0.5"
+                  type="button"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -176,17 +181,17 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
                 <button
                   key={label.id}
                   onClick={() => handleToggleLabel(label)}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                    isSelected
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${isSelected
                       ? "ring-2 ring-offset-2"
                       : "opacity-60 hover:opacity-100"
-                  }`}
+                    } ${readOnly ? "cursor-default hover:opacity-60" : ""}`}
                   style={{
                     backgroundColor: label.color,
                     color: isLabelColorLight(label.color) ? "#000" : "#fff",
                     ...(isSelected ? { '--tw-ring-color': label.color } as React.CSSProperties : {}),
                   }}
                   type="button"
+                  disabled={readOnly}
                 >
                   {label.name}
                 </button>
@@ -197,80 +202,81 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange }:
       </div>
 
       {/* Create New Label */}
-      {showCreate ? (
-        <div className="border rounded-lg p-3 space-y-2 bg-gray-50">
-          <Input
-            value={newLabelName}
-            onChange={(e) => setNewLabelName(e.target.value)}
-            placeholder="Nom de l'étiquette"
-            className="text-sm"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleCreateLabel();
-              if (e.key === "Escape") {
-                setShowCreate(false);
-                setNewLabelName("");
-                setError(null);
-              }
-            }}
-            disabled={creating}
-          />
-          
-          {/* Color Picker */}
-          <div className="space-y-1">
-            <p className="text-xs text-gray-500">Couleur</p>
-            <div className="flex flex-wrap gap-2">
-              {PRESET_COLORS.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => setNewLabelColor(color)}
-                  className={`w-8 h-8 rounded border-2 transition-all ${
-                    newLabelColor === color
-                      ? "border-gray-800 scale-110"
-                      : "border-gray-300 hover:border-gray-500"
-                  }`}
-                  style={{ backgroundColor: color }}
-                  type="button"
-                />
-              ))}
+      {!readOnly && (
+        showCreate ? (
+          <div className="border rounded-lg p-3 space-y-2 bg-gray-50">
+            <Input
+              value={newLabelName}
+              onChange={(e) => setNewLabelName(e.target.value)}
+              placeholder="Nom de l'étiquette"
+              className="text-sm"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateLabel();
+                if (e.key === "Escape") {
+                  setShowCreate(false);
+                  setNewLabelName("");
+                  setError(null);
+                }
+              }}
+              disabled={creating}
+            />
+
+            {/* Color Picker */}
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">Couleur</p>
+              <div className="flex flex-wrap gap-2">
+                {PRESET_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setNewLabelColor(color)}
+                    className={`w-8 h-8 rounded border-2 transition-all ${newLabelColor === color
+                        ? "border-gray-800 scale-110"
+                        : "border-gray-300 hover:border-gray-500"
+                      }`}
+                    style={{ backgroundColor: color }}
+                    type="button"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {error && (
+              <p className="text-xs text-red-500">{error}</p>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleCreateLabel}
+                disabled={creating || !newLabelName.trim()}
+              >
+                {creating ? "Création..." : "Créer"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setShowCreate(false);
+                  setNewLabelName("");
+                  setError(null);
+                }}
+              >
+                Annuler
+              </Button>
             </div>
           </div>
-
-          {error && (
-            <p className="text-xs text-red-500">{error}</p>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={handleCreateLabel}
-              disabled={creating || !newLabelName.trim()}
-            >
-              {creating ? "Création..." : "Créer"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setShowCreate(false);
-                setNewLabelName("");
-                setError(null);
-              }}
-            >
-              Annuler
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setShowCreate(true)}
-          className="w-full"
-        >
-          <Plus className="w-4 h-4 mr-1" />
-          Créer une nouvelle étiquette
-        </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowCreate(true)}
+            className="w-full"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Créer une nouvelle étiquette
+          </Button>
+        )
       )}
     </div>
   );

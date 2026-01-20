@@ -25,7 +25,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
-      include: { members: true },
+      include: {
+        members: true,
+        workspace: { include: { members: true } }
+      },
     });
 
     if (!board) {
@@ -33,9 +36,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
     }
 
     const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
+    const isBoardMember = board.members.some(member => member.userId === user.id);
+    const isWorkspaceMember = board.workspace?.members.some(member => member.userId === user.id);
 
-    if (!isOwner && !isMember) {
+    if (!isOwner && !isBoardMember && !isWorkspaceMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -114,7 +118,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
-      include: { members: true },
+      include: {
+        members: true,
+        workspace: { include: { members: true } }
+      },
     });
 
     if (!board) {
@@ -122,10 +129,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
     }
 
     const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
+    const boardMember = board.members.find(member => member.userId === user.id);
+    const workspaceMember = board.workspace?.members.find(member => member.userId === user.id);
 
-    if (!isOwner && !isMember) {
+    if (!isOwner && !boardMember && !workspaceMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const role = boardMember?.role || workspaceMember?.role || "VIEWER";
+    if (!isOwner && role === "VIEWER") {
+      return NextResponse.json({ error: "Forbidden: Viewers cannot update content" }, { status: 403 });
     }
 
     if (title === undefined && content === undefined && coverImage === undefined && dueDate === undefined && startDate === undefined && isDone === undefined) {
@@ -253,7 +266,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
-      include: { members: true },
+      include: {
+        members: true,
+        workspace: { include: { members: true } }
+      },
     });
 
     if (!board) {
@@ -261,10 +277,16 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
     }
 
     const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
+    const boardMember = board.members.find(member => member.userId === user.id);
+    const workspaceMember = board.workspace?.members.find(member => member.userId === user.id);
 
-    if (!isOwner && !isMember) {
+    if (!isOwner && !boardMember && !workspaceMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const role = boardMember?.role || workspaceMember?.role || "VIEWER";
+    if (!isOwner && role === "VIEWER") {
+      return NextResponse.json({ error: "Forbidden: Viewers cannot modify content" }, { status: 403 });
     }
 
     const card = await prisma.card.findUnique({

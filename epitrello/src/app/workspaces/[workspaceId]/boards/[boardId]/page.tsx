@@ -1,12 +1,17 @@
 import { fetchBoard, fetchLists, fetchCards, Card } from "@/app/lib/board-api";
 import BoardClient from "@/app/boards/[boardId]/board-client";
 
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/app/lib/prisma";
+
 export default async function BoardPage({
   params,
 }: {
   params: Promise<{ workspaceId: string; boardId: string }>;
 }) {
   const { workspaceId, boardId } = await params;
+  const session = await getServerSession(authOptions);
 
   const boardData = await fetchBoard(boardId);
 
@@ -16,6 +21,37 @@ export default async function BoardPage({
         Board introuvable
       </div>
     );
+  }
+
+  // Determine Role
+  let currentUserRole = "VIEWER";
+  if (session?.user?.email) {
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (user) {
+      const workspace = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        include: { members: true }
+      });
+
+      if (workspace) {
+        if (workspace.userId === user.id) {
+          currentUserRole = "OWNER";
+        } else {
+          // Check workspace member role
+          const wsMember = workspace.members.find(m => m.userId === user.id);
+          if (wsMember) {
+            currentUserRole = wsMember.role; // EDITOR, ADMIN, VIEWER
+          }
+          // Check board member role override if we want to be specific, 
+          // but usually workspace role is the base. 
+          // Let's stick to workspace role as the primary driver for now, 
+          // or check if BoardMember exists explicitly. 
+          // The invite system adds to BoardMember too. 
+          // Let's trust workspace member role for simplicity as per current 'InviteMemberModal' logic 
+          // which sets workspace member role.
+        }
+      }
+    }
   }
 
   const listsData = await fetchLists(boardId);
@@ -35,6 +71,7 @@ export default async function BoardPage({
       boardId={boardId}
       initialBoard={initialBoard}
       initialCardsByList={initialCardsByList}
+      currentUserRole={currentUserRole}
     />
   );
 }

@@ -27,7 +27,9 @@ export async function GET(req: Request) {
       workspaceId,
       OR: [
         { userId: user.id },
-        { members: { some: { id: user.id } } }
+        { members: { some: { userId: user.id } } },
+        { workspace: { members: { some: { userId: user.id } } } },
+        { workspace: { userId: user.id } }
       ]
     },
     orderBy: {
@@ -35,7 +37,13 @@ export async function GET(req: Request) {
     },
     include: {
       members: {
-        select: { id: true, name: true, email: true }
+        select: {
+          id: true,
+          role: true,
+          user: {
+            select: { id: true, name: true, email: true, profileImage: true }
+          }
+        }
       },
       user: {
         select: { id: true, name: true, email: true }
@@ -68,11 +76,24 @@ export async function POST(req: Request) {
   }
 
   const workspace = await prisma.workspace.findFirst({
-    where: { id: workspaceId, userId: user.id },
+    where: {
+      id: workspaceId,
+      OR: [
+        { userId: user.id },
+        {
+          members: {
+            some: {
+              userId: user.id,
+              role: { in: ["ADMIN", "EDITOR"] }
+            }
+          }
+        }
+      ]
+    },
   });
 
   if (!workspace) {
-    return NextResponse.json({ error: "Workspace introuvable ou non autorisé" }, { status: 404 });
+    return NextResponse.json({ error: "Workspace introuvable ou vous n'avez pas les droits de création" }, { status: 404 });
   }
 
   const board = await prisma.board.create({

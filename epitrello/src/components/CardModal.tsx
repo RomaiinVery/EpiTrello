@@ -21,6 +21,7 @@ interface CardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  currentUserRole?: string;
 }
 
 export function CardModal({
@@ -30,12 +31,15 @@ export function CardModal({
   isOpen,
   onClose,
   onUpdate,
+  currentUserRole,
 }: CardModalProps) {
   const [card, setCard] = useState<CardDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [lastActivityUpdate, setLastActivityUpdate] = useState(0);
+
+  const canEdit = currentUserRole !== "VIEWER";
 
   // Title Editing State
   const [title, setTitle] = useState("");
@@ -156,7 +160,7 @@ export function CardModal({
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b">
           <div className="flex-1 pr-4">
-            {isEditingTitle ? (
+            {isEditingTitle && canEdit ? (
               <div className="space-y-2">
                 <Input
                   value={title}
@@ -179,8 +183,8 @@ export function CardModal({
               </div>
             ) : (
               <h2
-                className="text-xl font-semibold text-gray-800 cursor-pointer hover:bg-gray-100 p-2 -m-2 rounded"
-                onClick={() => setIsEditingTitle(true)}
+                className={`text-xl font-semibold text-gray-800 p-2 -m-2 rounded ${canEdit ? "cursor-pointer hover:bg-gray-100" : ""}`}
+                onClick={() => canEdit && setIsEditingTitle(true)}
               >
                 {card?.title || "Chargement..."}
               </h2>
@@ -230,6 +234,7 @@ export function CardModal({
                       initialDescription={card.content}
                       onUpdate={onUpdate}
                       onCardUpdate={handleCardUpdate}
+                      readOnly={!canEdit}
                     />
 
                     <CardActions
@@ -243,6 +248,7 @@ export function CardModal({
                       onUpdate={onUpdate}
                       onCardUpdate={handleCardUpdate}
                       onActivityUpdate={triggerActivityUpdate}
+                      readOnly={!canEdit}
                     />
 
                     <CommentSection
@@ -252,6 +258,7 @@ export function CardModal({
                       currentUser={currentUser}
                       onUpdate={onUpdate}
                       onActivityUpdate={triggerActivityUpdate}
+                      readOnly={!canEdit}
                     />
 
 
@@ -261,6 +268,7 @@ export function CardModal({
                       cardId={cardId}
                       onUpdate={onUpdate}
                       onActivityUpdate={triggerActivityUpdate}
+                      readOnly={!canEdit}
                     />
 
                     <ChecklistSection
@@ -269,6 +277,7 @@ export function CardModal({
                       cardId={cardId}
                       onUpdate={onUpdate}
                       onActivityUpdate={triggerActivityUpdate}
+                      readOnly={!canEdit}
                     />
 
                     <ActivityLog

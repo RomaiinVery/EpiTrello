@@ -18,9 +18,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InviteMemberModal } from "@/components/modals/InviteMemberModal";
 
 type Board = { id: string; title: string; description?: string };
-type Workspace = { id: string; title: string };
+type Workspace = { id: string; title: string; currentUserRole?: string };
 
 export default function BoardsByWorkspacePage() {
   const params = useParams<{ workspaceId: string }>();
@@ -50,13 +51,6 @@ export default function BoardsByWorkspacePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
 
-  // Invitation state
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviting, setInviting] = useState(false);
-  const [inviteError, setInviteError] = useState<string | null>(null);
-  const [inviteSuccess, setInviteSuccess] = useState(false);
-
   useEffect(() => {
     if (!workspaceId) return;
 
@@ -67,7 +61,11 @@ export default function BoardsByWorkspacePage() {
           router.replace("/workspaces");
           return;
         }
-        setWorkspace({ id: data.id, title: data.title });
+        setWorkspace({
+          id: data.id,
+          title: data.title,
+          currentUserRole: data.currentUserRole
+        });
       });
 
     fetch(`/api/boards?workspaceId=${workspaceId}`)
@@ -164,38 +162,6 @@ export default function BoardsByWorkspacePage() {
     }
   };
 
-  const handleInvite = async () => {
-    if (!inviteEmail || !workspaceId) return;
-
-    setInviting(true);
-    setInviteError(null);
-    setInviteSuccess(false);
-
-    try {
-      const res = await fetch(`/api/workspaces/${workspaceId}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail }),
-      });
-
-      if (res.ok) {
-        setInviteSuccess(true);
-        setInviteEmail("");
-        setTimeout(() => {
-          setInviteOpen(false);
-          setInviteSuccess(false);
-        }, 1500);
-      } else {
-        const data = await res.json();
-        setInviteError(data.error || "Une erreur est survenue");
-      }
-    } catch (err) {
-      console.error(err);
-      setInviteError("Erreur réseau");
-    }
-    setInviting(false);
-  };
-
   if (!workspaceId) return null;
 
   return (
@@ -207,12 +173,17 @@ export default function BoardsByWorkspacePage() {
           </Link>
           <div className="flex items-center gap-4 mt-2">
             <h1 className="text-2xl font-semibold">{workspace?.title || "Workspace"}</h1>
-            <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)}>
-              Inviter un membre
-            </Button>
+            {workspace?.currentUserRole && workspace.currentUserRole !== "VIEWER" && (
+              <InviteMemberModal
+                workspaceId={workspaceId}
+                resourceTitle={workspace?.title || "Workspace"}
+              />
+            )}
           </div>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>Créer une board</Button>
+        {workspace?.currentUserRole && workspace.currentUserRole !== "VIEWER" && (
+          <Button onClick={() => setCreateOpen(true)}>Créer une board</Button>
+        )}
       </div>
       <ul className="space-y-2">
         {boards.map((b) => (
@@ -227,25 +198,27 @@ export default function BoardsByWorkspacePage() {
               )}
             </Link>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="text-gray-400 hover:text-gray-700 text-xl">
-                  ⋯
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => {
-                  setRenameBoardId(b.id);
-                  setNewTitle(b.title);
-                  setRenameOpen(true);
-                }}>
-                  Renommer
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDelete(b.id)}>
-                  Supprimer
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {workspace?.currentUserRole && workspace.currentUserRole !== "VIEWER" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="text-gray-400 hover:text-gray-700 text-xl">
+                    ⋯
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => {
+                    setRenameBoardId(b.id);
+                    setNewTitle(b.title);
+                    setRenameOpen(true);
+                  }}>
+                    Renommer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDelete(b.id)}>
+                    Supprimer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </li>
         ))}
       </ul>
@@ -388,40 +361,6 @@ export default function BoardsByWorkspacePage() {
             </Button>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Annuler
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Invite Dialog */}
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Inviter un membre au workspace</DialogTitle>
-          </DialogHeader>
-          <div className="mb-4">
-            <p className="text-sm text-gray-500 mb-2">
-              Le membre aura accès à toutes les boards de ce workspace.
-            </p>
-            <Input
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="Email du membre"
-              type="email"
-            />
-            {inviteError && (
-              <p className="text-red-500 text-sm mt-2">{inviteError}</p>
-            )}
-            {inviteSuccess && (
-              <p className="text-green-500 text-sm mt-2">Invitation envoyée avec succès !</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button onClick={handleInvite} disabled={!inviteEmail || inviting}>
-              {inviting ? "Envoi..." : "Inviter"}
-            </Button>
-            <Button variant="outline" onClick={() => setInviteOpen(false)}>
-              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>
