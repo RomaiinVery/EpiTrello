@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AuthPage() {
+function AuthForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const initialMode = searchParams.get("mode") === "register" ? "REGISTER" : "LOGIN";
 
-  const [variant, setVariant] = useState<"LOGIN" | "REGISTER" | "VERIFY">("LOGIN");
+  const [variant, setVariant] = useState<"LOGIN" | "REGISTER" | "VERIFY">(initialMode);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -41,6 +44,7 @@ export default function AuthPage() {
     const callback = await signIn("credentials", {
       ...data,
       redirect: false,
+      callbackUrl,
     });
 
     if (callback?.error) {
@@ -48,7 +52,7 @@ export default function AuthPage() {
     }
 
     if (callback?.ok && !callback?.error) {
-      router.push("/");
+      router.push(callbackUrl);
       router.refresh();
     }
   };
@@ -315,5 +319,17 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full" />
+      </div>
+    }>
+      <AuthForm />
+    </Suspense>
   );
 }
