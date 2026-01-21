@@ -69,7 +69,7 @@ export function ActiveBoards() {
                 {boards.map((board) => (
                     <Link
                         key={board.id}
-                        href={`/board/${board.id}`}
+                        href={`/workspaces/${board.workspaceId}/boards/${board.id}`}
                         className="group relative h-28 p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all bg-white flex flex-col justify-between overflow-hidden"
                     >
                         {/* Gradient Background Decoration */}

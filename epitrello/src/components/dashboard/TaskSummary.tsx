@@ -16,6 +16,10 @@ type Task = {
         board: {
             id: string;
             title: string;
+            workspace: {
+                id: string;
+                title: string;
+            };
         };
     };
 };
@@ -74,7 +78,7 @@ export function TaskSummary() {
                             <button className="mt-1 flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-300 group-hover:border-blue-500 transition-colors"></button>
 
                             <div className="flex-1 min-w-0">
-                                <Link href={`/board/${task.list.board.id}?cardId=${task.id}`} className="block">
+                                <Link href={`/workspaces/${task.list.board.workspace.id}/boards/${task.list.board.id}?cardId=${task.id}`} className="block">
                                     <h4 className="text-sm font-semibold text-gray-800 truncate group-hover:text-blue-700">
                                         {task.title}
                                     </h4>
