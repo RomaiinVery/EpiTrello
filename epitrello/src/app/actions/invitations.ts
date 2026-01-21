@@ -89,9 +89,9 @@ export async function createInvitation({
         }
 
         // Send Email
-        // Construct link: http://localhost:3000/invite/{token}
-        // TODO: Use Env var for BASE_URL
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        // Construct invite link using production URL
+        const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || vercelUrl || "http://localhost:3000";
         const inviteLink = `${baseUrl}/invite/${token}`;
 
         let resourceTitle = "Workspace";

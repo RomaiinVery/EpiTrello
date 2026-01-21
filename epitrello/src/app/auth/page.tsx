@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 function AuthForm() {
   const router = useRouter();
@@ -225,10 +226,10 @@ function AuthForm() {
                       disabled={isLoading}
                       value={data.email}
                       onChange={handleChange}
-                      className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${errorMessage && errorMessage.toLowerCase().includes("email")
+                      className={`appearance - none block w - full px - 3 py - 2 border rounded - md shadow - sm placeholder - gray - 400 focus: outline - none sm: text - sm ${errorMessage && errorMessage.toLowerCase().includes("email")
                         ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                        }`}
+                        } `}
                     />
                   </div>
                 </div>
@@ -247,16 +248,16 @@ function AuthForm() {
                       disabled={isLoading}
                       value={data.password}
                       onChange={handleChange}
-                      className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${errorMessage && errorMessage.toLowerCase().includes("mot de passe")
+                      className={`appearance - none block w - full px - 3 py - 2 border rounded - md shadow - sm placeholder - gray - 400 focus: outline - none sm: text - sm ${errorMessage && errorMessage.toLowerCase().includes("mot de passe")
                         ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                        }`}
+                        } `}
                     />
                   </div>
                   <div className="text-right mt-1">
-                    <a href="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">
+                    <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">
                       Mot de passe oublié ?
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </>
