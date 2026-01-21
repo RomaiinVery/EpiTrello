@@ -14,17 +14,24 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api/register") ||
     pathname.startsWith("/api/verify");
 
+  // 1. Redirect unauthenticated users trying to access private paths
   if (!token && !isPublicPath) {
     if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const url = new URL("/auth", req.url);
     url.searchParams.set("callbackUrl", encodeURI(req.url));
     return NextResponse.redirect(url);
   }
 
-  if (token && pathname === "/auth") {
-    return NextResponse.redirect(new URL("/", req.url));
+  // 2. Redirect authenticated users from Main Public Pages to Dashboard
+  if (token) {
+    if (pathname === "/auth") {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
   }
 
   return NextResponse.next();
