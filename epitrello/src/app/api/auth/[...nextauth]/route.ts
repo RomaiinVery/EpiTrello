@@ -44,6 +44,21 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
+  callbacks: {
+    async jwt({ token, trigger, session }) {
+      // Allow client to update session
+      if (trigger === "update" && session?.name) {
+        token.name = session.name;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.name) {
+        session.user.name = token.name;
+      }
+      return session;
+    },
+  },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 };

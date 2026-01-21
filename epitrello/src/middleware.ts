@@ -15,6 +15,9 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api/verify");
 
   if (!token && !isPublicPath) {
+    if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const url = new URL("/auth", req.url);
     url.searchParams.set("callbackUrl", encodeURI(req.url));
     return NextResponse.redirect(url);

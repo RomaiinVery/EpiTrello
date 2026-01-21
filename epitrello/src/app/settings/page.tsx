@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signOut, useSession } from "next-auth/react"; 
+import { signOut, useSession } from "next-auth/react";
 
 type SettingsState = {
   displayName: string;
@@ -24,7 +24,7 @@ type PasswordState = {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
 
   const [values, setValues] = useState<SettingsState>({
     displayName: "",
@@ -56,79 +56,79 @@ export default function SettingsPage() {
   const [loadingGithub, setLoadingGithub] = useState(false);
   const searchParams = useSearchParams();
 
-  
-    useEffect(() => {
-        if (status === "authenticated" && session?.user) {
-        setValues((prev) => ({
-            ...prev,
-            displayName: session.user?.name || "", 
-            email: session.user?.email || "",
-            timezone: "Europe/Paris", 
-        }));
-        // Fetch user profile image
-        fetch("/api/user/profile-image")
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.profileImage) {
-              setProfileImage(data.profileImage);
-            }
-          })
-          .catch(() => {});
-        // Fetch GitHub status
-        fetch("/api/user/github")
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.isLinked !== undefined) {
-              setGithubStatus({
-                isLinked: data.isLinked,
-                username: data.username,
-                avatarUrl: data.avatarUrl,
-              });
-            }
-          })
-          .catch(() => {});
-        } else if (status === "unauthenticated") {
-            router.push("/auth");
-        }
-    }, [session, status, router]);
 
-    // Handle query params for GitHub linking success/error
-    useEffect(() => {
-      const success = searchParams.get("success");
-      const error = searchParams.get("error");
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      setValues((prev) => ({
+        ...prev,
+        displayName: session.user?.name || "",
+        email: session.user?.email || "",
+        timezone: "Europe/Paris",
+      }));
+      // Fetch user profile image
+      fetch("/api/user/profile-image")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.profileImage) {
+            setProfileImage(data.profileImage);
+          }
+        })
+        .catch(() => { });
+      // Fetch GitHub status
+      fetch("/api/user/github")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.isLinked !== undefined) {
+            setGithubStatus({
+              isLinked: data.isLinked,
+              username: data.username,
+              avatarUrl: data.avatarUrl,
+            });
+          }
+        })
+        .catch(() => { });
+    } else if (status === "unauthenticated") {
+      router.push("/auth");
+    }
+  }, [session, status, router]);
 
-      if (success === "github_linked") {
-        setMessage("Compte GitHub lié avec succès !");
-        setTimeout(() => setMessage(null), 5000);
-        // Refresh GitHub status
-        fetch("/api/user/github")
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.isLinked !== undefined) {
-              setGithubStatus({
-                isLinked: data.isLinked,
-                username: data.username,
-                avatarUrl: data.avatarUrl,
-              });
-            }
-          })
-          .catch(() => {});
-        // Clean URL
-        router.replace("/settings");
-      } else if (error === "github_auth_failed") {
-        setMessage("Échec de l'authentification GitHub. Veuillez réessayer.");
-        setTimeout(() => setMessage(null), 5000);
-        router.replace("/settings");
-      } else if (error === "github_token_error") {
-        setMessage("Erreur lors de l'obtention du token GitHub. Veuillez réessayer.");
-        setTimeout(() => setMessage(null), 5000);
-        router.replace("/settings");
-      } else if (error === "server_error") {
-        setMessage("Erreur serveur lors de la liaison du compte GitHub.");
-        setTimeout(() => setMessage(null), 5000);
-        router.replace("/settings");
-      }
-    }, [searchParams, router]);
+  // Handle query params for GitHub linking success/error
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const error = searchParams.get("error");
+
+    if (success === "github_linked") {
+      setMessage("Compte GitHub lié avec succès !");
+      setTimeout(() => setMessage(null), 5000);
+      // Refresh GitHub status
+      fetch("/api/user/github")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.isLinked !== undefined) {
+            setGithubStatus({
+              isLinked: data.isLinked,
+              username: data.username,
+              avatarUrl: data.avatarUrl,
+            });
+          }
+        })
+        .catch(() => { });
+      // Clean URL
+      router.replace("/settings");
+    } else if (error === "github_auth_failed") {
+      setMessage("Échec de l'authentification GitHub. Veuillez réessayer.");
+      setTimeout(() => setMessage(null), 5000);
+      router.replace("/settings");
+    } else if (error === "github_token_error") {
+      setMessage("Erreur lors de l'obtention du token GitHub. Veuillez réessayer.");
+      setTimeout(() => setMessage(null), 5000);
+      router.replace("/settings");
+    } else if (error === "server_error") {
+      setMessage("Erreur serveur lors de la liaison du compte GitHub.");
+      setTimeout(() => setMessage(null), 5000);
+      router.replace("/settings");
+    }
+  }, [searchParams, router]);
 
 
   function handleChange<K extends keyof SettingsState>(key: K, val: SettingsState[K]) {
@@ -139,22 +139,58 @@ export default function SettingsPage() {
     setPasswords((prev) => ({ ...prev, [field]: e.target.value }));
   }
 
-  function handleSubmit(e?: React.FormEvent) {
-    e?.preventDefault();
-    setSaving(true);
-    setMessage(null);
+  async function handleSubmit(e?: React.FormEvent) {
+    try {
+      e?.preventDefault();
 
-    if (!/^\S+@\S+\.\S+$/.test(values.email)) {
-      setMessage("Please provide a valid email address.");
+      if (typeof values.email !== 'string') {
+        return;
+      }
+
+      setSaving(true);
+      setMessage(null);
+
+      if (!values.email || !/^\S+@\S+\.\S+$/.test(values.email)) {
+        setMessage("Please provide a valid email address.");
+        setSaving(false);
+        return;
+      }
+
+      const res = await fetch("/api/user/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache"
+        },
+        cache: "no-store",
+        body: JSON.stringify({ displayName: values.displayName }),
+      });
+
+      if (res.ok) {
+        if (update) {
+          // Update the session with the new name to persist it in the cookie
+          await update({ name: values.displayName });
+        }
+
+        // Update local state immediately
+        setValues(prev => ({ ...prev, displayName: values.displayName }));
+
+        setMessage("Settings saved successfully.");
+
+        // Reload to ensure everything is consistent
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } else {
+        const data = await res.json();
+        setMessage(data.error || "Something went wrong.");
+      }
+    } catch (error) {
+      console.error(error);
+      setMessage("Failed to save settings.");
+    } finally {
       setSaving(false);
-      return;
     }
-
-    setTimeout(() => {
-      setSaving(false);
-      setMessage("Settings saved successfully (Simulation).");
-      setTimeout(() => setMessage(null), 3000);
-    }, 800);
   }
 
   function handleSecuritySubmit(e?: React.FormEvent) {
@@ -241,7 +277,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/auth/github/authorize");
       const data = await res.json();
-      
+
       if (res.ok && data.authUrl) {
         window.location.href = data.authUrl;
       } else {
@@ -289,8 +325,8 @@ export default function SettingsPage() {
     return (
       <div className="flex h-screen w-full items-center justify-center text-gray-500">
         <div className="animate-pulse flex flex-col items-center">
-            <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-            Loading profile...
+          <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          Loading profile...
         </div>
       </div>
     );
@@ -298,57 +334,57 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-10 font-sans text-gray-900">
-      
+
       {/* Header with Back Button */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div className="flex items-center gap-4">
-            <button 
-                onClick={() => router.back()}
-                className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600"
-                aria-label="Go back"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                </svg>
-            </button>
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900">Settings</h1>
-                <p className="text-gray-500 mt-1">Manage your profile preferences and security settings.</p>
-            </div>
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600"
+            aria-label="Go back"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Settings</h1>
+            <p className="text-gray-500 mt-1">Manage your profile preferences and security settings.</p>
+          </div>
         </div>
 
         {/* Global Actions */}
         <div className="flex items-center gap-3">
-            <button 
-                onClick={() => signOut({ callbackUrl: "/auth" })} 
-                className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors"
-            >
-                Logout
-            </button>
-            <button 
-                onClick={handleSubmit} 
-                disabled={saving}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-            >
-                {saving ? "Saving..." : "Save Changes"}
-            </button>
+          <button
+            onClick={() => signOut({ callbackUrl: "/auth" })}
+            className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors"
+          >
+            Logout
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
         </div>
       </div>
 
       {/* Feedback Message */}
       {message && (
         <div className={`mb-6 p-4 rounded-lg border ${message.includes("valid") ? "bg-red-50 border-red-200 text-red-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"} flex items-center gap-2`}>
-            <span>{message.includes("valid") ? "⚠️" : "✅"}</span>
-            {message}
+          <span>{message.includes("valid") ? "⚠️" : "✅"}</span>
+          {message}
         </div>
       )}
 
       <div className="space-y-6">
-        
+
         {/* SECTION 1: Profile */}
         <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Profile Information</h2>
-          
+
           {/* Profile Picture Section */}
           <div className="mb-6 flex items-center gap-6">
             <div className="relative">
@@ -429,30 +465,30 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Language</label>
-                    <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                        value={values.language}
-                        onChange={(e) => handleChange("language", e.target.value)}
-                    >
-                        <option value="en">English</option>
-                        <option value="es">Español</option>
-                        <option value="fr">Français</option>
-                    </select>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Theme</label>
-                    <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                        value={values.theme}
-                        onChange={(e) => handleChange("theme", e.target.value as SettingsState["theme"])}
-                    >
-                        <option value="system">System</option>
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                    </select>
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Language</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  value={values.language}
+                  onChange={(e) => handleChange("language", e.target.value)}
+                >
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Français</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Theme</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  value={values.theme}
+                  onChange={(e) => handleChange("theme", e.target.value as SettingsState["theme"])}
+                >
+                  <option value="system">System</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
             </div>
           </div>
         </section>
@@ -462,22 +498,22 @@ export default function SettingsPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Notifications</h2>
           <div className="space-y-4">
             {[
-                { key: "emailNotifications", label: "Email Notifications", desc: "Receive daily digests and important alerts." },
+              { key: "emailNotifications", label: "Email Notifications", desc: "Receive daily digests and important alerts." },
             ].map((item) => (
-                <div key={item.key} className="flex items-start gap-3">
-                    <div className="flex h-6 items-center">
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                            checked={values[item.key as keyof SettingsState] as boolean}
-                            onChange={(e) => handleChange(item.key as keyof SettingsState, e.target.checked)}
-                        />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-gray-900 block">{item.label}</label>
-                        <p className="text-sm text-gray-500">{item.desc}</p>
-                    </div>
+              <div key={item.key} className="flex items-start gap-3">
+                <div className="flex h-6 items-center">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    checked={values[item.key as keyof SettingsState] as boolean}
+                    onChange={(e) => handleChange(item.key as keyof SettingsState, e.target.checked)}
+                  />
                 </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-900 block">{item.label}</label>
+                  <p className="text-sm text-gray-500">{item.desc}</p>
+                </div>
+              </div>
             ))}
           </div>
         </section>
@@ -487,41 +523,41 @@ export default function SettingsPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Security</h2>
           <form onSubmit={handleSecuritySubmit} className="max-w-md space-y-4">
             <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Current Password</label>
-                <input
-                    type="password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={passwords.current}
-                    onChange={(e) => handlePasswordChange(e, 'current')}
-                />
+              <label className="text-sm font-medium text-gray-700">Current Password</label>
+              <input
+                type="password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={passwords.current}
+                onChange={(e) => handlePasswordChange(e, 'current')}
+              />
             </div>
             <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">New Password</label>
-                <input
-                    type="password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={passwords.newP}
-                    onChange={(e) => handlePasswordChange(e, 'newP')}
-                />
+              <label className="text-sm font-medium text-gray-700">New Password</label>
+              <input
+                type="password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={passwords.newP}
+                onChange={(e) => handlePasswordChange(e, 'newP')}
+              />
             </div>
             <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
-                <input
-                    type="password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={passwords.confirm}
-                    onChange={(e) => handlePasswordChange(e, 'confirm')}
-                />
+              <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
+              <input
+                type="password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={passwords.confirm}
+                onChange={(e) => handlePasswordChange(e, 'confirm')}
+              />
             </div>
 
             {pwError && <div className="text-sm text-red-600 font-medium">{pwError}</div>}
-            
-            <button 
-                type="submit" 
-                disabled={saving}
-                className="mt-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="mt-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
             >
-                Update Password
+              Update Password
             </button>
           </form>
         </section>
@@ -529,7 +565,7 @@ export default function SettingsPage() {
         {/* SECTION 4: Connected Accounts */}
         <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Connected Accounts</h2>
-          
+
           <div className="space-y-4">
             {/* GitHub Account */}
             <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
