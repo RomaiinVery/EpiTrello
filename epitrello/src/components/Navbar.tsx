@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
 
@@ -49,9 +50,12 @@ export function Navbar() {
               className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors p-2 rounded-md hover:bg-gray-50"
             >
               {profileImage ? (
-                <img
+                <Image
                   src={profileImage}
                   alt={session.user.name || "Profile"}
+                  width={32}
+                  height={32}
+                  unoptimized
                   className="w-8 h-8 rounded-full object-cover border border-gray-200"
                 />
               ) : (

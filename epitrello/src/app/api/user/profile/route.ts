@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/app/lib/prisma";
 
-export async function GET(req: Request) {
+export async function GET() {
     try {
         const session = await getServerSession(authOptions);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

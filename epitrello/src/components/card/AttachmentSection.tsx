@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { Paperclip, Plus, Trash2, FileText, Image as ImageIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Attachment } from "@/types";
@@ -26,11 +27,7 @@ export function AttachmentSection({
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        fetchAttachments();
-    }, [boardId, listId, cardId]);
-
-    const fetchAttachments = async () => {
+    const fetchAttachments = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(
@@ -45,7 +42,11 @@ export function AttachmentSection({
         } finally {
             setLoading(false);
         }
-    };
+    }, [boardId, listId, cardId]);
+
+    useEffect(() => {
+        fetchAttachments();
+    }, [fetchAttachments]);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (readOnly) return;
@@ -154,10 +155,12 @@ export function AttachmentSection({
                         {/* Thumbnail / Icon */}
                         <div className="w-16 h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center flex-shrink-0">
                             {attachment.type.startsWith("image/") ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
+                                <Image
                                     src={attachment.url}
                                     alt={attachment.name}
+                                    width={64}
+                                    height={48}
+                                    unoptimized
                                     className="w-full h-full object-cover"
                                 />
                             ) : (

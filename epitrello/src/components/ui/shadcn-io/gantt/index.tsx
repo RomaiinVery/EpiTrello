@@ -1233,6 +1233,7 @@ export const GanttProvider: FC<GanttProviderProps> = ({
       scrollRef.current.scrollLeft = Math.max(0, targetScroll);
       setScrollX(scrollRef.current.scrollLeft);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setScrollX]); // Only run once on mount (or when dependencies change if I added them, but empty dep array or stable deps is better for "initial" scroll)
   // Wait, the original effect had `[setScrollX]`.
   // I should probably depend on `timelineData` (initial), `zoom`, `range` to be safe if they change?
@@ -1269,6 +1270,7 @@ export const GanttProvider: FC<GanttProviderProps> = ({
   }, []);
 
   // Fix the useCallback to include all dependencies
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleScroll = useCallback(
     throttle(() => {
       const scrollElement = scrollRef.current;

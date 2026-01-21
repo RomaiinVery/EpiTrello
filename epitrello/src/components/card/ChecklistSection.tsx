@@ -34,10 +34,6 @@ export function ChecklistSection({
     const [newItemTexts, setNewItemTexts] = useState<Record<string, string>>({});
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchChecklists();
-    }, [boardId, listId, cardId]);
-
     const fetchChecklists = useCallback(async () => {
         setLoading(true);
         try {
@@ -54,6 +50,10 @@ export function ChecklistSection({
             setLoading(false);
         }
     }, [boardId, listId, cardId]);
+
+    useEffect(() => {
+        fetchChecklists();
+    }, [fetchChecklists]);
 
     const handleCreateChecklist = async () => {
         if (readOnly) return;

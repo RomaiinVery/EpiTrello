@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 
 type SettingsState = {
@@ -474,9 +475,12 @@ export default function SettingsPage() {
           <div className="mb-6 flex items-center gap-6">
             <div className="relative">
               {profileImage ? (
-                <img
+                <Image
                   src={profileImage}
                   alt="Profile"
+                  width={96}
+                  height={96}
+                  unoptimized
                   className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
                 />
               ) : (
@@ -664,9 +668,12 @@ export default function SettingsPage() {
                   {githubStatus.isLinked ? (
                     <div className="flex items-center gap-2 mt-1">
                       {githubStatus.avatarUrl && (
-                        <img
+                        <Image
                           src={githubStatus.avatarUrl}
                           alt="GitHub"
+                          width={20}
+                          height={20}
+                          unoptimized
                           className="w-5 h-5 rounded-full"
                         />
                       )}

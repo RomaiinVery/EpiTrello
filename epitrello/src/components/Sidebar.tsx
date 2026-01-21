@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Home, Layers, Settings, Plus, ChevronRight, FolderKanban, Activity } from "lucide-react";
+import { Home, Layers, Settings, Plus, ChevronRight, Activity } from "lucide-react";
 
 type Workspace = {
   id: string;
@@ -228,9 +229,12 @@ export function Sidebar() {
           className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-colors"
         >
           {profileImage ? (
-            <img
+            <Image
               src={profileImage}
               alt={session?.user?.name || "Profile"}
+              width={40}
+              height={40}
+              unoptimized
               className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
             />
           ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,11 +42,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, r
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchLabels();
-  }, [boardId]);
-
-  const fetchLabels = async () => {
+  const fetchLabels = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/boards/${boardId}/labels`);
@@ -59,7 +55,11 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, r
     } finally {
       setLoading(false);
     }
-  };
+  }, [boardId]);
+
+  useEffect(() => {
+    fetchLabels();
+  }, [fetchLabels]);
 
   const handleCreateLabel = async () => {
     if (readOnly) return;
@@ -182,8 +182,8 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, r
                   key={label.id}
                   onClick={() => handleToggleLabel(label)}
                   className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${isSelected
-                      ? "ring-2 ring-offset-2"
-                      : "opacity-60 hover:opacity-100"
+                    ? "ring-2 ring-offset-2"
+                    : "opacity-60 hover:opacity-100"
                     } ${readOnly ? "cursor-default hover:opacity-60" : ""}`}
                   style={{
                     backgroundColor: label.color,
@@ -231,8 +231,8 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, r
                     key={color}
                     onClick={() => setNewLabelColor(color)}
                     className={`w-8 h-8 rounded border-2 transition-all ${newLabelColor === color
-                        ? "border-gray-800 scale-110"
-                        : "border-gray-300 hover:border-gray-500"
+                      ? "border-gray-800 scale-110"
+                      : "border-gray-300 hover:border-gray-500"
                       }`}
                     style={{ backgroundColor: color }}
                     type="button"

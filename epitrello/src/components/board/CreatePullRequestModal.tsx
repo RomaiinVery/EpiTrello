@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,14 +32,7 @@ export function CreatePullRequestModal({
     const [loadingBranches, setLoadingBranches] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isOpen) {
-            setTitle(cardTitle);
-            fetchBranches();
-        }
-    }, [isOpen, cardTitle]); // Added cardTitle previously, should be fine. Linter says fetchBranches missing deps.
-
-    const fetchBranches = async () => {
+    const fetchBranches = useCallback(async () => {
         setLoadingBranches(true);
         setError(null);
         try {
@@ -57,7 +50,14 @@ export function CreatePullRequestModal({
         } finally {
             setLoadingBranches(false);
         }
-    };
+    }, [boardId]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTitle(cardTitle);
+            fetchBranches();
+        }
+    }, [isOpen, cardTitle, fetchBranches]);
 
     const handleConfirm = () => {
         if (!title || !head || !base) return;

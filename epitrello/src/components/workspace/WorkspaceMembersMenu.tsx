@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
     Dialog,
     DialogContent,
@@ -38,13 +39,7 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
     const [removingId, setRemovingId] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchMembers();
-        }
-    }, [isOpen, workspaceId]);
-
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -58,7 +53,13 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
         } finally {
             setLoading(false);
         }
-    };
+    }, [workspaceId]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchMembers();
+        }
+    }, [isOpen, fetchMembers]);
 
     const handleRequestRemove = (membershipId: string) => {
         setConfirmDeleteId(membershipId);
@@ -115,7 +116,7 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
                                 <div className="flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200">
                                         {owner.profileImage ? (
-                                            <img src={owner.profileImage} alt={owner.name || ""} className="h-full w-full object-cover" />
+                                            <Image src={owner.profileImage} alt={owner.name || ""} width={32} height={32} unoptimized className="h-full w-full object-cover" />
                                         ) : (
                                             <span className="text-xs font-bold text-blue-700">{(owner.name || owner.email)[0].toUpperCase()}</span>
                                         )}
@@ -173,7 +174,7 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
                                             <div className="flex items-center gap-3">
                                                 <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
                                                     {member.user.profileImage ? (
-                                                        <img src={member.user.profileImage} alt={member.user.name || ""} className="h-full w-full object-cover" />
+                                                        <Image src={member.user.profileImage} alt={member.user.name || ""} width={32} height={32} unoptimized className="h-full w-full object-cover" />
                                                     ) : (
                                                         <span className="text-xs font-bold text-gray-600">{(member.user.name || member.user.email)[0].toUpperCase()}</span>
                                                     )}

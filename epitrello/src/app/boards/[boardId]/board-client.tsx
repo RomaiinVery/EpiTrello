@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useMemo, useEffect } from "react";
 import React from "react";
 import {
@@ -89,9 +90,12 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
       }}
     >
       {card.coverImage && (
-        <img
+        <Image
           src={card.coverImage}
           alt="Cover"
+          width={500}
+          height={128}
+          unoptimized
           className="w-full h-32 object-cover"
         />
       )}
@@ -183,10 +187,13 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
           <div className="flex items-center gap-1 mt-2">
             {card.members.map((member) => (
               member.profileImage ? (
-                <img
+                <Image
                   key={member.id}
                   src={member.profileImage}
                   alt={member.name || member.email}
+                  width={24}
+                  height={24}
+                  unoptimized
                   className="w-6 h-6 rounded-full object-cover border-2 border-white"
                   title={member.name || member.email}
                 />

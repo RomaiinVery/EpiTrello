@@ -6,7 +6,7 @@ import { prisma } from "@/app/lib/prisma";
 import { sendInvitationEmail } from "@/app/lib/email";
 import { Role } from "@prisma/client";
 import { nanoid } from "nanoid";
-import { revalidatePath } from "next/cache";
+
 
 export async function createInvitation({
     email,

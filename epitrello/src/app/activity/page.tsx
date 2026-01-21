@@ -3,18 +3,17 @@
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import Image from "next/image";
 import {
-    Activity,
+    Activity, // lucide-react Activity icon
     CreditCard,
-    FileText,
     Layout,
     MessageSquare,
     User,
     Paperclip,
-    CheckSquare,
 } from "lucide-react";
 
-type ActivityItem = {
+interface ActivityItem {
     id: string;
     type: string;
     description: string;
@@ -22,7 +21,7 @@ type ActivityItem = {
     user: {
         name: string | null;
         email: string;
-        profileImage?: string | null;
+        profileImage: string | null;
     };
     board: {
         title: string;
@@ -30,7 +29,7 @@ type ActivityItem = {
     card?: {
         title: string;
     } | null;
-};
+}
 
 export default function ActivityPage() {
     const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -71,8 +70,9 @@ export default function ActivityPage() {
         <div className="p-8 max-w-4xl mx-auto">
             <h1 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
                 <Activity className="w-6 h-6" />
-                Fil d'actualité
+                Fil d&apos;actualité
             </h1>
+            <p className="text-gray-500 mb-6">L&apos;activité récente de vos espaces de travail.</p>
 
             {isLoading ? (
                 <div className="text-center py-10 text-gray-500">Chargement...</div>
@@ -90,10 +90,13 @@ export default function ActivityPage() {
                             {/* User Avatar */}
                             <div className="flex-shrink-0">
                                 {activity.user.profileImage ? (
-                                    <img
+                                    <Image
                                         src={activity.user.profileImage}
                                         alt={activity.user.name || "User"}
-                                        className="w-10 h-10 rounded-full object-cover border"
+                                        width={32}
+                                        height={32}
+                                        unoptimized
+                                        className="w-8 h-8 rounded-full border border-gray-200"
                                     />
                                 ) : (
                                     <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
