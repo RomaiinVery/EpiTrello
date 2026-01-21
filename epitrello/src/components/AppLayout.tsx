@@ -9,7 +9,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
   const pathname = usePathname();
 
-  const forceFullScreen = ["/auth", "/register"];
+  const forceFullScreen = ["/", "/auth", "/register"];
 
   if (status === "unauthenticated" || forceFullScreen.includes(pathname)) {
     return (
@@ -21,11 +21,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (status === "loading") {
     return (
-        <div className="flex h-screen items-center justify-center bg-gray-50">
-             <div className="animate-pulse flex flex-col items-center">
-                <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-            </div>
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
         </div>
+      </div>
     );
   }
 
@@ -35,7 +35,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col flex-1 h-screen overflow-hidden">
         <Navbar />
         <main className="flex-1 overflow-auto p-6">
-            {children}
+          {children}
         </main>
       </div>
     </div>
