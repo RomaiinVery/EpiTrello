@@ -41,7 +41,7 @@ export default function SettingsPage() {
   const [passwords, setPasswords] = useState<PasswordState>({ current: "", newP: "", confirm: "" });
   const [saving, setSaving] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [githubStatus, setGithubStatus] = useState<{
@@ -54,6 +54,9 @@ export default function SettingsPage() {
     avatarUrl: null,
   });
   const [loadingGithub, setLoadingGithub] = useState(false);
+  const [verificationStep, setVerificationStep] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
 
@@ -65,15 +68,25 @@ export default function SettingsPage() {
         email: session.user?.email || "",
         timezone: "Europe/Paris",
       }));
-      // Fetch user profile image
-      fetch("/api/user/profile-image")
+      // Fetch user profile (full data including pendingEmail)
+      fetch("/api/user/profile")
         .then((res) => res.json())
         .then((data) => {
+          if (data.email) {
+            setValues(prev => ({ ...prev, email: data.email, displayName: data.name || prev.displayName }));
+          }
           if (data.profileImage) {
             setProfileImage(data.profileImage);
           }
+          if (data.pendingEmail) {
+            setVerificationStep(true);
+            setPendingVerificationEmail(data.pendingEmail);
+          }
         })
         .catch(() => { });
+
+      // Fetch user profile image (deprecated, now in profile)
+      // fetch("/api/user/profile-image")
       // Fetch GitHub status
       fetch("/api/user/github")
         .then((res) => res.json())
@@ -93,12 +106,13 @@ export default function SettingsPage() {
   }, [session, status, router]);
 
   // Handle query params for GitHub linking success/error
+
   useEffect(() => {
     const success = searchParams.get("success");
     const error = searchParams.get("error");
 
     if (success === "github_linked") {
-      setMessage("Compte GitHub lié avec succès !");
+      setMessage({ text: "Compte GitHub lié avec succès !", type: "success" });
       setTimeout(() => setMessage(null), 5000);
       // Refresh GitHub status
       fetch("/api/user/github")
@@ -116,15 +130,15 @@ export default function SettingsPage() {
       // Clean URL
       router.replace("/settings");
     } else if (error === "github_auth_failed") {
-      setMessage("Échec de l'authentification GitHub. Veuillez réessayer.");
+      setMessage({ text: "Échec de l'authentification GitHub. Veuillez réessayer.", type: "error" });
       setTimeout(() => setMessage(null), 5000);
       router.replace("/settings");
     } else if (error === "github_token_error") {
-      setMessage("Erreur lors de l'obtention du token GitHub. Veuillez réessayer.");
+      setMessage({ text: "Erreur lors de l'obtention du token GitHub. Veuillez réessayer.", type: "error" });
       setTimeout(() => setMessage(null), 5000);
       router.replace("/settings");
     } else if (error === "server_error") {
-      setMessage("Erreur serveur lors de la liaison du compte GitHub.");
+      setMessage({ text: "Erreur serveur lors de la liaison du compte GitHub.", type: "error" });
       setTimeout(() => setMessage(null), 5000);
       router.replace("/settings");
     }
@@ -151,7 +165,7 @@ export default function SettingsPage() {
       setMessage(null);
 
       if (!values.email || !/^\S+@\S+\.\S+$/.test(values.email)) {
-        setMessage("Please provide a valid email address.");
+        setMessage({ text: "Please provide a valid email address.", type: "error" });
         setSaving(false);
         return;
       }
@@ -163,31 +177,67 @@ export default function SettingsPage() {
           "Cache-Control": "no-cache"
         },
         cache: "no-store",
-        body: JSON.stringify({ displayName: values.displayName }),
+        body: JSON.stringify({ displayName: values.displayName, email: values.email }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        if (update) {
-          // Update the session with the new name to persist it in the cookie
-          await update({ name: values.displayName });
+        if (data.verificationNeeded) {
+          setVerificationStep(true);
+          setMessage({ text: "Un code de vérification a été envoyé à votre nouvelle adresse email.", type: "success" });
+        } else {
+          if (update) {
+            await update({ name: values.displayName });
+          }
+          setValues(prev => ({ ...prev, displayName: values.displayName }));
+          setMessage({ text: "Settings saved successfully.", type: "success" });
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
         }
-
-        // Update local state immediately
-        setValues(prev => ({ ...prev, displayName: values.displayName }));
-
-        setMessage("Settings saved successfully.");
-
-        // Reload to ensure everything is consistent
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
       } else {
-        const data = await res.json();
-        setMessage(data.error || "Something went wrong.");
+        setMessage({ text: data.error || "Something went wrong.", type: "error" });
       }
     } catch (error) {
       console.error(error);
-      setMessage("Failed to save settings.");
+      setMessage({ text: "Failed to save settings.", type: "error" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleVerifyEmail() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: verificationCode }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setMessage({ text: "Email mis à jour avec succès !", type: "success" });
+        setVerificationStep(false);
+        setVerificationCode("");
+        setPendingVerificationEmail(null);
+
+        // Update session
+        if (data.user?.email && update) {
+          await update({ email: data.user.email });
+        }
+
+        // Force refresh to ensure everything is clean
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        const data = await res.json();
+        setMessage({ text: data.error || "Code invalide", type: "error" });
+      }
+    } catch {
+      setMessage({ text: "Erreur lors de la vérification", type: "error" });
     } finally {
       setSaving(false);
     }
@@ -214,7 +264,7 @@ export default function SettingsPage() {
     setTimeout(() => {
       setSaving(false);
       setPasswords({ current: "", newP: "", confirm: "" });
-      setMessage("Password updated successfully.");
+      setMessage({ text: "Password updated successfully.", type: "success" });
       setTimeout(() => setMessage(null), 3000);
     }, 900);
   }
@@ -236,16 +286,16 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setProfileImage(data.profileImage);
-        setMessage("Photo de profil mise à jour avec succès !");
+        setMessage({ text: "Photo de profil mise à jour avec succès !", type: "success" });
         setTimeout(() => setMessage(null), 3000);
         // Trigger event to refresh navbar and sidebar
         window.dispatchEvent(new CustomEvent("profileImageUpdated", { detail: data.profileImage }));
       } else {
         const error = await res.json();
-        setMessage(error.error || "Erreur lors de l'upload");
+        setMessage({ text: error.error || "Erreur lors de l'upload", type: "error" });
       }
     } catch {
-      setMessage("Erreur réseau");
+      setMessage({ text: "Erreur réseau", type: "error" });
     } finally {
       setUploadingImage(false);
     }
@@ -260,13 +310,13 @@ export default function SettingsPage() {
 
       if (res.ok) {
         setProfileImage(null);
-        setMessage("Photo de profil supprimée avec succès !");
+        setMessage({ text: "Photo de profil supprimée avec succès !", type: "success" });
         setTimeout(() => setMessage(null), 3000);
         // Trigger event to refresh navbar and sidebar
         window.dispatchEvent(new CustomEvent("profileImageUpdated", { detail: null }));
       }
     } catch {
-      setMessage("Erreur réseau");
+      setMessage({ text: "Erreur réseau", type: "error" });
     } finally {
       setUploadingImage(false);
     }
@@ -281,11 +331,11 @@ export default function SettingsPage() {
       if (res.ok && data.authUrl) {
         window.location.href = data.authUrl;
       } else {
-        setMessage(data.error || "Erreur lors de l'initialisation de la connexion GitHub");
+        setMessage({ text: data.error || "Erreur lors de l'initialisation de la connexion GitHub", type: "error" });
         setLoadingGithub(false);
       }
     } catch {
-      setMessage("Erreur réseau lors de la connexion à GitHub");
+      setMessage({ text: "Erreur réseau lors de la connexion à GitHub", type: "error" });
       setLoadingGithub(false);
     }
   }
@@ -307,14 +357,14 @@ export default function SettingsPage() {
           username: null,
           avatarUrl: null,
         });
-        setMessage("Compte GitHub délié avec succès !");
+        setMessage({ text: "Compte GitHub délié avec succès !", type: "success" });
         setTimeout(() => setMessage(null), 3000);
       } else {
         const error = await res.json();
-        setMessage(error.error || "Erreur lors de la suppression de la liaison");
+        setMessage({ text: error.error || "Erreur lors de la suppression de la liaison", type: "error" });
       }
     } catch {
-      setMessage("Erreur réseau");
+      setMessage({ text: "Erreur réseau", type: "error" });
     } finally {
       setLoadingGithub(false);
     }
@@ -373,9 +423,44 @@ export default function SettingsPage() {
 
       {/* Feedback Message */}
       {message && (
-        <div className={`mb-6 p-4 rounded-lg border ${message.includes("valid") ? "bg-red-50 border-red-200 text-red-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"} flex items-center gap-2`}>
-          <span>{message.includes("valid") ? "⚠️" : "✅"}</span>
-          {message}
+        <div className={`mb-6 p-4 rounded-lg border ${message.type === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"} flex items-center gap-2`}>
+          <span>{message.type === "error" ? "⚠️" : "✅"}</span>
+          {message.text}
+        </div>
+      )}
+
+      {/* Verification Modal */}
+      {verificationStep && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Vérification de l'email</h3>
+            <p className="text-gray-600 mb-4">
+              Veuillez entrer le code à 6 chiffres envoyé à <strong>{pendingVerificationEmail || values.email}</strong>.
+            </p>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-2xl tracking-widest font-mono mb-4"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              placeholder="123456"
+              maxLength={6}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setVerificationStep(false)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleVerifyEmail}
+                disabled={saving || verificationCode.length !== 6}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? "Validation..." : "Valider"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -443,8 +528,7 @@ export default function SettingsPage() {
               <label className="text-sm font-medium text-gray-700">Email Address</label>
               <input
                 type="email"
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 value={values.email}
                 onChange={(e) => handleChange("email", e.target.value)}
               />

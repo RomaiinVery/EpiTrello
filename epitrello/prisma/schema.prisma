@@ -13,28 +13,29 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  password     String
-  name         String?
-  profileImage String?
-  emailVerified DateTime?
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String
+  name             String?
+  profileImage     String?
+  emailVerified    DateTime?
+  pendingEmail     String?
   verificationCode String?
   resetToken       String?
   resetTokenExpiry DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   githubId          String? @unique
   githubAccessToken String?
   githubUsername    String?
   githubAvatarUrl   String?
 
-  workspaces Workspace[]
+  workspaces           Workspace[]
   workspaceMemberships WorkspaceMember[]
-  
-  boards   Board[]
-  boardMemberships  BoardMember[]
+
+  boards           Board[]
+  boardMemberships BoardMember[]
 
   assignedCards CardMember[]
   comments      Comment[]
@@ -50,7 +51,7 @@ model Workspace {
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   members WorkspaceMember[]
 
   boards Board[]
@@ -73,7 +74,7 @@ model Board {
   title       String
   description String?
   createdAt   DateTime @default(now())
-  
+
   githubRepo   String?
   githubBranch String?
 
@@ -91,29 +92,29 @@ model Board {
 }
 
 model BoardMember {
-  id        String   @id @default(cuid())
-  boardId   String
-  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role     @default(VIEWER)
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  boardId  String
+  board    Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     Role     @default(VIEWER)
+  joinedAt DateTime @default(now())
 
   @@unique([boardId, userId])
 }
 
 model Invitation {
-  id        String   @id @default(cuid())
-  email     String
-  token     String   @unique
-  role      Role     @default(VIEWER)
-  
+  id    String @id @default(cuid())
+  email String
+  token String @unique
+  role  Role   @default(VIEWER)
+
   workspaceId String?
-  
-  boardId     String?
-  
+
+  boardId String?
+
   inviterId String
-  
+
   status    String   @default("PENDING") // PENDING, ACCEPTED
   createdAt DateTime @default(now())
   expiresAt DateTime
@@ -133,28 +134,28 @@ model List {
 }
 
 model Card {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   title      String
   content    String?
   position   Int
   listId     String
-  list       List     @relation(fields: [listId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  archived   Boolean  @default(false)
+  list       List      @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archived   Boolean   @default(false)
   coverImage String?
   startDate  DateTime?
   dueDate    DateTime?
   isDone     Boolean   @default(false)
-  
+
   githubIssueNumber Int?
   githubIssueUrl    String?
 
-  labels     CardLabel[]
-  members    CardMember[]
-  comments   Comment[]
-  activities Activity[]
-  checklists Checklist[]
+  labels      CardLabel[]
+  members     CardMember[]
+  comments    Comment[]
+  activities  Activity[]
+  checklists  Checklist[]
   attachments Attachment[]
 }
 

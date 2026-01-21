@@ -140,3 +140,40 @@ export const sendPasswordResetEmail = async (to: string, resetLink: string) => {
     return false;
   }
 };
+
+export const sendEmailChangeVerification = async (to: string, code: string) => {
+  console.log("==================================================");
+  console.log("📧 EMAIL CHANGE CODE: " + code);
+  console.log("Sent to: " + to);
+  console.log("==================================================");
+
+  if (!process.env.SMTP_HOST) {
+    console.warn("⚠️ SMTP_HOST not defined. Email will not be sent via Nodemailer.");
+    return true;
+  }
+
+  try {
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to,
+      subject: "Vérification de votre nouvelle adresse email - EpiTrello",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb; text-align: center;">Changement d'email</h2>
+          <p>Bonjour,</p>
+          <p>Vous avez demandé à changer votre adresse email sur EpiTrello. Pour confirmer cette modification, veuillez utiliser le code ci-dessous :</p>
+          <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-radius: 8px; margin: 30px 0;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1f2937;">${code}</span>
+          </div>
+          <p>Ce code est valable pendant 10 minutes.</p>
+          <p style="color: #666; font-size: 14px; text-align: center; margin-top: 40px;">Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
+        </div>
+      `,
+    });
+    console.log(`Email de confirmation de changement d'email envoyé à ${to}`);
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de l'envoi du code:", error);
+    return false;
+  }
+};
