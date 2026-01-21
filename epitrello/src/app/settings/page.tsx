@@ -59,6 +59,20 @@ export default function SettingsPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const verificationStepRef = React.useRef(verificationStep);
+
+  useEffect(() => {
+    verificationStepRef.current = verificationStep;
+  }, [verificationStep]);
+
+  useEffect(() => {
+    return () => {
+      // If we leave the page while verification is pending, cancel it
+      if (verificationStepRef.current) {
+        fetch('/api/user/profile/cancel-email', { method: 'POST', keepalive: true });
+      }
+    };
+  }, []);
 
 
   useEffect(() => {
@@ -372,6 +386,17 @@ export default function SettingsPage() {
   }
 
 
+  async function handleCancelVerification() {
+    setVerificationStep(false);
+    setVerificationCode("");
+    setPendingVerificationEmail(null);
+    try {
+      await fetch('/api/user/profile/cancel-email', { method: 'POST' });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   if (status === "loading") {
     return (
       <div className="flex h-screen w-full items-center justify-center text-gray-500">
@@ -431,6 +456,9 @@ export default function SettingsPage() {
       )}
 
       {/* Verification Modal */}
+
+
+
       {verificationStep && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full">
@@ -448,7 +476,7 @@ export default function SettingsPage() {
             />
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setVerificationStep(false)}
+                onClick={handleCancelVerification}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
               >
                 Annuler
