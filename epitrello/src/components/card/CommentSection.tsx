@@ -31,10 +31,6 @@ export function CommentSection({
     const [editingCommentContent, setEditingCommentContent] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchComments();
-    }, [boardId, listId, cardId]);
-
     const fetchComments = useCallback(async () => {
         try {
             const res = await fetch(
@@ -48,6 +44,10 @@ export function CommentSection({
             console.error("Error fetching comments:", err);
         }
     }, [boardId, listId, cardId]);
+
+    useEffect(() => {
+        fetchComments();
+    }, [fetchComments]);
 
     const handlePostComment = async () => {
         if (readOnly) return;

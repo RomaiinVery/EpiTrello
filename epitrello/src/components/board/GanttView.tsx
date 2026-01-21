@@ -16,6 +16,7 @@ import { useMemo, useContext, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatDistance, isSameDay, addDays } from "date-fns";
 import React from "react";
+import Image from "next/image";
 
 interface GanttViewProps {
     lists: List[];
@@ -75,7 +76,7 @@ const CustomGanttSidebarItem = ({
                 {feature.members && feature.members.map((member) => (
                     <div key={member.id} className="w-5 h-5 rounded-full overflow-hidden border border-white bg-gray-200" title={member.name || member.email}>
                         {member.profileImage ? (
-                            <img src={member.profileImage} alt={member.name || "User"} className="w-full h-full object-cover" />
+                            <Image src={member.profileImage} alt={member.name || "User"} width={20} height={20} unoptimized className="w-full h-full object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-600">
                                 {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}

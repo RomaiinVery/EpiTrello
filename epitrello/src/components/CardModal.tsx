@@ -46,12 +46,6 @@ export function CardModal({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [savingTitle, setSavingTitle] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && cardId) {
-      fetchCardDetails();
-    }
-  }, [isOpen, cardId, boardId, listId]);
-
   const fetchCardDetails = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -101,6 +95,12 @@ export function CardModal({
       setLoading(false);
     }
   }, [boardId, listId, cardId]);
+
+  useEffect(() => {
+    if (isOpen && cardId) {
+      fetchCardDetails();
+    }
+  }, [isOpen, cardId, boardId, listId, fetchCardDetails]);
 
 
   const handleSaveTitle = async () => {

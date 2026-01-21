@@ -15,7 +15,10 @@ export type ActivityType =
   | "cover_uploaded"
   | "cover_removed"
   | "attachment_uploaded"
-  | "attachment_deleted";
+  | "attachment_deleted"
+  | "board_created"
+  | "board_updated"
+  | "board_deleted";
 
 interface LogActivityParams {
   type: ActivityType;

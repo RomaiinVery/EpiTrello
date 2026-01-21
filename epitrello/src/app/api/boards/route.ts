@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { prisma } from "../../lib/prisma";
+import { logActivity } from "@/app/lib/activity-logger";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -113,6 +114,13 @@ export async function POST(req: Request) {
     include: {
       lists: true,
     },
+  });
+
+  await logActivity({
+    type: "board_created",
+    description: `${user.name || user.email} a créé le tableau "${title}"`,
+    userId: user.id,
+    boardId: board.id,
   });
 
   return NextResponse.json(board, { status: 201 });

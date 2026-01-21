@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Users, X, Calendar } from "lucide-react";
+import Image from "next/image";
 import { LabelPicker } from "@/components/LabelPicker";
 import {
     DropdownMenu,
@@ -42,10 +43,6 @@ export function CardActions({
     const [boardMembers, setBoardMembers] = useState<User[]>([]);
     const [isAssigningMember, setIsAssigningMember] = useState(false);
 
-    useEffect(() => {
-        fetchBoardMembers();
-    }, [boardId]);
-
     const fetchBoardMembers = useCallback(async () => {
         try {
             const boardRes = await fetch(`/api/boards/${boardId}`);
@@ -79,6 +76,10 @@ export function CardActions({
             console.error("Error fetching board members:", err);
         }
     }, [boardId]);
+
+    useEffect(() => {
+        fetchBoardMembers();
+    }, [fetchBoardMembers]);
 
     const handleUnassignMember = async (memberId: string) => {
         if (readOnly) return;
@@ -255,9 +256,12 @@ export function CardActions({
                                     className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200"
                                 >
                                     {member.profileImage ? (
-                                        <img
+                                        <Image
                                             src={member.profileImage}
                                             alt={member.name || member.email}
+                                            width={24}
+                                            height={24}
+                                            unoptimized
                                             className="w-6 h-6 rounded-full object-cover"
                                         />
                                     ) : (

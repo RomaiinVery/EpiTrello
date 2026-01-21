@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -15,11 +15,7 @@ export function ActivityLog({ boardId, cardId, lastUpdate }: ActivityLogProps) {
     const [loading, setLoading] = useState(false);
     const [showAll, setShowAll] = useState(false);
 
-    useEffect(() => {
-        fetchActivities();
-    }, [boardId, cardId, lastUpdate]);
-
-    const fetchActivities = async () => {
+    const fetchActivities = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(
@@ -34,7 +30,11 @@ export function ActivityLog({ boardId, cardId, lastUpdate }: ActivityLogProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [boardId, cardId]);
+
+    useEffect(() => {
+        fetchActivities();
+    }, [fetchActivities, lastUpdate]);
 
     return (
         <div className="border-t pt-4">
