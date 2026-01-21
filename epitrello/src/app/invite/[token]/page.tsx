@@ -16,11 +16,9 @@ export default async function InvitationPage({
 
     // If not logged in, redirect to login but keep callback URL to return here
     if (!session?.user) {
-        // Construct the full URL to this page
-        // In dev we assume localhost, but need a robust way or just relative
-        // signIn callbackUrl handles relative paths usually
         const callbackUrl = `/invite/${token}`;
-        redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        // Redirect to custom auth page with register mode
+        redirect(`/auth?mode=register&callbackUrl=${encodeURIComponent(callbackUrl)}`);
     }
 
     // Attempt to accept the invitation immediately upon load
