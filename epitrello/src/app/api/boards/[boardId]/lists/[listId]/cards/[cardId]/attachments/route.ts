@@ -66,7 +66,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
         const timestamp = Date.now();
         // Sanitize filename
         const originalName = file.name;
-        const extension = originalName.split(".").pop();
+
         const safeName = originalName.replace(/[^a-zA-Z0-9.-]/g, "_");
         const filename = `${cardId}-${timestamp}-${safeName}`;
         const filepath = join(process.cwd(), "public", "uploads", filename);

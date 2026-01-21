@@ -3,7 +3,6 @@ import {
     GanttProvider,
     GanttSidebar,
     GanttSidebarGroup,
-    GanttSidebarHeader,
     GanttTimeline,
     GanttHeader,
     GanttFeatureList,
@@ -39,7 +38,7 @@ const CustomGanttSidebarItem = ({
     className?: string;
 }) => {
     const gantt = useContext(GanttContext);
-    const [, setDragging] = useGanttDragging();
+    useGanttDragging();
 
     // Logic copied from GanttSidebarItem for interaction
     const handleClick = () => {
@@ -120,7 +119,7 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
                                 issuesToFetch.push({ owner, repo, number, id: card.id });
                             }
                         }
-                    } catch (e) {
+                    } catch {
                         // invalid url, ignore
                     }
                 }
@@ -154,7 +153,6 @@ export function GanttView({ lists, cardsByList }: GanttViewProps) {
 
         lists.forEach((list) => {
             const listCards = cardsByList[list.id] || [];
-            const isDoingList = list.title.toLowerCase().includes("doing") || list.title.toLowerCase().includes("en cours");
 
             const features: ExtendedGanttFeature[] = [];
 

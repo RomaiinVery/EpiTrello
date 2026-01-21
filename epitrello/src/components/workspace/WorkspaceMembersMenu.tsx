@@ -53,7 +53,7 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
             const data = await res.json();
             setMembers(data.members);
             setOwner(data.owner);
-        } catch (err) {
+        } catch {
             setError("Impossible de charger les membres.");
         } finally {
             setLoading(false);
@@ -80,7 +80,7 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
             } else {
                 alert("Erreur lors de la suppression");
             }
-        } catch (e) {
+        } catch {
             alert("Erreur réseau");
         } finally {
             setRemovingId(null);

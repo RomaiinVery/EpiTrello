@@ -1405,7 +1405,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               });
 
               if (res.ok) {
-                const pr = await res.json();
+                await res.json();
                 handleCardUpdate();
                 setShowPRModal(false);
                 setPrModalData(null);

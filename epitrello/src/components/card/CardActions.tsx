@@ -231,7 +231,7 @@ export function CardActions({
                     boardId={boardId}
                     cardId={cardId}
                     selectedLabels={labels}
-                    onLabelsChange={(newLabels) => {
+                    onLabelsChange={() => {
                         onUpdate();
                     }}
                     readOnly={readOnly}

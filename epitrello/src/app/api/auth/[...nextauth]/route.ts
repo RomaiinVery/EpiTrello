@@ -45,16 +45,27 @@ export const authOptions: AuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, trigger, session }) {
+    async jwt({ token, trigger, session, user }) {
+      if (user) {
+        token.id = user.id;
+      }
       // Allow client to update session
-      if (trigger === "update" && session?.name) {
-        token.name = session.name;
+      if (trigger === "update") {
+        if (session?.name) token.name = session.name;
+        if (session?.email) token.email = session.email;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.name) {
-        session.user.name = token.name;
+      if (session.user) {
+        // ID is critical for identifying user if email changes. 
+        // token.sub is standard standard for user ID in NextAuth
+        const userId = token.id || token.sub;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (userId) (session.user as any).id = userId;
+
+        if (token.name) session.user.name = token.name;
+        if (token.email) session.user.email = token.email;
       }
       return session;
     },

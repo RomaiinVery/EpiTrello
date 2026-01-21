@@ -5,12 +5,15 @@ import { authOptions } from "../auth/[...nextauth]/route";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || !session.user?.email) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userId = (session?.user as any)?.id;
+
+  if (!userId && !session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: userId ? { id: userId } : { email: session?.user?.email as string },
   });
 
   if (!user) {
@@ -39,13 +42,15 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userId = (session?.user as any)?.id;
 
-  if (!session || !session.user?.email) {
+  if (!userId && !session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: userId ? { id: userId } : { email: session?.user?.email as string },
   });
 
   if (!user) {

@@ -18,12 +18,15 @@ cloudinary.config({
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (session?.user as any)?.id;
+
+    if (!userId && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: userId ? { id: userId } : { email: session?.user?.email as string },
       select: {
         id: true,
         email: true,
@@ -52,12 +55,15 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (session?.user as any)?.id;
+
+    if (!userId && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: userId ? { id: userId } : { email: session?.user?.email as string },
     });
 
     if (!user) {
@@ -70,7 +76,6 @@ export async function POST(req: Request) {
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
-
     // Validate file type
     const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp", "image/gif"];
     if (!validTypes.includes(file.type)) {
@@ -134,15 +139,18 @@ export async function POST(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (session?.user as any)?.id;
+
+    if (!userId && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: userId ? { id: userId } : { email: session?.user?.email as string },
     });
 
     if (!user) {

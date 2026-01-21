@@ -6,13 +6,17 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (session?.user as any)?.id;
+
+    if (!userId && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: userId ? { id: userId } : { email: session?.user?.email as string },
       select: {
+        id: true,
         githubId: true,
         githubUsername: true,
         githubAvatarUrl: true,
@@ -35,7 +39,7 @@ export async function GET() {
       if (verifyRes.status === 401) {
         // Token is invalid, unlink account
         await prisma.user.update({
-          where: { email: session.user.email },
+          where: { id: user.id },
           data: {
             githubId: null,
             githubAccessToken: null,
@@ -69,12 +73,15 @@ export async function GET() {
 export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (session?.user as any)?.id;
+
+    if (!userId && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await prisma.user.update({
-      where: { email: session.user.email },
+      where: userId ? { id: userId } : { email: session?.user?.email as string },
       data: {
         githubId: null,
         githubAccessToken: null,

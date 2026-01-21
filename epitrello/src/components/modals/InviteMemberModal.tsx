@@ -59,7 +59,7 @@ export function InviteMemberModal({
                     setStatus("idle");
                 }, 2000);
             }
-        } catch (error) {
+        } catch {
             setStatus("error");
             setErrorMessage("Une erreur inattendue est survenue.");
         } finally {
