@@ -65,7 +65,7 @@ export async function POST(req: Request) {
             parsedCommand = JSON.parse(cleanJson);
             // Validate with Zod
             // We parse loosely first to avoid crashing if LLM hallucinates extra fields
-        } catch (e) {
+        } catch {
             console.error("Failed to parse LLM response:", responseText);
             return NextResponse.json({
                 role: "bot",

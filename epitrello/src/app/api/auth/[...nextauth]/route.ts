@@ -61,6 +61,7 @@ export const authOptions: AuthOptions = {
         // ID is critical for identifying user if email changes. 
         // token.sub is standard standard for user ID in NextAuth
         const userId = token.id || token.sub;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (userId) (session.user as any).id = userId;
 
         if (token.name) session.user.name = token.name;

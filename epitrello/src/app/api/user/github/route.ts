@@ -6,6 +6,7 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userId = (session?.user as any)?.id;
 
     if (!userId && !session?.user?.email) {
@@ -72,6 +73,7 @@ export async function GET() {
 export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userId = (session?.user as any)?.id;
 
     if (!userId && !session?.user?.email) {
