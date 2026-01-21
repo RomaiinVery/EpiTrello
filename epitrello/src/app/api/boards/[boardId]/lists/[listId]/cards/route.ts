@@ -71,17 +71,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
-      include: { members: true },
+      include: {
+        members: true,
+        workspace: {
+          include: {
+            members: true,
+          },
+        },
+      },
     });
 
     if (!board) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
+    const isBoardOwner = board.userId === user.id;
+    const isBoardMember = board.members.some(member => member.userId === user.id);
+    const isWorkspaceOwner = board.workspace.userId === user.id;
+    const isWorkspaceMember = board.workspace.members.some(member => member.userId === user.id);
 
-    if (!isOwner && !isMember) {
+    console.log("DEBUG PERMISSION:", {
+      userId: user.id,
+      boardOwnerId: board.userId,
+      isBoardOwner,
+      isBoardMember,
+      isWorkspaceOwner,
+      isWorkspaceMember,
+    });
+
+    if (!isBoardOwner && !isBoardMember && !isWorkspaceOwner && !isWorkspaceMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

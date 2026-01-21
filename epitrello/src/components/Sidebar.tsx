@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Home, Layers, Settings, Plus, ChevronRight, FolderKanban } from "lucide-react";
+import { Home, Layers, Settings, Plus, ChevronRight, FolderKanban, Activity } from "lucide-react";
 
 type Workspace = {
   id: string;
@@ -83,6 +83,7 @@ export function Sidebar() {
   const navItems = [
     { href: "/", label: "Accueil", icon: Home },
     { href: "/workspaces", label: "Workspaces", icon: Layers },
+    { href: "/activity", label: "Activité", icon: Activity },
     { href: "/settings", label: "Paramètres", icon: Settings },
   ];
 

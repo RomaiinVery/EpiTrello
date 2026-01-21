@@ -9,8 +9,9 @@ import { AlertCircle, CheckCircle } from "lucide-react";
 export default async function InvitationPage({
     params,
 }: {
-    params: { token: string };
+    params: Promise<{ token: string }>;
 }) {
+    const { token } = await params;
     const session = await getServerSession(authOptions);
 
     // If not logged in, redirect to login but keep callback URL to return here
@@ -18,13 +19,13 @@ export default async function InvitationPage({
         // Construct the full URL to this page
         // In dev we assume localhost, but need a robust way or just relative
         // signIn callbackUrl handles relative paths usually
-        const callbackUrl = `/invite/${params.token}`;
+        const callbackUrl = `/invite/${token}`;
         redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
     }
 
     // Attempt to accept the invitation immediately upon load
     // Alternatively we could show a "Click to Accept" button, but auto-accept is smoother if already logged in.
-    const result = await acceptInvitation(params.token);
+    const result = await acceptInvitation(token);
 
     if (result.success && result.redirectUrl) {
         redirect(result.redirectUrl);
