@@ -39,6 +39,7 @@ export async function GET() {
                                 title: true,
                                 workspace: {
                                     select: {
+                                        id: true,
                                         title: true
                                     }
                                 }
