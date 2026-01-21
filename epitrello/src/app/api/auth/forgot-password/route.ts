@@ -42,9 +42,9 @@ export async function POST(request: Request) {
             },
         });
 
-        // Create reset link
-        // Assuming the app URL is determined by the request headers or env var, but for now hardcode/env
-        const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        // Create reset link using production URL
+        const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+        const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || vercelUrl || "http://localhost:3000";
         const resetLink = `${appUrl}/auth/reset-password?token=${resetToken}`;
 
         await sendPasswordResetEmail(email, resetLink);
