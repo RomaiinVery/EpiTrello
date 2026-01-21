@@ -433,7 +433,7 @@ export default function SettingsPage() {
       {verificationStep && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">Vérification de l'email</h3>
+            <h3 className="text-xl font-bold mb-4">Vérification de l&apos;email</h3>
             <p className="text-gray-600 mb-4">
               Veuillez entrer le code à 6 chiffres envoyé à <strong>{pendingVerificationEmail || values.email}</strong>.
             </p>

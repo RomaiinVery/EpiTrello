@@ -110,6 +110,7 @@ export type GanttContextProps = {
 
 const getsDaysIn = (range: Range) => {
   // For when range is daily
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let fn = (_date: Date) => 1;
 
   if (range === 'monthly' || range === 'quarterly') {

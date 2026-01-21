@@ -7,6 +7,7 @@ import { prisma } from "@/app/lib/prisma";
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const userId = (session?.user as any)?.id;
 
         if (!userId && !session?.user?.email) {

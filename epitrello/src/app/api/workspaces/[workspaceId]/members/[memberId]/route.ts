@@ -52,7 +52,7 @@ export async function DELETE(
             where: { id: memberId }
         });
         return NextResponse.json({ message: "Member removed" });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to remove member" }, { status: 500 });
     }
 }
