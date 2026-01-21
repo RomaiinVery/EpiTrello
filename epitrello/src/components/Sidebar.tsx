@@ -92,7 +92,7 @@ export function Sidebar() {
       <div className="p-6 border-b">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <FolderKanban className="w-5 h-5 text-white" />
+            <Layers className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
             EpiTrello
