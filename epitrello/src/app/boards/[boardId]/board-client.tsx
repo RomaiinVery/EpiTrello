@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useMemo, useEffect } from "react";
-
+import useSWR from "swr";
 import React from "react";
 import {
   DropdownMenu,
@@ -364,54 +364,74 @@ interface BoardClientProps {
 export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList, currentUserRole = "VIEWER" }: BoardClientProps) {
 
 
-  const [board, setBoardState] = useState<Board | null>(initialBoard);
-  const [cardsByList, setCardsByListState] = useState<Record<string, Card[]>>(initialCardsByList);
 
+
+
+
+
+
+  // Define the SWR fetcher that aggregates all data
+  const getFullBoardData = async () => {
+    const boardRes = await fetch(`/api/boards/${boardId}`, { cache: "no-store" });
+    if (!boardRes.ok) throw new Error("Failed to fetch board");
+    const boardData = await boardRes.json();
+
+    const listsRes = await fetch(`/api/boards/${boardId}/lists`, { cache: "no-store" });
+    if (!listsRes.ok) throw new Error("Failed to fetch lists");
+    const listsData = await listsRes.json();
+
+    // Merge lists into boardData immediately
+    const boardWithLists = { ...boardData, lists: listsData };
+
+    const newCardsByList: Record<string, Card[]> = {};
+    // Parallelize card fetching
+    await Promise.all(listsData.map(async (list: List) => {
+      const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`, { cache: "no-store" });
+      if (cardsRes.ok) {
+        const cardsData = await cardsRes.json();
+        newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
+      } else {
+        throw new Error(`Failed to fetch cards for list ${list.id}`);
+      }
+    }));
+
+    return { board: boardWithLists, cardsByList: newCardsByList };
+  };
+
+  const { data: boardData, mutate } = useSWR(
+    [`board-full`, boardId],
+    getFullBoardData,
+    {
+      refreshInterval: 2000,
+      fallbackData: {
+        board: initialBoard,
+        cardsByList: initialCardsByList
+      }
+    }
+  );
+
+  // Derived state from SWR data
+  const board = boardData?.board || null;
+  const cardsByList = boardData?.cardsByList || {};
+
+  // Helper to update SWR cache optimistically or after mutation
   const setBoard = (fn: (prev: Board | null) => Board | null) => {
-    setBoardState((prev) => fn(prev));
+    mutate((current) => {
+      if (!current) return undefined;
+      const newBoard = fn(current.board);
+      return newBoard ? { ...current, board: newBoard } : current;
+    }, false);
   };
 
   const setCardsByList = (fn: (prev: Record<string, Card[]>) => Record<string, Card[]>) => {
-    setCardsByListState((prev) => fn(prev));
+    mutate((current) => {
+      if (!current) return undefined;
+      const newCards = fn(current.cardsByList);
+      return { ...current, cardsByList: newCards };
+    }, false);
   };
 
 
-  const fetchBoardData = async () => {
-    try {
-      const boardRes = await fetch(`/api/boards/${boardId}`, { cache: "no-store" });
-      if (boardRes.ok) {
-        const boardData = await boardRes.json();
-
-        const listsRes = await fetch(`/api/boards/${boardId}/lists`, { cache: "no-store" });
-        if (listsRes.ok) {
-          const listsData = await listsRes.json();
-          const boardWithLists = { ...boardData, lists: listsData };
-          setBoardState(boardWithLists);
-
-          const newCardsByList: Record<string, Card[]> = {};
-          await Promise.all(listsData.map(async (list: List) => {
-            const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`, { cache: "no-store" });
-            if (cardsRes.ok) {
-              const cardsData = await cardsRes.json();
-              newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
-            } else {
-              newCardsByList[list.id] = [];
-            }
-          }));
-          setCardsByListState(newCardsByList);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to refresh board data", e);
-    }
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchBoardData();
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [boardId]);
 
 
   const [showDialog, setShowDialog] = useState(false);
@@ -785,7 +805,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   };
 
   const handleCardUpdate = () => {
-    fetchBoardData();
+    mutate();
   };
 
 
