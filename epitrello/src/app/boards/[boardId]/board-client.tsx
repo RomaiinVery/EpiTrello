@@ -523,6 +523,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
           : prev
       );
       setCardsByList((prev) => ({ ...prev, [newList.id]: [] }));
+      mutate();
       setShowDialog(false);
       setNewListTitle("");
     } catch {
@@ -575,6 +576,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         return { ...prev, lists: newLists };
       });
       setShowRenameDialog(false);
+      mutate();
       setRenameTitle("");
       setListToRename(null);
     } catch {
@@ -621,6 +623,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         return newCardsByList;
       });
       setShowDeleteDialog(false);
+      mutate();
       setListToDelete(null);
     } catch {
       setDeleteError("Erreur réseau");
@@ -665,8 +668,15 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       const newCard = await res.json();
       setCardsByList((prev) => {
         const prevCards = prev[listForNewCard.id] || [];
-        return { ...prev, [listForNewCard.id]: [...prevCards, { ...newCard, listId: listForNewCard.id }] };
+        return {
+          ...prev,
+          [listForNewCard.id]: [
+            ...prevCards,
+            { ...newCard, listId: listForNewCard.id, labels: [], members: [], checklists: [] }
+          ]
+        };
       });
+      mutate(); // Trigger revalidation to ensure sync
       setShowAddCardDialog(false);
       setCardTitle("");
       setCardContent("");
@@ -718,10 +728,11 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       const updatedCard = await res.json();
       setCardsByList((prev) => {
         const updatedCards = prev[listForCardAction].map((c) =>
-          c.id === updatedCard.id ? { ...updatedCard, listId: listForCardAction } : c
+          c.id === updatedCard.id ? { ...c, ...updatedCard, listId: listForCardAction } : c
         );
         return { ...prev, [listForCardAction]: updatedCards };
       });
+      mutate();
       setShowRenameCardDialog(false);
       setCardToRename(null);
       setRenameCardTitle("");
@@ -767,6 +778,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         );
         return { ...prev, [listForCardAction]: filtered };
       });
+      mutate();
       setShowDeleteCardDialog(false);
       setCardToDelete(null);
     } catch {
