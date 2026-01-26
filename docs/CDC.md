@@ -357,7 +357,7 @@ Cette section décrit le comportement attendu de l'interface pour chaque facette
 
 L'objectif est de transformer EpiTrello en une "Power App" dépassant les standards du marché.
 
-### 4.1 Moteur d'Automatisation (Code-First "RobzBot")
+### 4.1 Moteur d'Automatisation (Code-First "AutoBot")
 *Concept : Permettre des actions en chaîne sans code pour l'utilisateur.*
 
 *   **Modèle de Donnée : `AutomationRule`**
