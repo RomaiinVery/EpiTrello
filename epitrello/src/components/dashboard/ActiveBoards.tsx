@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import useSWR from "swr";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Board } from "@prisma/client";
@@ -10,25 +10,20 @@ export function ActiveBoards() {
     const [boards, setBoards] = useState<Board[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    async function fetchBoards() {
-        try {
-            const res = await fetch("/api/boards", { cache: "no-store" });
-            if (res.ok) {
-                const data = await res.json();
-                setBoards(data.slice(0, 4));
-            }
-        } catch (error) {
-            console.error("Failed to fetch boards", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }
+    const fetcher = (url: string) => fetch(url, { cache: "no-store" }).then((res) => res.json());
+
+    const { data: allBoards, error } = useSWR<Board[]>("/api/boards", fetcher, {
+        refreshInterval: 2000,
+    });
 
     useEffect(() => {
-        fetchBoards();
-        const interval = setInterval(fetchBoards, 2000);
-        return () => clearInterval(interval);
-    }, []);
+        if (allBoards) {
+            setBoards(allBoards.slice(0, 4));
+            setIsLoading(false);
+        }
+    }, [allBoards]);
+
+    if (error) console.error("Failed to fetch boards", error);
 
     if (isLoading) {
         return (
@@ -56,9 +51,6 @@ export function ActiveBoards() {
                 {/* Create New Board Button */}
                 <button
                     onClick={() => {
-                        // This would ideally open a modal, for now we might redirect or just show UI
-                        // Assuming there's a modal context or similar in the actual app
-                        // For this quick implementation, maybe just a placeholder or link to workspaces
                         window.location.href = "/workspaces";
                     }}
                     className="group flex flex-col items-center justify-center p-6 h-28 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer"
