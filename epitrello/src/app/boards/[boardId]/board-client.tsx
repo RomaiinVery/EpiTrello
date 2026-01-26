@@ -41,12 +41,14 @@ import { fr } from "date-fns/locale";
 import { GanttView } from "@/components/board/GanttView";
 import { MemberAvatar } from "../memberAvatar";
 import { AutomationModal } from "@/components/board/AutomationModal";
-import { Zap } from "lucide-react";
+import { Zap, Activity } from "lucide-react";
+import { AnalyticsModal } from "@/components/board/AnalyticsModal";
 
-function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
+function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRole }: {
   card: Card;
   onRename: (listId: string, cardId: string) => void;
   onDelete: (listId: string, cardId: string) => void;
+  onArchive: (listId: string, cardId: string) => void;
   onClick: (listId: string, cardId: string) => void;
   currentUserRole?: string;
 }) {
@@ -134,6 +136,9 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onClick(card.listId, card.id)}>
                   Modifier
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onArchive(card.listId, card.id)}>
+                  {card.archived ? "Désarchiver" : "Archiver"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onDelete(card.listId, card.id)}>
                   Supprimer
@@ -251,7 +256,7 @@ function isLabelColorLight(color: string): boolean {
   return brightness > 155;
 }
 
-function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard, onCardClick, currentUserRole }: {
+function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard, onArchiveCard, onCardClick, currentUserRole }: {
   list: List;
   cards: Card[];
   onRenameList: (listId: string) => void;
@@ -259,6 +264,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
   onAddCard: (list: List) => void;
   onRenameCard: (listId: string, cardId: string) => void;
   onDeleteCard: (listId: string, cardId: string) => void;
+  onArchiveCard: (listId: string, cardId: string) => void;
   onCardClick: (listId: string, cardId: string) => void;
   currentUserRole?: string;
 }) {
@@ -335,6 +341,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
                 card={card}
                 onRename={onRenameCard}
                 onDelete={onDeleteCard}
+                onArchive={onArchiveCard}
                 onClick={onCardClick}
                 currentUserRole={currentUserRole}
               />
@@ -492,7 +499,10 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   const [showPRModal, setShowPRModal] = useState(false);
   const [prModalData, setPrModalData] = useState<{ listId: string; cardId: string; boardId: string } | null>(null);
   const [prLoading, setPrLoading] = useState(false);
+
   const [showAutomationModal, setShowAutomationModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+
 
   const listIds = useMemo(() => (board?.lists || []).map((l: List) => l.id), [board?.lists]);
 
@@ -796,6 +806,40 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     }
     setListForCardAction(null);
     setDeletingCard(false);
+  };
+
+  const handleArchiveCard = async (listId: string, cardId: string) => {
+    const card = cardsByList[listId]?.find((c) => c.id === cardId);
+    if (!card) return;
+
+    // Optimistic update
+    const previousCards = cardsByList[listId];
+    setCardsByList((prev) => {
+      const updated = prev[listId].map(c =>
+        c.id === cardId ? { ...c, archived: !c.archived } : c
+      );
+      return { ...prev, [listId]: updated };
+    });
+
+    try {
+      const res = await fetch(
+        `/api/boards/${boardId}/lists/${listId}/cards/${cardId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ archived: !card.archived }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to archive");
+      }
+      // Revert is handled by SWR revalidation or we can just leave it if successful
+    } catch (error) {
+      console.error("Error archiving card:", error);
+      // Revert on error
+      setCardsByList((prev) => ({ ...prev, [listId]: previousCards }));
+    }
   };
 
 
@@ -1137,6 +1181,14 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               <Zap className="w-4 h-4 text-yellow-500 fill-current" />
               Automations
             </button>
+
+            <button
+              onClick={() => setShowAnalyticsModal(true)}
+              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ml-2"
+            >
+              <Activity className="w-4 h-4 text-blue-500" />
+              Analytics
+            </button>
           </div>
 
         </div>
@@ -1169,6 +1221,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
                       onAddCard={handleAddCardClick}
                       onRenameCard={handleRenameCard}
                       onDeleteCard={handleDeleteCard}
+                      onArchiveCard={handleArchiveCard}
                       onCardClick={handleCardClick}
                       currentUserRole={currentUserRole}
                     />
@@ -1526,6 +1579,12 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
           setShowAutomationModal(false);
           alert("Please use the 'Invite' button in the board header to add members.");
         }}
+      />
+
+      <AnalyticsModal
+        isOpen={showAnalyticsModal}
+        onClose={() => setShowAnalyticsModal(false)}
+        boardId={boardId}
       />
     </div>
   );
