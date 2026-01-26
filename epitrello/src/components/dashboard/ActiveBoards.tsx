@@ -26,6 +26,8 @@ export function ActiveBoards() {
 
     useEffect(() => {
         fetchBoards();
+        const interval = setInterval(fetchBoards, 2000);
+        return () => clearInterval(interval);
     }, []);
 
     if (isLoading) {
