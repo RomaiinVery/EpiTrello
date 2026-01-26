@@ -406,6 +406,13 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     }
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchBoardData();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [boardId]);
+
 
   const [showDialog, setShowDialog] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");
