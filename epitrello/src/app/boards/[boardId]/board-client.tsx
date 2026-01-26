@@ -365,11 +365,11 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
   // Define the SWR fetcher that aggregates all data
   const getFullBoardData = async () => {
-    const boardRes = await fetch(`/api/boards/${boardId}`);
+    const boardRes = await fetch(`/api/boards/${boardId}`, { cache: "no-store" });
     if (!boardRes.ok) throw new Error("Failed to fetch board");
     const boardData = await boardRes.json();
 
-    const listsRes = await fetch(`/api/boards/${boardId}/lists`);
+    const listsRes = await fetch(`/api/boards/${boardId}/lists`, { cache: "no-store" });
     if (!listsRes.ok) throw new Error("Failed to fetch lists");
     const listsData = await listsRes.json();
 
@@ -379,7 +379,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     const newCardsByList: Record<string, Card[]> = {};
     // Parallelize card fetching
     await Promise.all(listsData.map(async (list: List) => {
-      const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);
+      const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`, { cache: "no-store" });
       if (cardsRes.ok) {
         const cardsData = await cardsRes.json();
         newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));

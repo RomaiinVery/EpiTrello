@@ -5,6 +5,8 @@ import { logActivity } from "@/app/lib/activity-logger";
 
 import { prisma } from "@/app/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ boardId: string; listId: string }> }) {
   const { listId } = await params;
 
