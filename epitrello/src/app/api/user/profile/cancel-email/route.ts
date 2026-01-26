@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/app/lib/prisma";
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
     try {
         const session = await getServerSession(authOptions);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
         }
 
         const whereClause = userId ? { id: userId } : { email: session?.user?.email as string };
-        
+
         await prisma.user.update({
             where: whereClause,
             data: {

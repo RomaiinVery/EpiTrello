@@ -70,6 +70,19 @@ export function CardActions({
                     });
                 }
 
+                if (boardData.workspace?.members && Array.isArray(boardData.workspace.members)) {
+                    boardData.workspace.members.forEach((wm: { user: User }) => {
+                        if (wm.user && !allMembers.some((existing) => existing.id === wm.user.id)) {
+                            allMembers.push({
+                                id: wm.user.id,
+                                email: wm.user.email,
+                                name: wm.user.name,
+                                profileImage: wm.user.profileImage
+                            });
+                        }
+                    });
+                }
+
                 setBoardMembers(allMembers);
             }
         } catch (err) {

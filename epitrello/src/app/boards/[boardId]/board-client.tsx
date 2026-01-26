@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useMemo, useEffect } from "react";
+import useSWR from "swr";
 import React from "react";
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
 import { type List, type Card, type Board } from "@/app/lib/board-api";
+import { User } from "@/types";
 import { CardModal } from "@/components/CardModal";
 import { CreatePullRequestModal } from "@/components/board/CreatePullRequestModal";
 import { CheckSquare, Clock, Github } from "lucide-react";
@@ -361,8 +363,68 @@ interface BoardClientProps {
 
 export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList, currentUserRole = "VIEWER" }: BoardClientProps) {
 
-  const [board, setBoard] = useState<Board | null>(initialBoard);
-  const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>(initialCardsByList);
+  // Define the SWR fetcher that aggregates all data
+  const getFullBoardData = async () => {
+    const boardRes = await fetch(`/api/boards/${boardId}`);
+    if (!boardRes.ok) throw new Error("Failed to fetch board");
+    const boardData = await boardRes.json();
+
+    const listsRes = await fetch(`/api/boards/${boardId}/lists`);
+    if (!listsRes.ok) throw new Error("Failed to fetch lists");
+    const listsData = await listsRes.json();
+
+    // Merge lists into boardData immediately
+    const boardWithLists = { ...boardData, lists: listsData };
+
+    const newCardsByList: Record<string, Card[]> = {};
+    // Parallelize card fetching
+    await Promise.all(listsData.map(async (list: List) => {
+      const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);
+      if (cardsRes.ok) {
+        const cardsData = await cardsRes.json();
+        newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
+      } else {
+        newCardsByList[list.id] = [];
+      }
+    }));
+
+    return { board: boardWithLists, cardsByList: newCardsByList };
+  };
+
+  const { data: boardData, mutate } = useSWR(
+    [`board-full`, boardId],
+    getFullBoardData,
+    {
+      refreshInterval: 2000,
+      fallbackData: {
+        board: initialBoard,
+        cardsByList: initialCardsByList
+      }
+    }
+  );
+
+  // Derived state from SWR data
+  const board = boardData?.board || null;
+  const cardsByList = boardData?.cardsByList || {};
+
+  // Helper to update SWR cache optimistically or after mutation
+  const setBoard = (fn: (prev: Board | null) => Board | null) => {
+    mutate((current) => {
+      if (!current) return undefined;
+      const newBoard = fn(current.board);
+      return newBoard ? { ...current, board: newBoard } : current;
+    }, false); // false = do not revalidate immediately, rely on polling or specific revalidation
+  };
+
+  const setCardsByList = (fn: (prev: Record<string, Card[]>) => Record<string, Card[]>) => {
+    mutate((current) => {
+      if (!current) return undefined;
+      const newCards = fn(current.cardsByList);
+      return { ...current, cardsByList: newCards };
+    }, false);
+  };
+
+
 
   const [showDialog, setShowDialog] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");
@@ -416,7 +478,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   const [prModalData, setPrModalData] = useState<{ listId: string; cardId: string; boardId: string } | null>(null);
   const [prLoading, setPrLoading] = useState(false);
 
-  const listIds = useMemo(() => (board?.lists || []).map(l => l.id), [board?.lists]);
+  const listIds = useMemo(() => (board?.lists || []).map((l: List) => l.id), [board?.lists]);
 
 
   useEffect(() => {
@@ -471,7 +533,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
   const handleRename = (listId: string) => {
     if (!board || !board.lists) return;
-    const list = board.lists.find((l) => l.id === listId);
+    const list = board.lists.find((l: List) => l.id === listId);
     if (!list) return;
     setListToRename(list);
     setRenameTitle(list.title);
@@ -523,7 +585,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
   const handleDelete = (listId: string) => {
     if (!board || !board.lists) return;
-    const list = board.lists.find((l) => l.id === listId);
+    const list = board.lists.find((l: List) => l.id === listId);
     if (!list) return;
     setListToDelete(list);
     setDeleteError(null);
@@ -616,7 +678,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   };
 
   const handleRenameCard = (listId: string, cardId: string) => {
-    const card = cardsByList[listId]?.find((c) => c.id === cardId);
+    const card = cardsByList[listId]?.find((c: Card) => c.id === cardId);
     if (!card) return;
     setCardToRename(card);
     setListForCardAction(listId);
@@ -846,8 +908,8 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     if (isActiveAList && activeId !== overId) {
       setBoard((prev) => {
         if (!prev || !prev.lists) return prev;
-        const activeIndex = prev.lists.findIndex((l) => l.id === activeId);
-        const overIndex = prev.lists.findIndex((l) => l.id === overId);
+        const activeIndex = prev.lists.findIndex((l: List) => l.id === activeId);
+        const overIndex = prev.lists.findIndex((l: List) => l.id === overId);
         const newLists = arrayMove(prev.lists, activeIndex, overIndex);
 
         const listsToUpdate = newLists.map((list, index) => ({ id: list.id, position: index }));
@@ -922,7 +984,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         if (!activeListId || !overListId) return;
 
         // Check if moved to "Doing" or "En cours"
-        const destList = board?.lists?.find(l => l.id === overListId);
+        const destList = board?.lists?.find((l: List) => l.id === overListId);
 
         if (destList && board?.githubRepo && startListId && startListId !== overListId &&
           (destList.title.toLowerCase().includes("doing") || destList.title.toLowerCase().includes("en cours") || destList.title.toLowerCase().includes("going"))) {
@@ -1050,7 +1112,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               {board.user && (
                 <MemberAvatar key={board.user.id} member={{ user: board.user, id: board.user.id, role: 'OWNER' }} />
               )}
-              {board.members?.map(member => (
+              {board.members?.map((member: { user: User; id: string; role: string }) => (
                 <MemberAvatar key={member.id} member={member} />
               ))}
             </div>
@@ -1091,7 +1153,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
                 strategy={horizontalListSortingStrategy}
                 disabled={currentUserRole === "VIEWER"}
               >
-                {board?.lists?.map((list) => (
+                {board?.lists?.map((list: List) => (
                   <ListContainer
                     key={list.id}
                     list={list}
@@ -1427,7 +1489,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
           }}
           isCreating={prLoading}
           boardId={boardId}
-          cardTitle={cardsByList[prModalData.listId]?.find(c => c.id === prModalData.cardId)?.title || ""}
+          cardTitle={cardsByList[prModalData.listId]?.find((c: Card) => c.id === prModalData.cardId)?.title || ""}
           repoName={board.githubRepo}
         />
       )}
