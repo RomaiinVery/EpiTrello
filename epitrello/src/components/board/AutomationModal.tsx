@@ -1,9 +1,16 @@
-"use client";
-
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon, UserPlus, Zap, Plus, Trash2, Pencil, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { Zap, Plus, Trash2, X, Pencil, AlertTriangle } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AutomationRule {
     id: string;
@@ -20,16 +27,25 @@ interface Label {
     color: string;
 }
 
+interface Member {
+    id: string;
+    name: string;
+    email: string;
+    profileImage?: string;
+}
+
 interface AutomationModalProps {
     isOpen: boolean;
     onClose: () => void;
     boardId: string;
     lists: { id: string; title: string }[];
+    onInvite?: () => void;
 }
 
-export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationModalProps) {
+export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: AutomationModalProps) {
     const [rules, setRules] = useState<AutomationRule[]>([]);
     const [labels, setLabels] = useState<Label[]>([]);
+    const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(false);
     const [view, setView] = useState<"LIST" | "CREATE">("LIST");
 
@@ -42,12 +58,14 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
     const [triggerVal, setTriggerVal] = useState("");
     const [actionType, setActionType] = useState("ARCHIVE_CARD");
     const [actionVal, setActionVal] = useState("");
+    const [dateVal, setDateVal] = useState<Date | undefined>(undefined);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             fetchRules();
             fetchLabels();
+            fetchMembers();
             setView("LIST");
             resetForm();
         }
@@ -78,6 +96,23 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
         }
     };
 
+    const fetchMembers = async () => {
+        try {
+            const res = await fetch(`/api/boards/${boardId}`);
+            if (res.ok) {
+                const board = await res.json();
+                // Extract members from board response structure
+                const boardMembers = board.members.map((m: any) => m.user);
+                // Also add owner if not in members list (though usually is)
+                // For simplicity, using what API returns.
+                // NOTE: The previous API verification showed members structure.
+                setMembers(boardMembers);
+            }
+        } catch (error) {
+            console.error("Failed to load members", error);
+        }
+    };
+
     const handleDelete = async (ruleId: string) => {
         setLoading(true);
         try {
@@ -100,7 +135,21 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
         setTriggerType(rule.triggerType);
         setTriggerVal(rule.triggerVal);
         setActionType(rule.actionType);
-        setActionVal(rule.actionVal || "");
+
+        if (rule.actionType === "SET_DUE_DATE") {
+            // Handle special date strings if needed, currently assumes ISO or TODAY/TOMORROW
+            // For Picker we might parse if it looks like a date
+            if (rule.actionVal && !["TODAY", "TOMORROW"].includes(rule.actionVal)) {
+                setDateVal(new Date(rule.actionVal));
+                setActionVal(rule.actionVal);
+            } else {
+                setActionVal(rule.actionVal || "");
+                setDateVal(undefined);
+            }
+        } else {
+            setActionVal(rule.actionVal || "");
+        }
+
         setView("CREATE");
     };
 
@@ -108,13 +157,25 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
         setEditingRule(null);
         setTriggerVal("");
         setActionVal("");
+        setDateVal(undefined);
         setActionType("ARCHIVE_CARD");
         setTriggerType("CARD_MOVED_TO_LIST");
     };
 
     const handleSave = async () => {
         if (!triggerVal) return;
-        if (["ADD_LABEL", "MOVE_CARD", "ASSIGN_MEMBER", "SET_DUE_DATE", "REMOVE_LABEL"].includes(actionType) && !actionVal) return;
+
+        let finalActionVal = actionVal;
+
+        if (actionType === "SET_DUE_DATE") {
+            if (dateVal) {
+                finalActionVal = dateVal.toISOString(); // Use ISO string for specific dates
+            } else if (!actionVal) {
+                return; // Must have either dateVal or actionVal (TODAY/TOMORROW)
+            }
+        } else if (["ADD_LABEL", "MOVE_CARD", "ASSIGN_MEMBER", "REMOVE_LABEL"].includes(actionType) && !actionVal) {
+            return;
+        }
 
         setSaving(true);
         try {
@@ -131,7 +192,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
                     triggerType,
                     triggerVal,
                     actionType,
-                    actionVal: ["ADD_LABEL", "MOVE_CARD", "ASSIGN_MEMBER", "SET_DUE_DATE", "REMOVE_LABEL"].includes(actionType) ? actionVal : undefined,
+                    actionVal: ["ADD_LABEL", "MOVE_CARD", "ASSIGN_MEMBER", "SET_DUE_DATE", "REMOVE_LABEL"].includes(actionType) ? finalActionVal : undefined,
                     isActive: true
                 })
             });
@@ -162,9 +223,16 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
             case "MOVE_CARD":
                 return `Move to "${getListName(rule.actionVal || "")}"`;
             case "ASSIGN_MEMBER":
-                return `Assign to Member`;
+                const member = members.find(m => m.id === rule.actionVal);
+                return `Assign to ${member?.name || "Unknown Member"}`;
             case "SET_DUE_DATE":
-                return `Set Due Date to ${rule.actionVal}`;
+                if (rule.actionVal === "TODAY") return "Set Due Date to Today";
+                if (rule.actionVal === "TOMORROW") return "Set Due Date to Tomorrow";
+                try {
+                    return `Set Due Date to ${format(new Date(rule.actionVal || ""), "PPP")}`;
+                } catch {
+                    return `Set Due Date to ${rule.actionVal}`;
+                }
             case "REMOVE_LABEL":
                 const rLabel = labels.find(l => l.id === rule.actionVal);
                 return `Remove Label "${rLabel?.name || "Unknown"}"`;
@@ -294,6 +362,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
                                         onChange={(e) => {
                                             setActionType(e.target.value);
                                             setActionVal("");
+                                            setDateVal(undefined);
                                         }}
                                     >
                                         <option value="ARCHIVE_CARD">Archive the card</option>
@@ -340,18 +409,83 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
                                     </div>
                                 )}
 
+                                {actionType === "ASSIGN_MEMBER" && (
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-20"></div>
+                                        <div className="flex-1 space-y-2">
+                                            <select
+                                                className="w-full p-2 border rounded bg-white shadow-sm"
+                                                value={actionVal}
+                                                onChange={(e) => setActionVal(e.target.value)}
+                                            >
+                                                <option value="">Select a member...</option>
+                                                {members.map(member => (
+                                                    <option key={member.id} value={member.id}>{member.name || member.email}</option>
+                                                ))}
+                                            </select>
+                                            {members.length === 0 && (
+                                                <div className="text-sm text-gray-500 flex items-center gap-2">
+                                                    No members found.
+                                                    {onInvite && (
+                                                        <Button variant="link" className="p-0 h-auto font-normal text-blue-600" onClick={onInvite}>
+                                                            <UserPlus className="w-3 h-3 mr-1" />
+                                                            Invite a member
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {actionType === "SET_DUE_DATE" && (
                                     <div className="flex items-center gap-3">
                                         <div className="w-20"></div>
-                                        <select
-                                            className="flex-1 p-2 border rounded bg-white shadow-sm"
-                                            value={actionVal}
-                                            onChange={(e) => setActionVal(e.target.value)}
-                                        >
-                                            <option value="">Select date...</option>
-                                            <option value="TODAY">Today</option>
-                                            <option value="TOMORROW">Tomorrow</option>
-                                        </select>
+                                        <div className="flex-1 flex gap-2">
+                                            <select
+                                                className="w-[140px] p-2 border rounded bg-white shadow-sm"
+                                                value={actionVal}
+                                                onChange={(e) => {
+                                                    setActionVal(e.target.value);
+                                                    if (e.target.value === "TODAY" || e.target.value === "TOMORROW") {
+                                                        setDateVal(undefined);
+                                                    }
+                                                }}
+                                            >
+                                                <option value="">Select...</option>
+                                                <option value="TODAY">Today</option>
+                                                <option value="TOMORROW">Tomorrow</option>
+                                                <option value="CUSTOM">Specific Date</option>
+                                            </select>
+
+                                            {(actionVal === "CUSTOM" || (!["TODAY", "TOMORROW", ""].includes(actionVal))) && (
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant={"outline"}
+                                                            className={cn(
+                                                                "w-[240px] justify-start text-left font-normal",
+                                                                !dateVal && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                                            {dateVal ? format(dateVal, "PPP") : <span>Pick a date</span>}
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={dateVal}
+                                                            onSelect={(date) => {
+                                                                setDateVal(date);
+                                                                setActionVal(date ? date.toISOString() : "CUSTOM");
+                                                            }}
+                                                            initialFocus
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 
@@ -361,7 +495,11 @@ export function AutomationModal({ isOpen, onClose, boardId, lists }: AutomationM
                                 <Button onClick={handleSave} disabled={
                                     !triggerVal ||
                                     saving ||
-                                    (["ADD_LABEL", "MOVE_CARD", "ASSIGN_MEMBER", "SET_DUE_DATE", "REMOVE_LABEL"].includes(actionType) && !actionVal)
+                                    (actionType === "ADD_LABEL" && !actionVal) ||
+                                    (actionType === "MOVE_CARD" && !actionVal) ||
+                                    (actionType === "ASSIGN_MEMBER" && !actionVal) ||
+                                    (actionType === "REMOVE_LABEL" && !actionVal) ||
+                                    (actionType === "SET_DUE_DATE" && !actionVal && !dateVal)
                                 }>
                                     {saving ? "Saving..." : (editingRule ? "Update Rule" : "Create Rule")}
                                 </Button>

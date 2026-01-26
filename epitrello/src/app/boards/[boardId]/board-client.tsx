@@ -1522,9 +1522,11 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         onClose={() => setShowAutomationModal(false)}
         boardId={boardId}
         lists={board.lists || []}
+        onInvite={() => {
+          setShowAutomationModal(false);
+          alert("Please use the 'Invite' button in the board header to add members.");
+        }}
       />
-    </div >
-
+    </div>
   );
-
 }

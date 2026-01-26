@@ -101,11 +101,19 @@ export class AutomationService {
                 await this.logExecution(rule.id, "SUCCESS", `User ${rule.actionVal} assigned to card.`);
 
             } else if (rule.actionType === ActionType.SET_DUE_DATE) {
-                // actionVal: "TODAY" or "TOMORROW"
-                const date = new Date();
+                // actionVal: "TODAY", "TOMORROW", or ISO String
+                let date = new Date();
+
                 if (rule.actionVal === "TOMORROW") {
                     date.setDate(date.getDate() + 1);
+                } else if (rule.actionVal && rule.actionVal !== "TODAY") {
+                    // Try parsing as specific date
+                    const parsed = new Date(rule.actionVal);
+                    if (!isNaN(parsed.getTime())) {
+                        date = parsed;
+                    }
                 }
+
                 await prisma.card.update({
                     where: { id: context.cardId },
                     data: { dueDate: date }
