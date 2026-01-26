@@ -254,6 +254,7 @@ export function CardModal({
                       dueDate={card.dueDate}
                       onUpdate={onUpdate}
                       onCardUpdate={handleCardUpdate}
+                      onFetchCard={fetchCardDetails}
                       onActivityUpdate={triggerActivityUpdate}
                       readOnly={!canEdit}
                     />
