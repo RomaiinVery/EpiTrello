@@ -10,6 +10,8 @@ export async function middleware(req: NextRequest) {
 
   const isPublicPath =
     publicPaths.includes(pathname) ||
+    pathname.startsWith("/auth/forgot-password") ||
+    pathname.startsWith("/auth/reset-password") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/register") ||
     pathname.startsWith("/api/verify");
