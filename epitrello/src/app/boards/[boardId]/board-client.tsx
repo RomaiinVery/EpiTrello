@@ -384,7 +384,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         const cardsData = await cardsRes.json();
         newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
       } else {
-        newCardsByList[list.id] = [];
+        throw new Error(`Failed to fetch cards for list ${list.id}`);
       }
     }));
 
@@ -523,7 +523,6 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
           : prev
       );
       setCardsByList((prev) => ({ ...prev, [newList.id]: [] }));
-      mutate();
       setShowDialog(false);
       setNewListTitle("");
     } catch {
@@ -576,7 +575,6 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         return { ...prev, lists: newLists };
       });
       setShowRenameDialog(false);
-      mutate();
       setRenameTitle("");
       setListToRename(null);
     } catch {
@@ -623,7 +621,6 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         return newCardsByList;
       });
       setShowDeleteDialog(false);
-      mutate();
       setListToDelete(null);
     } catch {
       setDeleteError("Erreur réseau");
@@ -676,7 +673,6 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
           ]
         };
       });
-      mutate(); // Trigger revalidation to ensure sync
       setShowAddCardDialog(false);
       setCardTitle("");
       setCardContent("");
@@ -732,7 +728,6 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         );
         return { ...prev, [listForCardAction]: updatedCards };
       });
-      mutate();
       setShowRenameCardDialog(false);
       setCardToRename(null);
       setRenameCardTitle("");
@@ -778,7 +773,6 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         );
         return { ...prev, [listForCardAction]: filtered };
       });
-      mutate();
       setShowDeleteCardDialog(false);
       setCardToDelete(null);
     } catch {
