@@ -23,6 +23,7 @@ interface CardActionsProps {
     dueDate?: string | null;
     onUpdate: () => void;
     onCardUpdate: (newCard: CardDetail) => void;
+    onFetchCard: () => void;
     onActivityUpdate: () => void;
     readOnly?: boolean;
 }
@@ -37,6 +38,7 @@ export function CardActions({
     dueDate,
     onUpdate,
     onCardUpdate,
+    onFetchCard,
     onActivityUpdate,
     readOnly = false,
 }: CardActionsProps) {
@@ -103,6 +105,7 @@ export function CardActions({
             );
             if (res.ok) {
                 onUpdate();
+                onFetchCard();
                 onActivityUpdate();
             }
         } catch (err) {
@@ -124,6 +127,7 @@ export function CardActions({
             );
             if (res.ok) {
                 onUpdate();
+                onFetchCard();
                 onActivityUpdate();
             }
         } catch (err) {
@@ -247,6 +251,7 @@ export function CardActions({
                     selectedLabels={labels}
                     onLabelsChange={() => {
                         onUpdate();
+                        onFetchCard();
                     }}
                     readOnly={readOnly}
                 />

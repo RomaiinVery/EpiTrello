@@ -12,7 +12,7 @@ const adapter = new PrismaPg(pool)
 
 try {
   prismaInstance = globalForPrisma.prisma || new PrismaClient({ adapter })
-  console.log("Prisma Client initialisé avec succès");
+  // console.log("Prisma Client initialisé avec succès");
 } catch (error) {
   console.error(" Erreur critique d'initialisation prisma")
   console.error(error)
