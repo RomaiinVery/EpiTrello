@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { logActivity } from "@/app/lib/activity-logger";
+import { AutomationService, TriggerType } from "@/app/lib/automation";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -116,6 +117,15 @@ export async function PATCH(
               newListTitle: newList.title,
             },
           });
+
+          // AUTOMATION TRIGGER
+          // Fire and forget automation to not block response
+          AutomationService.processTrigger(
+            boardId,
+            TriggerType.CARD_MOVED_TO_LIST,
+            card.listId, // The list ID it was moved TO
+            { cardId: card.id }
+          ).catch(e => console.error("Automation Trigger Error:", e));
         }
       }
     }

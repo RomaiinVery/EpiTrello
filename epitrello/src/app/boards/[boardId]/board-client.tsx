@@ -40,6 +40,8 @@ import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { GanttView } from "@/components/board/GanttView";
 import { MemberAvatar } from "../memberAvatar";
+import { AutomationModal } from "@/components/board/AutomationModal";
+import { Zap } from "lucide-react";
 
 function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
   card: Card;
@@ -84,13 +86,18 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="bg-white rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+      className={`bg-white rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden relative ${card.archived ? "opacity-60 grayscale bg-gray-50" : ""}`}
       onClick={(e) => {
         if (!isDragging && !(e.target as HTMLElement).closest('[role="menuitem"]')) {
           onClick(card.listId, card.id);
         }
       }}
     >
+      {card.archived && (
+        <div className="absolute top-0 right-0 bg-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-bl z-10">
+          ARCHIVED
+        </div>
+      )}
       {card.coverImage && (
         <Image
           src={card.coverImage}
@@ -485,6 +492,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   const [showPRModal, setShowPRModal] = useState(false);
   const [prModalData, setPrModalData] = useState<{ listId: string; cardId: string; boardId: string } | null>(null);
   const [prLoading, setPrLoading] = useState(false);
+  const [showAutomationModal, setShowAutomationModal] = useState(false);
 
   const listIds = useMemo(() => (board?.lists || []).map((l: List) => l.id), [board?.lists]);
 
@@ -1121,6 +1129,14 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
                 Gantt
               </button>
             </div>
+
+            <button
+              onClick={() => setShowAutomationModal(true)}
+              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ml-2"
+            >
+              <Zap className="w-4 h-4 text-yellow-500 fill-current" />
+              Automations
+            </button>
           </div>
 
         </div>
@@ -1128,361 +1144,387 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
       <hr className="my-4" />
 
-      {viewMode === "kanban" ? (
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex-1 overflow-x-auto overflow-y-hidden">
-            <div className="flex h-full gap-4 pb-4 px-4 min-w-fit">
-              <SortableContext
-                items={listIds}
-                strategy={horizontalListSortingStrategy}
-                disabled={currentUserRole === "VIEWER"}
-              >
-                {board?.lists?.map((list: List) => (
-                  <ListContainer
-                    key={list.id}
-                    list={list}
-                    cards={cardsByList[list.id] || []}
-                    onRenameList={handleRename}
-                    onDeleteList={handleDelete}
-                    onAddCard={handleAddCardClick}
-                    onRenameCard={handleRenameCard}
-                    onDeleteCard={handleDeleteCard}
-                    onCardClick={handleCardClick}
-                    currentUserRole={currentUserRole}
-                  />
-                ))}
-              </SortableContext>
+      {
+        viewMode === "kanban" ? (
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex-1 overflow-x-auto overflow-y-hidden">
+              <div className="flex h-full gap-4 pb-4 px-4 min-w-fit">
+                <SortableContext
+                  items={listIds}
+                  strategy={horizontalListSortingStrategy}
+                  disabled={currentUserRole === "VIEWER"}
+                >
+                  {board?.lists?.map((list: List) => (
+                    <ListContainer
+                      key={list.id}
+                      list={list}
+                      cards={cardsByList[list.id] || []}
+                      onRenameList={handleRename}
+                      onDeleteList={handleDelete}
+                      onAddCard={handleAddCardClick}
+                      onRenameCard={handleRenameCard}
+                      onDeleteCard={handleDeleteCard}
+                      onCardClick={handleCardClick}
+                      currentUserRole={currentUserRole}
+                    />
+                  ))}
+                </SortableContext>
 
-              {currentUserRole !== "VIEWER" && (
+                {currentUserRole !== "VIEWER" && (
+                  <button
+                    onClick={handleAddListClick}
+                    className="w-64 min-w-[16rem] h-12 bg-gray-200/50 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-medium transition-colors"
+                    type="button"
+                  >
+                    + Ajouter une liste
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {isMounted ? createPortal(
+              <DragOverlay>
+                {activeList && (
+                  <div className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
+                    <h2 className="font-semibold text-gray-800">{activeList.title}</h2>
+                  </div>
+                )}
+                {activeCard && (
+                  <div className="bg-white rounded shadow p-2 mb-2 w-64 opacity-90">
+                    <h3 className="font-semibold text-gray-700">{activeCard.title}</h3>
+                    {activeCard.content && (
+                      <p className="text-gray-600 text-sm">{activeCard.content}</p>
+                    )}
+                  </div>
+                )}
+              </DragOverlay>,
+              document.body
+            ) : null}
+
+          </DndContext>
+        ) : (
+          <GanttView lists={board.lists || []} cardsByList={cardsByList} />
+        )
+      }
+
+      {
+        showDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Ajouter une liste</h3>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Titre de la liste"
+                value={newListTitle}
+                onChange={(e) => setNewListTitle(e.target.value)}
+                disabled={addingList}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleDialogConfirm();
+                }}
+              />
+              {error && (
+                <div className="text-red-500 text-sm mb-2">{error}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
                 <button
-                  onClick={handleAddListClick}
-                  className="w-64 min-w-[16rem] h-12 bg-gray-200/50 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-medium transition-colors"
+                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  onClick={handleDialogCancel}
+                  disabled={addingList}
                   type="button"
                 >
-                  + Ajouter une liste
+                  Annuler
                 </button>
-              )}
+                <button
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  onClick={handleDialogConfirm}
+                  disabled={addingList}
+                  type="button"
+                >
+                  {addingList ? "Ajout..." : "Ajouter"}
+                </button>
+              </div>
             </div>
           </div>
+        )
+      }
 
-          {isMounted ? createPortal(
-            <DragOverlay>
-              {activeList && (
-                <div className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
-                  <h2 className="font-semibold text-gray-800">{activeList.title}</h2>
-                </div>
-              )}
-              {activeCard && (
-                <div className="bg-white rounded shadow p-2 mb-2 w-64 opacity-90">
-                  <h3 className="font-semibold text-gray-700">{activeCard.title}</h3>
-                  {activeCard.content && (
-                    <p className="text-gray-600 text-sm">{activeCard.content}</p>
-                  )}
-                </div>
-              )}
-            </DragOverlay>,
-            document.body
-          ) : null}
-
-        </DndContext>
-      ) : (
-        <GanttView lists={board.lists || []} cardsByList={cardsByList} />
-      )}
-
-      {showDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Ajouter une liste</h3>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Titre de la liste"
-              value={newListTitle}
-              onChange={(e) => setNewListTitle(e.target.value)}
-              disabled={addingList}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleDialogConfirm();
-              }}
-            />
-            {error && (
-              <div className="text-red-500 text-sm mb-2">{error}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleDialogCancel}
-                disabled={addingList}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleDialogConfirm}
-                disabled={addingList}
-                type="button"
-              >
-                {addingList ? "Ajout..." : "Ajouter"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showRenameDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Renommer la liste</h3>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Nouveau titre"
-              value={renameTitle}
-              onChange={(e) => setRenameTitle(e.target.value)}
-              disabled={renaming}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRenameConfirm();
-              }}
-            />
-            {renameError && (
-              <div className="text-red-500 text-sm mb-2">{renameError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleRenameCancel}
+      {
+        showRenameDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Renommer la liste</h3>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Nouveau titre"
+                value={renameTitle}
+                onChange={(e) => setRenameTitle(e.target.value)}
                 disabled={renaming}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleRenameConfirm}
-                disabled={renaming}
-                type="button"
-              >
-                {renaming ? "Renommage..." : "Renommer"}
-              </button>
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameConfirm();
+                }}
+              />
+              {renameError && (
+                <div className="text-red-500 text-sm mb-2">{renameError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  onClick={handleRenameCancel}
+                  disabled={renaming}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  onClick={handleRenameConfirm}
+                  disabled={renaming}
+                  type="button"
+                >
+                  {renaming ? "Renommage..." : "Renommer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showDeleteDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
-            <p className="mb-4">
-              Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
-            </p>
-            {deleteError && (
-              <div className="text-red-500 text-sm mb-2">{deleteError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleDeleteCancel}
-                disabled={deleting}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
-                onClick={handleDeleteConfirm}
-                disabled={deleting}
-                type="button"
-              >
-                {deleting ? "Suppression..." : "Supprimer"}
-              </button>
+      {
+        showDeleteDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
+              <p className="mb-4">
+                Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
+              </p>
+              {deleteError && (
+                <div className="text-red-500 text-sm mb-2">{deleteError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  onClick={handleDeleteCancel}
+                  disabled={deleting}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                  onClick={handleDeleteConfirm}
+                  disabled={deleting}
+                  type="button"
+                >
+                  {deleting ? "Suppression..." : "Supprimer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showAddCardDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Ajouter une carte</h3>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Titre de la carte"
-              value={cardTitle}
-              onChange={(e) => setCardTitle(e.target.value)}
-              disabled={addingCard}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleAddCardConfirm();
-              }}
-            />
-            <textarea
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-              placeholder="Contenu (optionnel)"
-              value={cardContent}
-              onChange={(e) => setCardContent(e.target.value)}
-              disabled={addingCard}
-              rows={3}
-            />
-            {addCardError && (
-              <div className="text-red-500 text-sm mb-2">{addCardError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleAddCardCancel}
+      {
+        showAddCardDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Ajouter une carte</h3>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Titre de la carte"
+                value={cardTitle}
+                onChange={(e) => setCardTitle(e.target.value)}
                 disabled={addingCard}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleAddCardConfirm}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddCardConfirm();
+                }}
+              />
+              <textarea
+                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                placeholder="Contenu (optionnel)"
+                value={cardContent}
+                onChange={(e) => setCardContent(e.target.value)}
                 disabled={addingCard}
-                type="button"
-              >
-                {addingCard ? "Ajout..." : "Ajouter"}
-              </button>
+                rows={3}
+              />
+              {addCardError && (
+                <div className="text-red-500 text-sm mb-2">{addCardError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  onClick={handleAddCardCancel}
+                  disabled={addingCard}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  onClick={handleAddCardConfirm}
+                  disabled={addingCard}
+                  type="button"
+                >
+                  {addingCard ? "Ajout..." : "Ajouter"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showRenameCardDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Renommer la carte</h3>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Nouveau titre"
-              value={renameCardTitle}
-              onChange={(e) => setRenameCardTitle(e.target.value)}
-              disabled={renamingCard}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRenameCardConfirm();
-              }}
-            />
-            {renameCardError && (
-              <div className="text-red-500 text-sm mb-2">{renameCardError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleRenameCardCancel}
+      {
+        showRenameCardDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Renommer la carte</h3>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Nouveau titre"
+                value={renameCardTitle}
+                onChange={(e) => setRenameCardTitle(e.target.value)}
                 disabled={renamingCard}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleRenameCardConfirm}
-                disabled={renamingCard}
-                type="button"
-              >
-                {renamingCard ? "Renommage..." : "Renommer"}
-              </button>
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameCardConfirm();
+                }}
+              />
+              {renameCardError && (
+                <div className="text-red-500 text-sm mb-2">{renameCardError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  onClick={handleRenameCardCancel}
+                  disabled={renamingCard}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  onClick={handleRenameCardConfirm}
+                  disabled={renamingCard}
+                  type="button"
+                >
+                  {renamingCard ? "Renommage..." : "Renommer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showDeleteCardDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
-            <p className="mb-4">
-              Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
-            </p>
-            {deleteCardError && (
-              <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleDeleteCardCancel}
-                disabled={deletingCard}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
-                onClick={handleDeleteCardConfirm}
-                disabled={deletingCard}
-                type="button"
-              >
-                {deletingCard ? "Suppression..." : "Supprimer"}
-              </button>
+      {
+        showDeleteCardDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
+              <p className="mb-4">
+                Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
+              </p>
+              {deleteCardError && (
+                <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  onClick={handleDeleteCardCancel}
+                  disabled={deletingCard}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                  onClick={handleDeleteCardConfirm}
+                  disabled={deletingCard}
+                  type="button"
+                >
+                  {deletingCard ? "Suppression..." : "Supprimer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
 
 
       {/* Card Modal */}
-      {showCardModal && selectedCardId && selectedListId && (
-        <CardModal
-          boardId={boardId}
-          cardId={selectedCardId}
-          listId={selectedListId}
-          isOpen={showCardModal}
-          onClose={handleCardModalClose}
-          onUpdate={handleCardUpdate}
-          currentUserRole={currentUserRole}
-        />
-      )}
+      {
+        showCardModal && selectedCardId && selectedListId && (
+          <CardModal
+            boardId={boardId}
+            cardId={selectedCardId}
+            listId={selectedListId}
+            isOpen={showCardModal}
+            onClose={handleCardModalClose}
+            onUpdate={handleCardUpdate}
+            currentUserRole={currentUserRole}
+          />
+        )
+      }
 
-      {board && board.githubRepo && prModalData && (
-        <CreatePullRequestModal
-          isOpen={showPRModal}
-          onClose={() => {
-            setShowPRModal(false);
-            setPrModalData(null);
-          }}
-          onConfirm={async (data) => {
-            if (!prModalData) return;
-            setPrLoading(true);
-            try {
-              const res = await fetch(`/api/boards/${boardId}/lists/${prModalData.listId}/cards/${prModalData.cardId}/github/pr`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-              });
+      {
+        board && board.githubRepo && prModalData && (
+          <CreatePullRequestModal
+            isOpen={showPRModal}
+            onClose={() => {
+              setShowPRModal(false);
+              setPrModalData(null);
+            }}
+            onConfirm={async (data) => {
+              if (!prModalData) return;
+              setPrLoading(true);
+              try {
+                const res = await fetch(`/api/boards/${boardId}/lists/${prModalData.listId}/cards/${prModalData.cardId}/github/pr`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(data),
+                });
 
-              if (res.ok) {
-                await res.json();
-                handleCardUpdate();
-                setShowPRModal(false);
-                setPrModalData(null);
-              } else {
-                console.error("Failed to create PR");
+                if (res.ok) {
+                  await res.json();
+                  handleCardUpdate();
+                  setShowPRModal(false);
+                  setPrModalData(null);
+                } else {
+                  console.error("Failed to create PR");
+                }
+              } catch (e) {
+                console.error("Error creating PR", e);
+              } finally {
+                setPrLoading(false);
               }
-            } catch (e) {
-              console.error("Error creating PR", e);
-            } finally {
-              setPrLoading(false);
-            }
-          }}
-          isCreating={prLoading}
-          boardId={boardId}
-          cardTitle={cardsByList[prModalData.listId]?.find((c: Card) => c.id === prModalData.cardId)?.title || ""}
-          repoName={board.githubRepo}
-        />
-      )}
-    </div>
+            }}
+            isCreating={prLoading}
+            boardId={boardId}
+            cardTitle={cardsByList[prModalData.listId]?.find((c: Card) => c.id === prModalData.cardId)?.title || ""}
+            repoName={board.githubRepo}
+          />
+        )
+      }
+
+      <AutomationModal
+        isOpen={showAutomationModal}
+        onClose={() => setShowAutomationModal(false)}
+        boardId={boardId}
+        lists={board.lists || []}
+      />
+    </div >
+
   );
 
 }

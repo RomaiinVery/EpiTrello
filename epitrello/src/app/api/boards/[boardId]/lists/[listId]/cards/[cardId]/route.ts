@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../auth/[...nextauth]/route";
 import { logActivity } from "@/app/lib/activity-logger";
+import { AutomationService, TriggerType } from "@/app/lib/automation";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -237,6 +238,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
           listTitle: updatedCard.list.title,
         },
       });
+    }
+
+    // AUTOMATION TRIGGER
+    if (updatedCard.listId !== oldCard.listId) {
+      // Fire and forget automation to not block response
+      AutomationService.processTrigger(
+        boardId,
+        TriggerType.CARD_MOVED_TO_LIST,
+        updatedCard.listId,
+        { cardId: updatedCard.id }
+      ).catch(e => console.error("Automation Trigger Error:", e));
     }
 
     return NextResponse.json(formattedCard);
