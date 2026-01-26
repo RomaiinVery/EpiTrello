@@ -43,6 +43,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ boardId:
           name: true,
         },
       },
+      workspace: {
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                  profileImage: true,
+                },
+              },
+            },
+          },
+        },
+      },
     }
   });
 

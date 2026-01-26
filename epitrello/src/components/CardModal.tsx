@@ -79,6 +79,13 @@ export function CardModal({
                   if (!allMembers.some(ex => ex.id === m.id)) allMembers.push(m);
                 });
               }
+              if (boardData.workspace?.members) {
+                boardData.workspace.members.forEach((wm: any) => {
+                  if (wm.user && !allMembers.some(ex => ex.id === wm.user.id)) {
+                    allMembers.push(wm.user);
+                  }
+                });
+              }
               const found = allMembers.find(m => m.email === session.user.email);
               if (found) setCurrentUser(found);
             }
