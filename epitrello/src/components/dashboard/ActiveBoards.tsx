@@ -17,8 +17,12 @@ export function ActiveBoards() {
     });
 
     useEffect(() => {
-        if (allBoards) {
+        if (allBoards && Array.isArray(allBoards)) {
             setBoards(allBoards.slice(0, 4));
+            setIsLoading(false);
+        } else if (allBoards) {
+            // Handle error response or unexpected format
+            setBoards([]);
             setIsLoading(false);
         }
     }, [allBoards]);

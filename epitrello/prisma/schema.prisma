@@ -260,13 +260,21 @@ model AutomationRule {
   board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   triggerType String // e.g., "CARD_MOVED_TO_LIST"
   triggerVal  String // e.g., "Done List ID"
-  actionType  String // e.g., "ARCHIVE_CARD"
-  actionVal   String? // e.g. Label ID
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  logs AutomationLog[]
+  actions AutomationAction[]
+  logs    AutomationLog[]
+}
+
+model AutomationAction {
+  id        String         @id @default(cuid())
+  ruleId    String
+  rule      AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  type      String // e.g., "ARCHIVE_CARD"
+  value     String? // e.g. Label ID
+  createdAt DateTime       @default(now())
 }
 
 model AutomationLog {

@@ -43,7 +43,7 @@ export async function PUT(
 
         const { boardId, ruleId } = await params;
         const body = await request.json();
-        const { triggerType, triggerVal, actionType, actionVal, isActive } = body;
+        const { triggerType, triggerVal, actions, isActive } = body;
 
         const updatedRule = await prisma.automationRule.update({
             where: {
@@ -53,10 +53,16 @@ export async function PUT(
             data: {
                 triggerType,
                 triggerVal,
-                actionType,
-                actionVal,
-                isActive
-            }
+                isActive,
+                actions: {
+                    deleteMany: {},
+                    create: actions.map((action: any) => ({
+                        type: action.type,
+                        value: action.value
+                    }))
+                }
+            },
+            include: { actions: true }
         });
 
         return NextResponse.json(updatedRule);

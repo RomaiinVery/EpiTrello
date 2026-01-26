@@ -14,6 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
 
         const rules = await prisma.automationRule.findMany({
             where: { boardId },
+            include: { actions: true },
             orderBy: { createdAt: 'desc' },
         });
 
@@ -32,16 +33,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
 
         const { boardId } = await params;
         const body = await request.json();
-        const { triggerType, triggerVal, actionType, actionVal } = body;
+        const { triggerType, triggerVal, actions } = body;
 
         const rule = await prisma.automationRule.create({
             data: {
                 boardId,
                 triggerType,
                 triggerVal,
-                actionType,
-                actionVal,
+                actions: {
+                    create: actions.map((action: any) => ({
+                        type: action.type,
+                        value: action.value
+                    }))
+                }
             },
+            include: { actions: true }
         });
 
         return NextResponse.json(rule, { status: 201 });
