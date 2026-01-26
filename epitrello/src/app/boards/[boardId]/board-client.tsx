@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useMemo, useEffect } from "react";
+import useSWR from "swr";
 import React from "react";
 import {
   DropdownMenu,
@@ -361,8 +362,69 @@ interface BoardClientProps {
 
 export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList, currentUserRole = "VIEWER" }: BoardClientProps) {
 
-  const [board, setBoard] = useState<Board | null>(initialBoard);
-  const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>(initialCardsByList);
+  // Define the SWR fetcher that aggregates all data
+  const getFullBoardData = async () => {
+    const boardRes = await fetch(`/api/boards/${boardId}`);
+    if (!boardRes.ok) throw new Error("Failed to fetch board");
+    const boardData = await boardRes.json();
+
+    const listsRes = await fetch(`/api/boards/${boardId}/lists`);
+    if (!listsRes.ok) throw new Error("Failed to fetch lists");
+    const listsData = await listsRes.json();
+
+    // Merge lists into boardData immediately
+    const boardWithLists = { ...boardData, lists: listsData };
+
+    const newCardsByList: Record<string, Card[]> = {};
+    // Parallelize card fetching
+    await Promise.all(listsData.map(async (list: List) => {
+      const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);
+      if (cardsRes.ok) {
+        const cardsData = await cardsRes.json();
+        newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
+      } else {
+        newCardsByList[list.id] = [];
+      }
+    }));
+
+    return { board: boardWithLists, cardsByList: newCardsByList };
+  };
+
+  const { data: boardData, mutate } = useSWR(
+    [`board-full`, boardId],
+    getFullBoardData,
+    {
+      refreshInterval: 2000,
+      fallbackData: {
+        board: initialBoard,
+        cardsByList: initialCardsByList
+      }
+    }
+  );
+
+  // Derived state from SWR data
+  const board = boardData?.board || null;
+  const cardsByList = boardData?.cardsByList || {};
+
+  // Helper to update SWR cache optimistically or after mutation
+  const setBoard = (fn: (prev: Board | null) => Board | null) => {
+    mutate((current) => {
+      if (!current) return undefined;
+      const newBoard = fn(current.board);
+      return newBoard ? { ...current, board: newBoard } : current;
+    }, false); // false = do not revalidate immediately, rely on polling or specific revalidation
+  };
+
+  const setCardsByList = (fn: (prev: Record<string, Card[]>) => Record<string, Card[]>) => {
+    mutate((current) => {
+      if (!current) return undefined;
+      const newCards = fn(current.cardsByList);
+      return { ...current, cardsByList: newCards };
+    }, false);
+  };
+
+  // Specific revalidate function to pass down if needed, or just call mutate()
+  const reloadBoard = () => mutate();
 
   const [showDialog, setShowDialog] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");

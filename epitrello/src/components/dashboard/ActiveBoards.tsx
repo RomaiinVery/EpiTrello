@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Board } from "@prisma/client";
@@ -9,23 +10,20 @@ export function ActiveBoards() {
     const [boards, setBoards] = useState<Board[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+    const { data: allBoards, error } = useSWR<Board[]>("/api/boards", fetcher, {
+        refreshInterval: 2000,
+    });
+
     useEffect(() => {
-        async function fetchBoards() {
-            try {
-                const res = await fetch("/api/boards");
-                if (res.ok) {
-                    const data = await res.json();
-                    // Take only the first 4 for the dashboard view
-                    setBoards(data.slice(0, 4));
-                }
-            } catch (error) {
-                console.error("Failed to fetch boards", error);
-            } finally {
-                setIsLoading(false);
-            }
+        if (allBoards) {
+            setBoards(allBoards.slice(0, 4));
+            setIsLoading(false);
         }
-        fetchBoards();
-    }, []);
+    }, [allBoards]);
+
+    if (error) console.error("Failed to fetch boards", error);
 
     if (isLoading) {
         return (
