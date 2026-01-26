@@ -424,8 +424,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     }, false);
   };
 
-  // Specific revalidate function to pass down if needed, or just call mutate()
-  const reloadBoard = () => mutate();
+
 
   const [showDialog, setShowDialog] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");
@@ -1113,7 +1112,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               {board.user && (
                 <MemberAvatar key={board.user.id} member={{ user: board.user, id: board.user.id, role: 'OWNER' }} />
               )}
-              {board.members?.map((member: any) => (
+              {board.members?.map((member: { user: User; id: string; role: string }) => (
                 <MemberAvatar key={member.id} member={member} />
               ))}
             </div>

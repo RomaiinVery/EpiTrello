@@ -80,7 +80,7 @@ export function CardModal({
                 });
               }
               if (boardData.workspace?.members) {
-                boardData.workspace.members.forEach((wm: any) => {
+                boardData.workspace.members.forEach((wm: { user: User }) => {
                   if (wm.user && !allMembers.some(ex => ex.id === wm.user.id)) {
                     allMembers.push(wm.user);
                   }
