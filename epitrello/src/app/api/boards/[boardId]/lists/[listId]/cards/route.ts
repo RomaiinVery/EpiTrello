@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../auth/[...nextauth]/route";
 import { logActivity } from "@/app/lib/activity-logger";
+import { AutomationService, TriggerType } from "@/app/lib/automation";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -189,6 +190,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       cardId: newCard.id,
       metadata: { listTitle: list.title },
     });
+
+    // AUTOMATION TRIGGER
+    // AUTOMATION TRIGGER
+    await AutomationService.processTrigger(
+      boardId,
+      TriggerType.CARD_CREATED,
+      listId,
+      { cardId: newCard.id }
+    ).catch(e => console.error("Automation Trigger Error (Create):", e));
 
     return NextResponse.json(newCard, { status: 201 });
   } catch (error) {

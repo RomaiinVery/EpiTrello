@@ -57,6 +57,7 @@ export type Card = {
   checklists?: Checklist[];
   githubIssueNumber?: number | null;
   githubIssueUrl?: string | null;
+  archived?: boolean;
 };
 
 export type Board = {
