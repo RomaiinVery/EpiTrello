@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, Minimize2, Send, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
     role: "user" | "assistant";
@@ -110,9 +111,13 @@ export function BoardChat({ boardId }: BoardChatProps) {
                                 "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm",
                                 m.role === "user"
                                     ? "bg-indigo-600 text-white rounded-br-none"
-                                    : "bg-white border border-gray-100 text-gray-800 rounded-bl-none"
+                                    : "bg-white border border-gray-100 text-gray-800 rounded-bl-none prose prose-sm max-w-none"
                             )}>
-                                {m.content}
+                                {m.role === "user" ? (
+                                    m.content
+                                ) : (
+                                    <ReactMarkdown>{m.content}</ReactMarkdown>
+                                )}
                             </div>
                         </div>
                     ))}
