@@ -192,7 +192,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     });
 
     // AUTOMATION TRIGGER
-    AutomationService.processTrigger(
+    // AUTOMATION TRIGGER
+    await AutomationService.processTrigger(
       boardId,
       TriggerType.CARD_CREATED,
       listId,

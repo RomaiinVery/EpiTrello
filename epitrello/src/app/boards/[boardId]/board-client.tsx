@@ -43,6 +43,7 @@ import { MemberAvatar } from "../memberAvatar";
 import { AutomationModal } from "@/components/board/AutomationModal";
 import { Zap, Activity } from "lucide-react";
 import { AnalyticsModal } from "@/components/board/AnalyticsModal";
+import { BoardChat } from "@/components/board/BoardChat";
 
 function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRole }: {
   card: Card;
@@ -1586,6 +1587,8 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         onClose={() => setShowAnalyticsModal(false)}
         boardId={boardId}
       />
+
+      <BoardChat boardId={boardId} />
     </div>
   );
 }
