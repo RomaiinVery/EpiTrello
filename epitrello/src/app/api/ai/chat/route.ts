@@ -3,7 +3,7 @@ import { GoogleGenerativeAI, SchemaType, Tool } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { createList, createCard, addLabel, setDueDate, assignMember, getBoardMembers, setCardDescription, addCardComment } from "@/app/lib/ai-actions";
+import { createList, createCard, addLabel, setDueDate, assignMember, getBoardMembers, setCardDescription, addCardComment, moveCard, deleteCard, archiveCard } from "@/app/lib/ai-actions";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -31,6 +31,40 @@ const tools = [
                         cardTitle: { type: SchemaType.STRING, description: "The title of the new card." },
                     },
                     required: ["listName", "cardTitle"],
+                },
+            },
+            {
+                name: "moveCard",
+                description: "Moves a card to a different list.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        cardTitle: { type: SchemaType.STRING, description: "The name of the card to move." },
+                        targetListName: { type: SchemaType.STRING, description: "The name of the destination list." },
+                    },
+                    required: ["cardTitle", "targetListName"],
+                },
+            },
+            {
+                name: "deleteCard",
+                description: "Permanently deletes a card.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        cardTitle: { type: SchemaType.STRING, description: "The name of the card to delete." },
+                    },
+                    required: ["cardTitle"],
+                },
+            },
+            {
+                name: "archiveCard",
+                description: "Archives a card.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        cardTitle: { type: SchemaType.STRING, description: "The name of the card to archive." },
+                    },
+                    required: ["cardTitle"],
                 },
             },
             {
@@ -218,6 +252,30 @@ export async function POST(req: Request) {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     } catch (e: any) {
                         confirmationMessage = `Failed to add comment: ${e.message}`;
+                    }
+                } else if (name === "moveCard") {
+                    try {
+                        await moveCard(boardId, typedArgs.cardTitle, typedArgs.targetListName);
+                        confirmationMessage = `I've moved the card "${typedArgs.cardTitle}" to logic list "${typedArgs.targetListName}".`;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        confirmationMessage = `Failed to move card: ${e.message}`;
+                    }
+                } else if (name === "deleteCard") {
+                    try {
+                        await deleteCard(boardId, typedArgs.cardTitle);
+                        confirmationMessage = `I've deleted the card "${typedArgs.cardTitle}".`;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        confirmationMessage = `Failed to delete card: ${e.message}`;
+                    }
+                } else if (name === "archiveCard") {
+                    try {
+                        await archiveCard(boardId, typedArgs.cardTitle);
+                        confirmationMessage = `I've archived the card "${typedArgs.cardTitle}".`;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        confirmationMessage = `Failed to archive card: ${e.message}`;
                     }
                 }
                 results.push(confirmationMessage);

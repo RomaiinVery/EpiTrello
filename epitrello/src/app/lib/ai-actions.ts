@@ -269,3 +269,42 @@ export async function addCardComment(boardId: string, cardTitle: string, comment
 
     // Optional: Log activity if you want consistency with normal comments
 }
+
+export async function moveCard(boardId: string, cardTitle: string, targetListName: string) {
+    const card = await findCardByName(boardId, cardTitle);
+    if (!card) throw new Error(`Card '${cardTitle}' not found.`);
+
+    const list = await findListByName(boardId, targetListName);
+    if (!list) throw new Error(`List '${targetListName}' not found.`);
+
+    // Get max position in new list
+    const lastCard = await prisma.card.findFirst({
+        where: { listId: list.id },
+        orderBy: { position: "desc" },
+    });
+    const position = lastCard ? lastCard.position + 1 : 0;
+
+    await prisma.card.update({
+        where: { id: card.id },
+        data: { listId: list.id, position }
+    });
+}
+
+export async function deleteCard(boardId: string, cardTitle: string) {
+    const card = await findCardByName(boardId, cardTitle);
+    if (!card) throw new Error(`Card '${cardTitle}' not found.`);
+
+    await prisma.card.delete({
+        where: { id: card.id }
+    });
+}
+
+export async function archiveCard(boardId: string, cardTitle: string) {
+    const card = await findCardByName(boardId, cardTitle);
+    if (!card) throw new Error(`Card '${cardTitle}' not found.`);
+
+    await prisma.card.update({
+        where: { id: card.id },
+        data: { archived: true }
+    });
+}
