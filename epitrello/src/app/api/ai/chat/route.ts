@@ -1,7 +1,7 @@
 
 import { GoogleGenerativeAI, SchemaType, Tool } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-import { createList, createCard } from "@/app/lib/ai-actions";
+import { createList, createCard, addLabel, setDueDate, assignMember } from "@/app/lib/ai-actions";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -29,6 +29,43 @@ const tools = [
                         cardTitle: { type: SchemaType.STRING, description: "The title of the new card." },
                     },
                     required: ["listName", "cardTitle"],
+                },
+            },
+            {
+                name: "addLabel",
+                description: "Adds a label to a card. Creates the label if it doesn't exist.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        cardTitle: { type: SchemaType.STRING, description: "The name of the card." },
+                        labelName: { type: SchemaType.STRING, description: "The text of the label." },
+                        color: { type: SchemaType.STRING, description: "Color name (e.g., red, blue, green). Optional." },
+                    },
+                    required: ["cardTitle", "labelName"],
+                },
+            },
+            {
+                name: "setDueDate",
+                description: "Sets a due date for a card.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        cardTitle: { type: SchemaType.STRING, description: "The name of the card." },
+                        date: { type: SchemaType.STRING, description: "The due date (YYYY-MM-DD or 'tomorrow', 'today')." },
+                    },
+                    required: ["cardTitle", "date"],
+                },
+            },
+            {
+                name: "assignMember",
+                description: "Assigns a member to a card.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        cardTitle: { type: SchemaType.STRING, description: "The name of the card." },
+                        memberName: { type: SchemaType.STRING, description: "The name or email of the member." },
+                    },
+                    required: ["cardTitle", "memberName"],
                 },
             },
         ],
@@ -86,6 +123,30 @@ export async function POST(req: Request) {
                         confirmationMessage = `I've added the card "${typedArgs.cardTitle}" to the "${typedArgs.listName}" list.`;
                     } catch {
                         confirmationMessage = `I couldn't find a list named "${typedArgs.listName}". Please create it first.`;
+                    }
+                } else if (name === "addLabel") {
+                    try {
+                        await addLabel(boardId, typedArgs.cardTitle, typedArgs.labelName, typedArgs.color);
+                        confirmationMessage = `I've added the label "${typedArgs.labelName}" to card "${typedArgs.cardTitle}".`;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        confirmationMessage = `Failed to add label: ${e.message}`;
+                    }
+                } else if (name === "setDueDate") {
+                    try {
+                        await setDueDate(boardId, typedArgs.cardTitle, typedArgs.date);
+                        confirmationMessage = `I've set the due date for "${typedArgs.cardTitle}" to ${typedArgs.date}.`;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        confirmationMessage = `Failed to set due date: ${e.message}`;
+                    }
+                } else if (name === "assignMember") {
+                    try {
+                        await assignMember(boardId, typedArgs.cardTitle, typedArgs.memberName);
+                        confirmationMessage = `I've assigned "${typedArgs.memberName}" to card "${typedArgs.cardTitle}".`;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        confirmationMessage = `Failed to assign member: ${e.message}`;
                     }
                 }
                 results.push(confirmationMessage);

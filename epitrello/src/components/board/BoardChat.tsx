@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+// import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, Minimize2, Send, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -128,15 +128,22 @@ export function BoardChat({ boardId }: BoardChatProps) {
                 </div>
 
                 <div className="p-3 bg-white border-t shrink-0">
-                    <form onSubmit={handleSubmit} className="flex gap-2">
-                        <Input
+                    <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+                        <textarea
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask me to do something..."
-                            className="flex-1 focus-visible:ring-indigo-500"
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSubmit();
+                                }
+                            }}
+                            placeholder="Ask me to do something... (Shift+Enter for new line)"
+                            className="flex-1 min-h-[80px] max-h-[160px] p-2 text-sm border rounded-md resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                             disabled={isLoading}
+                            rows={3}
                         />
-                        <Button type="submit" size="icon" className="bg-indigo-600 hover:bg-indigo-700" disabled={isLoading || !input.trim()}>
+                        <Button type="submit" size="icon" className="bg-indigo-600 hover:bg-indigo-700 h-10 w-10 shrink-0" disabled={isLoading || !input.trim()}>
                             <Send className="w-4 h-4" />
                         </Button>
                     </form>
