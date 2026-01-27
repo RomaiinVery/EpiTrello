@@ -308,3 +308,49 @@ export async function archiveCard(boardId: string, cardTitle: string) {
         data: { archived: true }
     });
 }
+
+export async function getBoardData(boardId: string) {
+    const lists = await prisma.list.findMany({
+        where: { boardId },
+        include: {
+            cards: {
+                where: { archived: false },
+                include: {
+                    members: { include: { user: true } },
+                    labels: { include: { label: true } }
+                }
+            }
+        },
+        orderBy: { position: 'asc' }
+    });
+
+    // Simplify data for AI
+    return lists.map(list => ({
+        listName: list.title,
+        cards: list.cards.map(card => ({
+            title: card.title,
+            description: card.content,
+            dueDate: card.dueDate,
+            members: card.members.map(m => m.user.name).join(", "),
+            labels: card.labels.map(l => l.label.name).join(", ")
+        }))
+    }));
+}
+
+export async function getArchivedCards(boardId: string) {
+    const cards = await prisma.card.findMany({
+        where: {
+            list: { boardId },
+            archived: true
+        },
+        include: {
+            list: true
+        }
+    });
+
+    return cards.map(c => ({
+        title: c.title,
+        originalList: c.list.title,
+        content: c.content
+    }));
+}

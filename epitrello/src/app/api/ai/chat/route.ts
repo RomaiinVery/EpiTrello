@@ -3,7 +3,7 @@ import { GoogleGenerativeAI, SchemaType, Tool } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { createList, createCard, addLabel, setDueDate, assignMember, getBoardMembers, setCardDescription, addCardComment, moveCard, deleteCard, archiveCard } from "@/app/lib/ai-actions";
+import { createList, createCard, addLabel, setDueDate, assignMember, getBoardMembers, setCardDescription, addCardComment, moveCard, deleteCard, archiveCard, getBoardData, getArchivedCards } from "@/app/lib/ai-actions";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -106,8 +106,16 @@ const tools = [
                 },
             },
             {
-                name: "listMembers",
-                description: "Lists all members of the board.",
+                name: "readBoard",
+                description: "Reads the content of the board (lists, cards, details) to answer questions or summarize status.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {},
+                },
+            },
+            {
+                name: "listArchivedCards",
+                description: "Lists all cards that are currently archived.",
                 parameters: {
                     type: SchemaType.OBJECT,
                     properties: {},
@@ -192,99 +200,87 @@ export async function POST(req: Request) {
         const call = response.functionCalls();
 
         if (call && call.length > 0) {
-            const results = [];
+            const functionResponses = [];
+            let hasAction = false;
 
             for (const functionCall of call) {
                 const { name, args } = functionCall;
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const typedArgs = args as any;
-                let confirmationMessage = "";
+                let functionResult = {};
 
-                if (name === "createList") {
-                    await createList(boardId, typedArgs.title);
-                    confirmationMessage = `I've created the list "${typedArgs.title}".`;
-                } else if (name === "createCard") {
-                    try {
+                try {
+                    if (name === "createList") {
+                        await createList(boardId, typedArgs.title);
+                        functionResult = { success: true, message: `Created list "${typedArgs.title}"` };
+                        hasAction = true;
+                    } else if (name === "createCard") {
                         await createCard(boardId, typedArgs.listName, typedArgs.cardTitle);
-                        confirmationMessage = `I've added the card "${typedArgs.cardTitle}" to the "${typedArgs.listName}" list.`;
-                    } catch {
-                        confirmationMessage = `I couldn't find a list named "${typedArgs.listName}". Please create it first.`;
-                    }
-                } else if (name === "addLabel") {
-                    try {
+                        functionResult = { success: true, message: `Created card "${typedArgs.cardTitle}" in "${typedArgs.listName}"` };
+                        hasAction = true;
+                    } else if (name === "addLabel") {
                         await addLabel(boardId, typedArgs.cardTitle, typedArgs.labelName, typedArgs.color);
-                        confirmationMessage = `I've added the label "${typedArgs.labelName}" to card "${typedArgs.cardTitle}".`;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (e: any) {
-                        confirmationMessage = `Failed to add label: ${e.message}`;
-                    }
-                } else if (name === "setDueDate") {
-                    try {
+                        functionResult = { success: true, message: `Added label "${typedArgs.labelName}" to "${typedArgs.cardTitle}"` };
+                        hasAction = true;
+                    } else if (name === "setDueDate") {
                         await setDueDate(boardId, typedArgs.cardTitle, typedArgs.date);
-                        confirmationMessage = `I've set the due date for "${typedArgs.cardTitle}" to ${typedArgs.date}.`;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (e: any) {
-                        confirmationMessage = `Failed to set due date: ${e.message}`;
-                    }
-                } else if (name === "assignMember") {
-                    try {
+                        functionResult = { success: true, message: `Set due date for "${typedArgs.cardTitle}" to ${typedArgs.date}` };
+                        hasAction = true;
+                    } else if (name === "assignMember") {
                         await assignMember(boardId, typedArgs.cardTitle, typedArgs.memberName);
-                        confirmationMessage = `I've assigned "${typedArgs.memberName}" to card "${typedArgs.cardTitle}".`;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (e: any) {
-                        confirmationMessage = `Failed to assign member: ${e.message}`;
-                    }
-                } else if (name === "listMembers") {
-                    const members = await getBoardMembers(boardId);
-                    confirmationMessage = `The members of this board are: ${members}`;
-                } else if (name === "addDescription") {
-                    try {
+                        functionResult = { success: true, message: `Assigned "${typedArgs.memberName}" to "${typedArgs.cardTitle}"` };
+                        hasAction = true;
+                    } else if (name === "listMembers") {
+                        const members = await getBoardMembers(boardId);
+                        functionResult = { members };
+                    } else if (name === "addDescription") {
                         await setCardDescription(boardId, typedArgs.cardTitle, typedArgs.description);
-                        confirmationMessage = `I've updated the description for card "${typedArgs.cardTitle}".`;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (e: any) {
-                        confirmationMessage = `Failed to update description: ${e.message}`;
-                    }
-                } else if (name === "addComment") {
-                    try {
+                        functionResult = { success: true, message: `Updated description for "${typedArgs.cardTitle}"` };
+                        hasAction = true;
+                    } else if (name === "addComment") {
                         await addCardComment(boardId, typedArgs.cardTitle, typedArgs.comment, userId);
-                        confirmationMessage = `I've added a comment to card "${typedArgs.cardTitle}".`;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (e: any) {
-                        confirmationMessage = `Failed to add comment: ${e.message}`;
-                    }
-                } else if (name === "moveCard") {
-                    try {
+                        functionResult = { success: true, message: `Added comment to "${typedArgs.cardTitle}"` };
+                        hasAction = true;
+                    } else if (name === "moveCard") {
                         await moveCard(boardId, typedArgs.cardTitle, typedArgs.targetListName);
-                        confirmationMessage = `I've moved the card "${typedArgs.cardTitle}" to logic list "${typedArgs.targetListName}".`;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (e: any) {
-                        confirmationMessage = `Failed to move card: ${e.message}`;
-                    }
-                } else if (name === "deleteCard") {
-                    try {
+                        functionResult = { success: true, message: `Moved card "${typedArgs.cardTitle}" to "${typedArgs.targetListName}"` };
+                        hasAction = true;
+                    } else if (name === "deleteCard") {
                         await deleteCard(boardId, typedArgs.cardTitle);
-                        confirmationMessage = `I've deleted the card "${typedArgs.cardTitle}".`;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (e: any) {
-                        confirmationMessage = `Failed to delete card: ${e.message}`;
-                    }
-                } else if (name === "archiveCard") {
-                    try {
+                        functionResult = { success: true, message: `Deleted card "${typedArgs.cardTitle}"` };
+                        hasAction = true;
+                    } else if (name === "archiveCard") {
                         await archiveCard(boardId, typedArgs.cardTitle);
-                        confirmationMessage = `I've archived the card "${typedArgs.cardTitle}".`;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (e: any) {
-                        confirmationMessage = `Failed to archive card: ${e.message}`;
+                        functionResult = { success: true, message: `Archived card "${typedArgs.cardTitle}"` };
+                        hasAction = true;
+                    } else if (name === "readBoard") {
+                        const boardData = await getBoardData(boardId);
+                        functionResult = { boardData };
+                    } else if (name === "listArchivedCards") {
+                        const archived = await getArchivedCards(boardId);
+                        functionResult = { archivedCards: archived };
                     }
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } catch (e: any) {
+                    functionResult = { error: e.message };
                 }
-                results.push(confirmationMessage);
+
+                functionResponses.push({
+                    functionResponse: {
+                        name: name,
+                        response: functionResult,
+                    },
+                });
             }
+
+            // Send tool outputs back to the model to get the final natural language response
+            const finalResult = await chat.sendMessage(functionResponses);
+            const finalResponse = await finalResult.response;
 
             return NextResponse.json({
                 role: "assistant",
-                content: results.join(" "),
-                actionPerformed: true
+                content: finalResponse.text(),
+                actionPerformed: hasAction
             });
         }
 
@@ -292,7 +288,6 @@ export async function POST(req: Request) {
             role: "assistant",
             content: response.text()
         });
-
     } catch (error) {
         console.error("AI Chat Error:", error);
         return NextResponse.json({ error: "Failed to process AI request" }, { status: 500 });
