@@ -19,7 +19,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
         });
 
         return NextResponse.json(rules);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to fetch rules" }, { status: 500 });
     }
 }
@@ -41,6 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
                 triggerType,
                 triggerVal,
                 actions: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     create: actions.map((action: any) => ({
                         type: action.type,
                         value: action.value
@@ -51,7 +52,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
         });
 
         return NextResponse.json(rule, { status: 201 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to create rule" }, { status: 500 });
     }
 }

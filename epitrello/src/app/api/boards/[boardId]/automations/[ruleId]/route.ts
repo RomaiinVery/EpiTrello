@@ -26,7 +26,7 @@ export async function DELETE(
         });
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to delete rule" }, { status: 500 });
     }
 }
@@ -56,6 +56,7 @@ export async function PUT(
                 isActive,
                 actions: {
                     deleteMany: {},
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     create: actions.map((action: any) => ({
                         type: action.type,
                         value: action.value
@@ -66,7 +67,7 @@ export async function PUT(
         });
 
         return NextResponse.json(updatedRule);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to update rule" }, { status: 500 });
     }
 }

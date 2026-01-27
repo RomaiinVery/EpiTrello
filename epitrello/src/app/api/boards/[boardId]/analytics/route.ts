@@ -50,14 +50,8 @@ export async function GET(
     const startDateParam = url.searchParams.get("startDate");
     const endDateParam = url.searchParams.get("endDate");
 
-    let dateFilter = {};
     if (startDateParam && endDateParam) {
-        dateFilter = {
-            createdAt: {
-                gte: new Date(startDateParam),
-                lte: new Date(endDateParam),
-            },
-        };
+        // dateFilter logic removed as it was unused and filtering happens on timelineData later
     }
 
     try {

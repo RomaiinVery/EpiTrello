@@ -1,5 +1,5 @@
 
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, Tool } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createList, createCard } from "@/app/lib/ai-actions";
 
@@ -37,7 +37,7 @@ const tools = [
 
 const model = genAI.getGenerativeModel({
     model: "gemini-flash-latest",
-    tools: tools as any,
+    tools: tools as unknown as Tool[],
 });
 
 export async function POST(req: Request) {
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
         // Convert Vercel/Standard UI messages to Gemini format
         // role: 'user' | 'model'
-        const history = messages.slice(0, -1).map((m: any) => ({
+        const history = messages.slice(0, -1).map((m: { role: string, content: string }) => ({
             role: m.role === 'user' ? 'user' : 'model',
             parts: [{ text: m.content }],
         }));
@@ -73,6 +73,7 @@ export async function POST(req: Request) {
 
             for (const functionCall of call) {
                 const { name, args } = functionCall;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const typedArgs = args as any;
                 let confirmationMessage = "";
 
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
                     try {
                         await createCard(boardId, typedArgs.listName, typedArgs.cardTitle);
                         confirmationMessage = `I've added the card "${typedArgs.cardTitle}" to the "${typedArgs.listName}" list.`;
-                    } catch (e) {
+                    } catch {
                         confirmationMessage = `I couldn't find a list named "${typedArgs.listName}". Please create it first.`;
                     }
                 }

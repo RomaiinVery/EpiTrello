@@ -54,6 +54,7 @@ export class AutomationService {
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private static async executeAction(ruleId: string, action: any, context: { cardId: string }) {
         try {
             if (action.type === ActionType.ARCHIVE_CARD) {
@@ -129,6 +130,7 @@ export class AutomationService {
             } else {
                 await this.logExecution(ruleId, "FAILURE", `Unknown action type: ${action.type}`);
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error(`[Automation] Action failed for rule ${ruleId}:`, error);
             await this.logExecution(ruleId, "FAILURE", error.message || "Unknown error");

@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, X, Minimize2, Send, Maximize2, Sparkles } from "lucide-react";
+import { Bot, Minimize2, Send, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -101,7 +101,7 @@ export function BoardChat({ boardId }: BoardChatProps) {
                         <div className="text-center text-sm text-gray-500 mt-20 px-6">
                             <Sparkles className="w-10 h-10 mx-auto mb-3 text-purple-300" />
                             <p>Hi! I can help you manage your board.</p>
-                            <p className="mt-2 text-xs">Try: "Create a list for Bugs" or "Add a card 'Fix Login' to Bugs"</p>
+                            <p className="mt-2 text-xs">Try: &quot;Create a list for Bugs&quot; or &quot;Add a card &apos;Fix Login&apos; to Bugs&quot;</p>
                         </div>
                     )}
                     {messages.map((m, i) => (

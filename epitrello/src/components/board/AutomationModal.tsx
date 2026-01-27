@@ -10,7 +10,11 @@ import { CalendarIcon, UserPlus, Zap, Plus, Trash2, Pencil, AlertTriangle } from
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+// ...
+
+
 
 interface AutomationAction {
     type: string;
@@ -77,6 +81,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
             setView("LIST");
             resetForm();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, boardId]);
 
     const fetchRules = async () => {

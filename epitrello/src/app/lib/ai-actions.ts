@@ -60,6 +60,7 @@ export async function createCard(boardId: string, listName: string, cardTitle: s
         TriggerType.CARD_CREATED,
         list.id,
         { cardId: newCard.id }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ).catch((e: any) => console.error("AI Automation Trigger Error:", e));
 
     return newCard;

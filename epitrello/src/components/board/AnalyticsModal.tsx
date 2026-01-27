@@ -57,6 +57,7 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
         if (isOpen) {
             fetchAnalytics();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, boardId, dateRange]);
 
     const fetchAnalytics = async () => {
@@ -110,9 +111,12 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
                         <select
                             className="text-sm border rounded-md px-2 py-1 bg-white"
                             value={dateRange}
-                            onChange={(e) => setDateRange(e.target.value as any)}
+                            onChange={(e) => setDateRange(e.target.value as "7d" | "30d" | "90d" | "all")}
                         >
                             <option value="7d">Last 7 Days</option>
+
+
+
                             <option value="30d">Last 30 Days</option>
                             <option value="90d">Last 3 Months</option>
                             <option value="all">All Time</option>
@@ -244,6 +248,7 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
                                                 cx="50%"
                                                 cy="50%"
                                                 labelLine={false}
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                 label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                                                 outerRadius={120}
                                                 fill="#8884d8"
