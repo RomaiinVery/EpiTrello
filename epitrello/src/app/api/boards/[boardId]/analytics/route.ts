@@ -46,8 +46,22 @@ export async function GET(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const url = new URL(req.url);
+    const startDateParam = url.searchParams.get("startDate");
+    const endDateParam = url.searchParams.get("endDate");
+
+    let dateFilter = {};
+    if (startDateParam && endDateParam) {
+        dateFilter = {
+            createdAt: {
+                gte: new Date(startDateParam),
+                lte: new Date(endDateParam),
+            },
+        };
+    }
+
     try {
-        // Fetch all lists and cards for the board to calculate metrics
+        // Fetch all lists and cards
         const lists = await prisma.list.findMany({
             where: { boardId },
             include: {
@@ -65,12 +79,17 @@ export async function GET(
 
         let totalCards = 0;
         let completedCards = 0;
+        let totalCompletionTimeMs = 0;
+        let completedCardsWithTime = 0;
 
         // List Distribution
         const listDistribution: { name: string; value: number }[] = [];
 
-        // Member Distribution (Map to aggregate counts)
+        // Member Distribution
         const memberMap = new Map<string, number>();
+
+        // Timeline Data: key = YYYY-MM-DD
+        const timelineMap = new Map<string, { date: string; created: number; completed: number }>();
 
         lists.forEach((list) => {
             const cardCount = list.cards.length;
@@ -78,14 +97,36 @@ export async function GET(
             listDistribution.push({ name: list.title, value: cardCount });
 
             list.cards.forEach((card) => {
-                if (card.isDone) {
-                    completedCards++;
-                }
-
+                // Member stats
                 card.members.forEach((m) => {
                     const name = m.user.name || m.user.email || "Unknown";
                     memberMap.set(name, (memberMap.get(name) || 0) + 1);
                 });
+
+                // Completion stats
+                if (card.isDone) {
+                    completedCards++;
+                    const completionTime = new Date(card.updatedAt).getTime() - new Date(card.createdAt).getTime();
+                    if (completionTime > 0) {
+                        totalCompletionTimeMs += completionTime;
+                        completedCardsWithTime++;
+                    }
+                }
+
+                // Timeline population
+                const createdDate = new Date(card.createdAt).toISOString().split("T")[0];
+                if (!timelineMap.has(createdDate)) {
+                    timelineMap.set(createdDate, { date: createdDate, created: 0, completed: 0 });
+                }
+                timelineMap.get(createdDate)!.created++;
+
+                if (card.isDone) {
+                    const doneDate = new Date(card.updatedAt).toISOString().split("T")[0];
+                    if (!timelineMap.has(doneDate)) {
+                        timelineMap.set(doneDate, { date: doneDate, created: 0, completed: 0 });
+                    }
+                    timelineMap.get(doneDate)!.completed++;
+                }
             });
         });
 
@@ -93,11 +134,35 @@ export async function GET(
             ([name, value]) => ({ name, value })
         );
 
+        // Filter and Sort Timeline
+        let timelineData = Array.from(timelineMap.values()).sort((a, b) =>
+            a.date.localeCompare(b.date)
+        );
+
+        // Filter timeline by requested date range if provided
+        if (startDateParam && endDateParam) {
+            const startStr = new Date(startDateParam).toISOString().split("T")[0];
+            const endStr = new Date(endDateParam).toISOString().split("T")[0];
+            timelineData = timelineData.filter(d => d.date >= startStr && d.date <= endStr);
+        } else {
+            // Default limit to last 30 entries if no filter to avoid huge payload
+            timelineData = timelineData.slice(-30);
+        }
+
+
+        // Avg Completion Time
+        const avgCompletionTimeHours =
+            completedCardsWithTime > 0
+                ? Math.round((totalCompletionTimeMs / completedCardsWithTime) / (1000 * 60 * 60))
+                : 0;
+
         return NextResponse.json({
             totalCards,
             completedCards,
             listDistribution,
             memberDistribution,
+            timelineData,
+            avgCompletionTimeHours
         });
     } catch (error) {
         console.error("Error calculating analytics:", error);
