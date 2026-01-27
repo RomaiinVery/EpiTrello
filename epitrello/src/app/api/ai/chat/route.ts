@@ -1,7 +1,9 @@
 
 import { GoogleGenerativeAI, SchemaType, Tool } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-import { createList, createCard, addLabel, setDueDate, assignMember, getBoardMembers } from "@/app/lib/ai-actions";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { createList, createCard, addLabel, setDueDate, assignMember, getBoardMembers, setCardDescription, addCardComment } from "@/app/lib/ai-actions";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -77,6 +79,30 @@ const tools = [
                     properties: {},
                 },
             },
+            {
+                name: "addDescription",
+                description: "Adds or updates the description of a card.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        cardTitle: { type: SchemaType.STRING, description: "The name of the card." },
+                        description: { type: SchemaType.STRING, description: "The content of the description." },
+                    },
+                    required: ["cardTitle", "description"],
+                },
+            },
+            {
+                name: "addComment",
+                description: "Adds a comment to a card.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        cardTitle: { type: SchemaType.STRING, description: "The name of the card." },
+                        comment: { type: SchemaType.STRING, description: "The comment text." },
+                    },
+                    required: ["cardTitle", "comment"],
+                },
+            },
         ],
     },
 ];
@@ -88,6 +114,23 @@ const model = genAI.getGenerativeModel({
 
 export async function POST(req: Request) {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // We might need the full user object for userId, assuming session contains it or we fetch it.
+        // Usually session.user.id is available if configured in authOptions callbacks. 
+        // If not, we fetch user by email.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let userId = (session.user as any).id;
+        if (!userId) {
+            // Fallback fetch if id not in session
+            const user = await import("@/app/lib/prisma").then(m => m.prisma.user.findUnique({ where: { email: session.user?.email || "" } }));
+            if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+            userId = user.id;
+        }
+
         const { messages, boardId } = await req.json();
 
         if (!boardId) {
@@ -160,6 +203,22 @@ export async function POST(req: Request) {
                 } else if (name === "listMembers") {
                     const members = await getBoardMembers(boardId);
                     confirmationMessage = `The members of this board are: ${members}`;
+                } else if (name === "addDescription") {
+                    try {
+                        await setCardDescription(boardId, typedArgs.cardTitle, typedArgs.description);
+                        confirmationMessage = `I've updated the description for card "${typedArgs.cardTitle}".`;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        confirmationMessage = `Failed to update description: ${e.message}`;
+                    }
+                } else if (name === "addComment") {
+                    try {
+                        await addCardComment(boardId, typedArgs.cardTitle, typedArgs.comment, userId);
+                        confirmationMessage = `I've added a comment to card "${typedArgs.cardTitle}".`;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        confirmationMessage = `Failed to add comment: ${e.message}`;
+                    }
                 }
                 results.push(confirmationMessage);
             }

@@ -244,3 +244,28 @@ export async function getBoardMembers(boardId: string) {
 
     return uniqueMembers.map(u => u.name || u.email || "Unknown").join(", ");
 }
+
+export async function setCardDescription(boardId: string, cardTitle: string, description: string) {
+    const card = await findCardByName(boardId, cardTitle);
+    if (!card) throw new Error(`Card '${cardTitle}' not found.`);
+
+    await prisma.card.update({
+        where: { id: card.id },
+        data: { content: description }
+    });
+}
+
+export async function addCardComment(boardId: string, cardTitle: string, comment: string, userId: string) {
+    const card = await findCardByName(boardId, cardTitle);
+    if (!card) throw new Error(`Card '${cardTitle}' not found.`);
+
+    await prisma.comment.create({
+        data: {
+            content: comment,
+            cardId: card.id,
+            userId: userId
+        }
+    });
+
+    // Optional: Log activity if you want consistency with normal comments
+}
