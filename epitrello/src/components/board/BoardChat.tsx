@@ -83,8 +83,8 @@ export function BoardChat({ boardId }: BoardChatProps) {
     }
 
     return (
-        <Card className="fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[500px] shadow-2xl z-50 flex flex-col border-purple-200 animate-in slide-in-from-bottom-5 fade-in duration-300">
-            <CardHeader className="p-3 border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-lg flex flex-row items-center justify-between shrink-0">
+        <Card className="fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[500px] shadow-2xl z-50 flex flex-col border-purple-200 animate-in slide-in-from-bottom-5 fade-in duration-300 p-0 gap-0 overflow-hidden">
+            <CardHeader className="p-3 border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-none flex flex-row items-center justify-between shrink-0">
                 <CardTitle className="flex items-center gap-2 text-md">
                     <Bot className="w-5 h-5" />
                     AI Action Bot
@@ -108,10 +108,10 @@ export function BoardChat({ boardId }: BoardChatProps) {
                     {messages.map((m, i) => (
                         <div key={i} className={cn("flex w-full", m.role === "user" ? "justify-end" : "justify-start")}>
                             <div className={cn(
-                                "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm",
+                                "max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm",
                                 m.role === "user"
                                     ? "bg-indigo-600 text-white rounded-br-none"
-                                    : "bg-white border border-gray-100 text-gray-800 rounded-bl-none prose prose-sm max-w-none"
+                                    : "bg-white border border-gray-100 text-gray-800 rounded-bl-none prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0"
                             )}>
                                 {m.role === "user" ? (
                                     m.content
@@ -122,11 +122,10 @@ export function BoardChat({ boardId }: BoardChatProps) {
                         </div>
                     ))}
                     {isLoading && (
-                        <div className="flex justify-start w-full">
-                            <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex gap-1">
-                                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                        <div className="flex justify-start w-full animate-pulse">
+                            <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-purple-500 animate-spin" />
+                                <span className="text-xs text-gray-500 font-medium">Thinking...</span>
                             </div>
                         </div>
                     )}
