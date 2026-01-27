@@ -1,7 +1,7 @@
 
 import { GoogleGenerativeAI, SchemaType, Tool } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-import { createList, createCard, addLabel, setDueDate, assignMember } from "@/app/lib/ai-actions";
+import { createList, createCard, addLabel, setDueDate, assignMember, getBoardMembers } from "@/app/lib/ai-actions";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -56,6 +56,7 @@ const tools = [
                     required: ["cardTitle", "date"],
                 },
             },
+
             {
                 name: "assignMember",
                 description: "Assigns a member to a card.",
@@ -66,6 +67,14 @@ const tools = [
                         memberName: { type: SchemaType.STRING, description: "The name or email of the member." },
                     },
                     required: ["cardTitle", "memberName"],
+                },
+            },
+            {
+                name: "listMembers",
+                description: "Lists all members of the board.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {},
                 },
             },
         ],
@@ -148,6 +157,9 @@ export async function POST(req: Request) {
                     } catch (e: any) {
                         confirmationMessage = `Failed to assign member: ${e.message}`;
                     }
+                } else if (name === "listMembers") {
+                    const members = await getBoardMembers(boardId);
+                    confirmationMessage = `The members of this board are: ${members}`;
                 }
                 results.push(confirmationMessage);
             }

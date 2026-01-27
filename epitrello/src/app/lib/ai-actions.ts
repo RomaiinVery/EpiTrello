@@ -67,12 +67,24 @@ export async function createCard(boardId: string, listName: string, cardTitle: s
 }
 
 export async function findCardByName(boardId: string, cardTitle: string) {
-    return prisma.card.findFirst({
+    const trimmedTitle = cardTitle.trim();
+    console.log(`[AI Action] Finding card: "${trimmedTitle}" in board: ${boardId}`);
+
+    const card = await prisma.card.findFirst({
         where: {
-            title: { contains: cardTitle, mode: 'insensitive' },
+            title: { contains: trimmedTitle, mode: 'insensitive' },
             list: { boardId }
         }
     });
+
+    if (!card) {
+        console.log(`[AI Action] Card not found. Searched for "${trimmedTitle}" in board ${boardId}`);
+        // Optional: List all cards on board for debugging context in logs
+        // const allCards = await prisma.card.findMany({ where: { list: { boardId } }, select: { title: true } });
+        // console.log(`[AI Action] Available cards: ${allCards.map(c => c.title).join(", ")}`);
+    }
+
+    return card;
 }
 
 export async function addLabel(boardId: string, cardTitle: string, labelName: string, color: string = "blue") {
@@ -121,7 +133,7 @@ function getDateForDay(dayName: string, nextWeek: boolean = false): Date {
     const currentDay = date.getDay();
     let daysUntil = (targetDay + 7 - currentDay) % 7;
 
-    if (daysUntil === 0) daysUntil = 7; // If today is the day, assume next week or next occurrence properly? usually "friday" means coming friday. if today is friday, next friday is 7 days away.
+    if (daysUntil === 0) daysUntil = 7;
     if (nextWeek) daysUntil += 7;
 
     date.setDate(date.getDate() + daysUntil);
@@ -136,17 +148,11 @@ export async function setDueDate(boardId: string, cardTitle: string, date: strin
     const lowerDate = date.toLowerCase().trim();
 
     if (lowerDate === 'today') {
-        // keep as is
     } else if (lowerDate === 'tomorrow') {
         targetDate.setDate(targetDate.getDate() + 1);
     } else if (lowerDate.startsWith('next ')) {
         const dayName = lowerDate.replace('next ', '');
-        targetDate = getDateForDay(dayName, false); // "next monday" usually means the one after the coming one, but often users mean "the coming monday". Let's assume generic logic:
-        // Actually, "next Monday" typically means "Monday of next week".
-        // Let's refine: "Monday" = coming Monday. "Next Monday" = Monday of *next* week.
-        // My helper `getDateForDay` calculates "coming [day]".
-        // So for "next [day]", we add 7 days to the result of "coming [day]" IF the "coming [day]" is in this week?
-        // Let's simplify:
+        targetDate = getDateForDay(dayName, false);
         // 1. Calculate coming occurrence of Day.
         // 2. If user said "next", add 7 days.
         const comingDate = getDateForDay(dayName);
@@ -156,7 +162,6 @@ export async function setDueDate(boardId: string, cardTitle: string, date: strin
             // However, often "next monday" is ambiguous. Let's stick to:
             // "Monday" -> coming Monday.
             // "Next Monday" -> 7 days after coming Monday? or just the coming Monday if today is not Monday?
-            // Let's adopt this convention: "next [day]" adds 7 days to the *coming* [day].
             targetDate.setDate(targetDate.getDate() + 7);
         } else {
             targetDate = new Date(date); // Fallback to standard parse
@@ -186,21 +191,56 @@ export async function assignMember(boardId: string, cardTitle: string, memberNam
     const card = await findCardByName(boardId, cardTitle);
     if (!card) throw new Error(`Card '${cardTitle}' not found.`);
 
-    // Find user by name or email in the board members
-    const boardMembers = await prisma.boardMember.findMany({
-        where: { boardId },
-        include: { user: true }
+    // Find user by name or email in the board members OR the board owner
+    const board = await prisma.board.findUnique({
+        where: { id: boardId },
+        include: {
+            members: { include: { user: true } },
+            user: true // The owner
+        }
     });
 
-    const targetMember = boardMembers.find(bm =>
-        bm.user.name?.toLowerCase().includes(memberName.toLowerCase()) ||
-        bm.user.email?.toLowerCase().includes(memberName.toLowerCase())
+    if (!board) throw new Error("Board not found");
+
+    const allMembers = [
+        board.user,
+        ...board.members.map(bm => bm.user)
+    ];
+
+    const targetMember = allMembers.find(u =>
+        u.name?.toLowerCase().includes(memberName.toLowerCase()) ||
+        u.email?.toLowerCase().includes(memberName.toLowerCase())
     );
 
-    if (!targetMember) throw new Error(`Member '${memberName}' not found on this board.`);
+    if (!targetMember) {
+        console.log(`[AI Action] Member not found: "${memberName}". Available members: ${allMembers.map(u => u.name || u.email).join(", ")}`);
+        throw new Error(`Member '${memberName}' not found on this board.`);
+    }
 
     // Assign
     await prisma.cardMember.create({
-        data: { cardId: card.id, userId: targetMember.userId }
+        data: { cardId: card.id, userId: targetMember.id }
     }).catch(() => { /* ignore duplicate */ });
+}
+
+export async function getBoardMembers(boardId: string) {
+    const board = await prisma.board.findUnique({
+        where: { id: boardId },
+        include: {
+            members: { include: { user: true } },
+            user: true // The owner
+        }
+    });
+
+    if (!board) return "Board not found";
+
+    const allMembers = [
+        board.user,
+        ...board.members.map(bm => bm.user)
+    ];
+
+    // Remove duplicates if owner is somehow also in members
+    const uniqueMembers = Array.from(new Map(allMembers.map(u => [u.id, u])).values());
+
+    return uniqueMembers.map(u => u.name || u.email || "Unknown").join(", ");
 }
