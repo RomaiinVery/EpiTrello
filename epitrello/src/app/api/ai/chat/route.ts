@@ -196,12 +196,19 @@ export async function POST(req: Request) {
         });
 
         const result = await chat.sendMessage(lastMessage.content);
-        const response = await result.response;
-        const call = response.functionCalls();
+        let call = result.response.functionCalls();
+        let finalText = result.response.text();
+        let hasAction = false;
+        let loopCount = 0;
+        const MAX_LOOPS = 5;
 
-        if (call && call.length > 0) {
+        const logPath = path.join(process.cwd(), "ai-debug.log");
+
+        while (call && call.length > 0 && loopCount < MAX_LOOPS) {
+            loopCount++;
+            fs.appendFileSync(logPath, `\n[${new Date().toISOString()}] Loop ${loopCount}: Processing ${call.length} tool calls...\n`);
+
             const functionResponses = [];
-            let hasAction = false;
 
             for (const functionCall of call) {
                 const { name, args } = functionCall;
@@ -210,6 +217,8 @@ export async function POST(req: Request) {
                 let functionResult = {};
 
                 try {
+                    fs.appendFileSync(logPath, `[${new Date().toISOString()}] Tool: ${name} Args: ${JSON.stringify(typedArgs)}\n`);
+
                     if (name === "createList") {
                         await createList(boardId, typedArgs.title);
                         functionResult = { success: true, message: `Created list "${typedArgs.title}"` };
@@ -263,6 +272,7 @@ export async function POST(req: Request) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (e: any) {
                     functionResult = { error: e.message };
+                    fs.appendFileSync(logPath, `[${new Date().toISOString()}] Error: ${e.message}\n`);
                 }
 
                 functionResponses.push({
@@ -273,20 +283,26 @@ export async function POST(req: Request) {
                 });
             }
 
-            // Send tool outputs back to the model to get the final natural language response
-            const finalResult = await chat.sendMessage(functionResponses);
-            const finalResponse = await finalResult.response;
+            // Send tool outputs back to the model to get the next step or final response
+            const nextResult = await chat.sendMessage(functionResponses);
+            const response = await nextResult.response;
 
-            return NextResponse.json({
-                role: "assistant",
-                content: finalResponse.text(),
-                actionPerformed: hasAction
-            });
+            // Update call and finalText for the next iteration (or for the return value)
+            call = response.functionCalls();
+            finalText = response.text();
+
+            fs.appendFileSync(logPath, `[${new Date().toISOString()}] Loop ${loopCount} Result Text: "${finalText}"\n`);
+        }
+
+        if (!finalText && hasAction) {
+            finalText = "I have successfully completed your request.";
+            fs.appendFileSync(logPath, `[${new Date().toISOString()}] Empty response detected after actions. Using fallback.\n`);
         }
 
         return NextResponse.json({
             role: "assistant",
-            content: response.text()
+            content: finalText,
+            actionPerformed: hasAction
         });
     } catch (error) {
         console.error("AI Chat Error:", error);
