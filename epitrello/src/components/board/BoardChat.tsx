@@ -71,6 +71,43 @@ export function BoardChat({ boardId }: BoardChatProps) {
         }
     };
 
+    const handleQuickAction = async (prompt: string) => {
+        if (isLoading) return;
+
+        // Optimistic UI
+        const newMessages: Message[] = [...messages, { role: "user", content: prompt }];
+        setMessages(newMessages);
+        setIsLoading(true);
+        // Clear input just in case
+        setInput("");
+
+        try {
+            const res = await fetch("/api/ai/chat", {
+                method: "POST",
+                body: JSON.stringify({ messages: newMessages, boardId }),
+                headers: { "Content-Type": "application/json" },
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I encountered an error." }]);
+            } else {
+                setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
+
+                if (data.actionPerformed) {
+                    router.refresh();
+                }
+            }
+
+        } catch (error) {
+            console.error(error);
+            setMessages((prev) => [...prev, { role: "assistant", content: "Network error. Please try again." }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     if (!isOpen) {
         return (
             <Button
@@ -131,7 +168,39 @@ export function BoardChat({ boardId }: BoardChatProps) {
                     )}
                 </div>
 
-                <div className="p-3 bg-white border-t shrink-0">
+                <div className="p-3 bg-white border-t shrink-0 flex flex-col gap-2">
+                    {/* Quick Actions (Chips) */}
+                    {messages.length < 2 && (
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            {[
+                                { label: "📋 Summarize", prompt: "Summarize the board state" },
+                                { label: "📅 My Tasks", prompt: "What are my tasks?" },
+                                { label: "📦 Archived", prompt: "List archived cards" },
+                                { label: "🐞 Bugs", prompt: "Summarize the 'Bugs' list" }
+                            ].map((action, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => {
+                                        setInput(action.prompt);
+                                        // Optional: Auto-submit? Let's just fill input for now or auto-submit.
+                                        // Let's auto-submit for "fast" feel, but setting state is async-ish.
+                                        // Better to call a handler.
+                                        // actually, let's just set input and let user hit enter? No, user wants "Quick Actions".
+                                        // Let's call handleSubmit directly with the prompt.
+
+                                        // We need to pass the prompt to handleSubmit OR setInput and submit.
+                                        // State update might not be fast enough for immediate submit in same tick.
+                                        // Let's modify handleSubmit to accept an optional override.
+                                        handleQuickAction(action.prompt);
+                                    }}
+                                    className="whitespace-nowrap px-3 py-1 bg-gray-100 hover:bg-gray-200 text-xs rounded-full border border-gray-200 transition-colors text-gray-700"
+                                >
+                                    {action.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="flex gap-2 items-end">
                         <textarea
                             value={input}
