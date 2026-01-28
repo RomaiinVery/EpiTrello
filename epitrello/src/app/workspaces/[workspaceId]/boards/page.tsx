@@ -19,9 +19,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InviteMemberModal } from "@/components/modals/InviteMemberModal";
+import { ColorPicker } from "@/components/board/ColorPicker";
 import { WorkspaceMembersMenu } from "@/components/workspace/WorkspaceMembersMenu";
+import { SettingsModal } from "@/components/board/SettingsModal";
 
-type Board = { id: string; title: string; description?: string };
+type Board = { id: string; title: string; description?: string; background?: string | null };
 type Workspace = { id: string; title: string; currentUserRole?: string };
 
 export default function BoardsByWorkspacePage() {
@@ -37,6 +39,7 @@ export default function BoardsByWorkspacePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
+  const [createBackground, setCreateBackground] = useState("#F5F5F5");
   const [linkGithub, setLinkGithub] = useState(false);
   const [githubRepo, setGithubRepo] = useState("");
   /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -51,6 +54,9 @@ export default function BoardsByWorkspacePage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [boardToEdit, setBoardToEdit] = useState<Board | null>(null);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -70,8 +76,21 @@ export default function BoardsByWorkspacePage() {
       });
 
     fetch(`/api/boards?workspaceId=${workspaceId}`)
-      .then((res) => res.json())
-      .then((data) => setBoards(data));
+      .then(async (res) => {
+        if (!res.ok) {
+          console.error(`Error fetching boards: Status ${res.status}`);
+          return [];
+        }
+        try {
+          return await res.json();
+        } catch (e) {
+          console.error("Failed to parse boards JSON", e);
+          const text = await res.text().catch(() => "No text");
+          console.error("Response text:", text);
+          return [];
+        }
+      })
+      .then((data) => setBoards(data || []));
 
     fetch("/api/user/github")
       .then((res) => res.json())
@@ -119,10 +138,11 @@ export default function BoardsByWorkspacePage() {
   const handleCreate = async () => {
     if (!createTitle || !workspaceId) return;
 
-    const payload: { title: string; description: string; workspaceId: string; githubRepo?: string; githubBranch?: string } = {
+    const payload: { title: string; description: string; workspaceId: string; githubRepo?: string; githubBranch?: string; background: string } = {
       title: createTitle,
       description: createDescription,
       workspaceId,
+      background: createBackground,
     };
 
     if (linkGithub && githubRepo) {
@@ -142,6 +162,7 @@ export default function BoardsByWorkspacePage() {
       setCreateOpen(false);
       setCreateTitle("");
       setCreateDescription("");
+      setCreateBackground("#F5F5F5");
       setLinkGithub(false);
       setGithubRepo("");
       window.dispatchEvent(new Event("sidebarUpdated"));
@@ -213,6 +234,12 @@ export default function BoardsByWorkspacePage() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => {
+                    setBoardToEdit(b);
+                    setSettingsOpen(true);
+                  }}>
+                    Modifier
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     setRenameBoardId(b.id);
                     setNewTitle(b.title);
@@ -341,6 +368,11 @@ export default function BoardsByWorkspacePage() {
                 </div>
               </div>
             )}
+
+            <div className="space-y-2 pt-2">
+              <label className="text-sm font-medium">Couleur de fond</label>
+              <ColorPicker selectedColor={createBackground} onChange={setCreateBackground} />
+            </div>
           </div>
           <DialogFooter>
             <Button onClick={handleCreate} disabled={!createTitle}>OK</Button>
@@ -372,6 +404,23 @@ export default function BoardsByWorkspacePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {boardToEdit && (
+        <SettingsModal
+          isOpen={settingsOpen}
+          onClose={() => {
+            setSettingsOpen(false);
+            setBoardToEdit(null);
+          }}
+          boardId={boardToEdit.id}
+          initialTitle={boardToEdit.title}
+          initialDescription={boardToEdit.description}
+          initialBackground={boardToEdit.background || "#F5F5F5"}
+          onUpdate={(updatedBoard) => {
+            setBoards((prev) => prev.map(b => b.id === updatedBoard.id ? { ...b, ...updatedBoard } : b));
+          }}
+        />
+      )}
     </div>
   );
 }

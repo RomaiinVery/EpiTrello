@@ -41,9 +41,10 @@ import { fr } from "date-fns/locale";
 import { GanttView } from "@/components/board/GanttView";
 import { MemberAvatar } from "../memberAvatar";
 import { AutomationModal } from "@/components/board/AutomationModal";
-import { Zap, Activity } from "lucide-react";
+import { Zap, Activity, Settings } from "lucide-react";
 import { AnalyticsModal } from "@/components/board/AnalyticsModal";
 import { BoardChat } from "@/components/board/BoardChat";
+import { SettingsModal } from "@/components/board/SettingsModal";
 import { FilterPopover, FilterState } from "@/components/board/FilterPopover";
 
 function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRole }: {
@@ -505,6 +506,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
   const [showAutomationModal, setShowAutomationModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     labelIds: [],
@@ -1216,13 +1218,24 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   }
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <Link
-        href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
-        className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
-      >
-        ← Retour aux boards
-      </Link>
+    <div className="p-6 h-full flex flex-col transition-colors duration-300" style={{ backgroundColor: board.background || "#fff" }}>
+      <div className="flex items-center justify-between mb-4">
+        <Link
+          href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
+          className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
+        >
+          ← Retour aux boards
+        </Link>
+        {currentUserRole === "OWNER" && (
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-black/5 transition-colors"
+            title="Paramètres"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center justify-between mb-2">
         <div className="flex-1 gap-4 flex flex-col">
@@ -1281,6 +1294,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               <Activity className="w-4 h-4 text-blue-500" />
               Analytics
             </button>
+
           </div>
 
         </div>
@@ -1678,6 +1692,20 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         onClose={() => setShowAnalyticsModal(false)}
         boardId={boardId}
       />
+
+      {board && (
+        <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          boardId={boardId}
+          initialTitle={board.title}
+          initialDescription={board.description || ""}
+          initialBackground={board.background || "#fff"}
+          onUpdate={(updatedBoard) => {
+            setBoard((prev) => prev ? { ...prev, ...updatedBoard } : prev);
+          }}
+        />
+      )}
 
       <BoardChat boardId={boardId} />
     </div>
