@@ -20,7 +20,7 @@ interface SettingsModalProps {
     initialTitle: string;
     initialDescription?: string;
     initialBackground?: string;
-    onUpdate: (data: { title: string; description?: string; background: string }) => void;
+    onUpdate: (data: { id?: string; title: string; description?: string; background: string }) => void;
 }
 
 export function SettingsModal({
