@@ -202,11 +202,8 @@ export async function POST(req: Request) {
         let loopCount = 0;
         const MAX_LOOPS = 5;
 
-        const logPath = path.join(process.cwd(), "ai-debug.log");
-
         while (call && call.length > 0 && loopCount < MAX_LOOPS) {
             loopCount++;
-            fs.appendFileSync(logPath, `\n[${new Date().toISOString()}] Loop ${loopCount}: Processing ${call.length} tool calls...\n`);
 
             const functionResponses = [];
 
@@ -217,8 +214,6 @@ export async function POST(req: Request) {
                 let functionResult = {};
 
                 try {
-                    fs.appendFileSync(logPath, `[${new Date().toISOString()}] Tool: ${name} Args: ${JSON.stringify(typedArgs)}\n`);
-
                     if (name === "createList") {
                         await createList(boardId, typedArgs.title);
                         functionResult = { success: true, message: `Created list "${typedArgs.title}"` };
@@ -272,7 +267,6 @@ export async function POST(req: Request) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (e: any) {
                     functionResult = { error: e.message };
-                    fs.appendFileSync(logPath, `[${new Date().toISOString()}] Error: ${e.message}\n`);
                 }
 
                 functionResponses.push({
@@ -290,13 +284,10 @@ export async function POST(req: Request) {
             // Update call and finalText for the next iteration (or for the return value)
             call = response.functionCalls();
             finalText = response.text();
-
-            fs.appendFileSync(logPath, `[${new Date().toISOString()}] Loop ${loopCount} Result Text: "${finalText}"\n`);
         }
 
         if (!finalText && hasAction) {
             finalText = "I have successfully completed your request.";
-            fs.appendFileSync(logPath, `[${new Date().toISOString()}] Empty response detected after actions. Using fallback.\n`);
         }
 
         return NextResponse.json({
