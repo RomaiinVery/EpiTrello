@@ -25,6 +25,59 @@ type Workspace = {
   boards?: { id: string; title: string }[];
 };
 
+const PRESETS = [
+  {
+    id: "empty",
+    name: "Vide (Par défaut)",
+    description: "Crée un workspace vide sans tableaux.",
+    preview: { board: null, lists: [], labels: [] }
+  },
+  {
+    id: "engineering",
+    name: "Ingénierie",
+    description: "Pour les équipes de développement logiciel.",
+    preview: {
+      board: "Development",
+      lists: ["Backlog", "To Do", "In Progress", "Code Review", "Done"],
+      labels: [
+        { name: "Bug", color: "#ef4444" },
+        { name: "Feature", color: "#22c55e" },
+        { name: "Enhancement", color: "#3b82f6" },
+        { name: "Docs", color: "#eab308" }
+      ]
+    }
+  },
+  {
+    id: "marketing",
+    name: "Marketing",
+    description: "Planification de campagnes et contenu.",
+    preview: {
+      board: "Marketing Launch",
+      lists: ["Ideas", "Content Prep", "In Review", "Scheduled", "Published"],
+      labels: [
+        { name: "Social", color: "#3b82f6" },
+        { name: "Blog", color: "#eab308" },
+        { name: "Email", color: "#f97316" },
+        { name: "Ads", color: "#a855f7" }
+      ]
+    }
+  },
+  {
+    id: "sales",
+    name: "Ventes",
+    description: "Suivi du pipeline de vente.",
+    preview: {
+      board: "Sales Pipeline",
+      lists: ["Leads", "Contacted", "Meeting Scheduled", "Negotiation", "Closed Won", "Closed Lost"],
+      labels: [
+        { name: "Hot", color: "#ef4444" },
+        { name: "Warm", color: "#f97316" },
+        { name: "Cold", color: "#3b82f6" }
+      ]
+    }
+  }
+];
+
 export default function WorkspacesPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -33,6 +86,7 @@ export default function WorkspacesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
+  const [createPreset, setCreatePreset] = useState("empty");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<string | null>(null);
 
@@ -92,7 +146,7 @@ export default function WorkspacesPage() {
     const res = await fetch("/api/workspaces", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: createTitle, description: createDescription }),
+      body: JSON.stringify({ title: createTitle, description: createDescription, preset: createPreset }),
     });
 
     if (res.ok) {
@@ -101,6 +155,7 @@ export default function WorkspacesPage() {
       setCreateOpen(false);
       setCreateTitle("");
       setCreateDescription("");
+      setCreatePreset("empty");
       window.dispatchEvent(new Event("sidebarUpdated"));
     }
   };
@@ -198,6 +253,59 @@ export default function WorkspacesPage() {
             placeholder="Description (optionnelle)"
             className="mb-4"
           />
+
+          <div className="space-y-3 mb-4">
+            <label className="text-sm font-medium">Préset de démarrage</label>
+            <div className="grid grid-cols-2 gap-2">
+              {PRESETS.map((preset) => (
+                <div
+                  key={preset.id}
+                  onClick={() => setCreatePreset(preset.id)}
+                  className={`p-3 rounded-md border cursor-pointer transition-all ${createPreset === preset.id
+                      ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
+                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                >
+                  <div className="font-semibold text-sm mb-1">{preset.name}</div>
+                  <div className="text-xs text-gray-500 line-clamp-2">{preset.description}</div>
+                </div>
+              ))}
+            </div>
+
+            {createPreset !== "empty" && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-md border">
+                <div className="text-xs font-semibold uppercase text-gray-500 mb-2">Aperçu du contenu</div>
+                {(() => {
+                  const preset = PRESETS.find(p => p.id === createPreset);
+                  if (!preset || !preset.preview.board) return null;
+                  return (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">Tableau :</span>
+                        <span className="font-medium">{preset.preview.board}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 block mb-1">Listes :</span>
+                        <div className="flex flex-wrap gap-1">
+                          {preset.preview.lists.map(l => (
+                            <span key={l} className="px-2 py-0.5 bg-gray-200 rounded text-xs">{l}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 block mb-1">Labels :</span>
+                        <div className="flex flex-wrap gap-1">
+                          {preset.preview.labels.map(l => (
+                            <span key={l.name} className="px-2 py-0.5 rounded text-xs text-white" style={{ backgroundColor: l.color }}>{l.name}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
           <DialogFooter>
             <Button onClick={handleCreate} disabled={!createTitle}>OK</Button>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
