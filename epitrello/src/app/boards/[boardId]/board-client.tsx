@@ -31,7 +31,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
-import { type List, type Card, type Board } from "@/app/lib/board-api";
+import { type List, type Card, type Board, type Members } from "@/app/lib/board-api";
 import { User } from "@/types";
 import { CardModal } from "@/components/CardModal";
 import { CreatePullRequestModal } from "@/components/board/CreatePullRequestModal";
@@ -45,6 +45,7 @@ import { Zap, Activity, Settings } from "lucide-react";
 import { AnalyticsModal } from "@/components/board/AnalyticsModal";
 import { BoardChat } from "@/components/board/BoardChat";
 import { SettingsModal } from "@/components/board/SettingsModal";
+import { FilterPopover, FilterState } from "@/components/board/FilterPopover";
 
 function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRole }: {
   card: Card;
@@ -375,9 +376,10 @@ interface BoardClientProps {
   initialBoard: Board;
   initialCardsByList: Record<string, Card[]>;
   currentUserRole?: string;
+  initialCardId?: string;
 }
 
-export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList, currentUserRole = "VIEWER" }: BoardClientProps) {
+export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList, currentUserRole = "VIEWER", initialCardId }: BoardClientProps) {
 
 
 
@@ -505,6 +507,87 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   const [showAutomationModal, setShowAutomationModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  const [filters, setFilters] = useState<FilterState>({
+    labelIds: [],
+    memberIds: [],
+    dueDate: "none",
+  });
+
+  // Handle deep linking to card
+  useEffect(() => {
+    if (initialCardId && isMounted) {
+      // Find which list the card belongs to
+      let foundListId: string | null = null;
+      Object.entries(cardsByList).forEach(([lId, cards]) => {
+        if (cards.some(c => c.id === initialCardId)) {
+          foundListId = lId;
+        }
+      });
+
+      if (foundListId) {
+        setSelectedCardId(initialCardId);
+        setSelectedListId(foundListId);
+        setShowCardModal(true);
+        // clean up URL
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+  }, [initialCardId, isMounted, cardsByList]);
+
+  // Apply filters
+  const filteredCardsByList = useMemo(() => {
+    const newCardsByList: Record<string, Card[]> = {};
+    const hasFilters = filters.labelIds.length > 0 || filters.memberIds.length > 0 || filters.dueDate !== "none";
+
+    if (!hasFilters) {
+      return cardsByList;
+    }
+
+    Object.keys(cardsByList).forEach(listId => {
+      newCardsByList[listId] = cardsByList[listId].filter(card => {
+        // Label Filter
+        if (filters.labelIds.length > 0) {
+          const cardLabelIds = card.labels?.map(l => l.id) || [];
+          if (!filters.labelIds.some(id => cardLabelIds.includes(id))) {
+            return false;
+          }
+        }
+
+        // Member Filter
+        if (filters.memberIds.length > 0) {
+          const cardMemberIds = card.members?.map(m => m.id) || [];
+          if (!filters.memberIds.some(id => cardMemberIds.includes(id))) {
+            return false;
+          }
+        }
+
+        // Due Date Filter
+        if (filters.dueDate !== "none") {
+          if (!card.dueDate) return false;
+          const date = new Date(card.dueDate);
+
+          if (filters.dueDate === "overdue") {
+            if (isPast(date) && !isToday(date) && !card.isDone) return true;
+            return false;
+          }
+          if (filters.dueDate === "due-soon") { // within 24h
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if (date >= now && date <= tomorrow && !card.isDone) return true;
+            return false;
+          }
+          if (filters.dueDate === "no-date") {
+            return false; // Logic handled above (if !card.dueDate return false)
+          }
+        }
+
+        return true;
+      });
+    });
+    return newCardsByList;
+  }, [cardsByList, filters]);
 
 
   const listIds = useMemo(() => (board?.lists || []).map((l: List) => l.id), [board?.lists]);
@@ -1155,8 +1238,16 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       </div>
 
       <div className="flex items-center justify-between mb-2">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
+        <div className="flex-1 gap-4 flex flex-col">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
+            <FilterPopover
+              labels={board?.labels || []}
+              members={board?.members.map((m: Members) => m.user) || []}
+              activeFilters={filters}
+              onFilterChange={setFilters}
+            />
+          </div>
           {board.description && (
             <p className="text-gray-600 mb-4">{board.description}</p>
           )}
@@ -1230,7 +1321,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
                     <ListContainer
                       key={list.id}
                       list={list}
-                      cards={cardsByList[list.id] || []}
+                      cards={filteredCardsByList[list.id] || []}
                       onRenameList={handleRename}
                       onDeleteList={handleDelete}
                       onAddCard={handleAddCardClick}
