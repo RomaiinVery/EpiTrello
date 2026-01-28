@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
+import { SearchInput } from "@/components/SearchInput";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -36,7 +37,10 @@ export function Navbar() {
 
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white shadow-sm border-b border-gray-200">
-      <h1 className="font-semibold text-lg text-gray-800">EpiTrello</h1>
+      <div className="flex items-center gap-8 flex-1 max-w-3xl">
+        <h1 className="font-semibold text-lg text-gray-800">EpiTrello</h1>
+        <SearchInput />
+      </div>
 
       <div>
         {status === "loading" ? (
