@@ -31,7 +31,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
-import { type List, type Card, type Board } from "@/app/lib/board-api";
+import { type List, type Card, type Board, type Members } from "@/app/lib/board-api";
 import { User } from "@/types";
 import { CardModal } from "@/components/CardModal";
 import { CreatePullRequestModal } from "@/components/board/CreatePullRequestModal";
@@ -1230,7 +1230,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
             <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
             <FilterPopover
               labels={board?.labels || []}
-              members={board?.members.map((m: any) => m.user) || []}
+              members={board?.members.map((m: Members) => m.user) || []}
               activeFilters={filters}
               onFilterChange={setFilters}
             />

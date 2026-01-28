@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Calendar, Filter, User as UserIcon, Tag, X } from "lucide-react";
+import { Calendar, Filter, User as UserIcon, Tag } from "lucide-react";
 
 import { Label } from "@/app/lib/board-api";
 import { User } from "@/types";
@@ -130,7 +130,7 @@ export function FilterPopover({ labels, members, onFilterChange, activeFilters }
                     <div className="space-y-2">
                         <h4 className="font-medium text-xs text-gray-500 uppercase flex items-center gap-2">
                             <Calendar className="w-3 h-3" />
-                            Date d'échéance
+                            Date d&apos;échéance
                         </h4>
                         <div className="flex flex-col gap-1">
                             {[
@@ -141,7 +141,7 @@ export function FilterPopover({ labels, members, onFilterChange, activeFilters }
                                 <div
                                     key={opt.id}
                                     onClick={() => {
-                                        const newVal = activeFilters.dueDate === opt.id ? "none" : opt.id as any;
+                                        const newVal = activeFilters.dueDate === opt.id ? "none" : opt.id as FilterState["dueDate"];
                                         onFilterChange({ ...activeFilters, dueDate: newVal });
                                     }}
                                     className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-gray-100 ${activeFilters.dueDate === opt.id ? "bg-blue-50 text-blue-700" : "text-gray-700"}`}

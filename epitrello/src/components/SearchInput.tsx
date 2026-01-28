@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Loader2, Trello, Folder, Layout } from "lucide-react";
-import { useDebounce } from "@/hooks/use-debounce"; // We might need to create this hook or use a simple timer
+import { Search, Loader2 } from "lucide-react";
 
 interface SearchResult {
     id: string;
