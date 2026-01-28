@@ -7,10 +7,14 @@ import { prisma } from "@/app/lib/prisma";
 
 export default async function BoardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ workspaceId: string; boardId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { workspaceId, boardId } = await params;
+  const { cardId } = await searchParams;
+  const initialCardId = typeof cardId === 'string' ? cardId : undefined;
   const session = await getServerSession(authOptions);
 
   const boardData = await fetchBoard(boardId);
@@ -72,6 +76,7 @@ export default async function BoardPage({
       initialBoard={initialBoard}
       initialCardsByList={initialCardsByList}
       currentUserRole={currentUserRole}
+      initialCardId={initialCardId}
     />
   );
 }
