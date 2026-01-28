@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { title, description, workspaceId, githubRepo, githubBranch } = await req.json();
+  const { title, description, workspaceId, githubRepo, githubBranch, background } = await req.json();
 
   if (!title || !workspaceId) {
     return NextResponse.json({ error: "Title and workspaceId are required" }, { status: 400 });
@@ -103,6 +103,7 @@ export async function POST(req: Request) {
       userId: user.id,
       githubRepo: githubRepo || null,
       githubBranch: githubBranch || null,
+      background: background || null,
       lists: {
         create: [
           { title: "To Do", position: 0 },

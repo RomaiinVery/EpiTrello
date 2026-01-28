@@ -90,6 +90,8 @@ model Board {
 
   members         BoardMember[]
   automationRules AutomationRule[]
+
+  background String?
 }
 
 model BoardMember {
