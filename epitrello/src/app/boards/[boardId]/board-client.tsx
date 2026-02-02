@@ -564,6 +564,10 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
         // Due Date Filter
         if (filters.dueDate !== "none") {
+          if (filters.dueDate === "no-date") {
+            return !card.dueDate;
+          }
+
           if (!card.dueDate) return false;
           const date = new Date(card.dueDate);
 
@@ -577,9 +581,6 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
             tomorrow.setDate(tomorrow.getDate() + 1);
             if (date >= now && date <= tomorrow && !card.isDone) return true;
             return false;
-          }
-          if (filters.dueDate === "no-date") {
-            return false; // Logic handled above (if !card.dueDate return false)
           }
         }
 
@@ -1243,7 +1244,10 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
             <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
             <FilterPopover
               labels={board?.labels || []}
-              members={board?.members.map((m: Members) => m.user) || []}
+              members={[
+                ...(board.user ? [{ ...board.user, id: board.user.id, role: 'OWNER' } as unknown as User] : []),
+                ...(board.members?.map((m: Members) => m.user) || [])
+              ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)}
               activeFilters={filters}
               onFilterChange={setFilters}
             />
