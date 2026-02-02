@@ -89,9 +89,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
     }
 
     // Verify user has access to the board
+    // Verify user has access to the board
     const board = await prisma.board.findUnique({
       where: { id: boardId },
-      include: { members: true },
+      include: {
+        members: true,
+        workspace: {
+          include: {
+            members: true,
+          }
+        }
+      },
     });
 
     if (!board) {
@@ -105,11 +113,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Verify the user to assign is a member of the board (owner or member)
+    // Verify the user to assign is a member of the board (owner or member) OR workspace member
     const userToAssignIsOwner = board.userId === userId;
     const userToAssignIsMember = board.members.some(m => m.id === userId);
-    if (!userToAssignIsOwner && !userToAssignIsMember) {
-      return NextResponse.json({ error: "User is not a member of this board" }, { status: 400 });
+    // Check if user is a member of the workspace
+    // Note: workspace.members is a WorkspaceMember[], so we check userId field
+    const userToAssignIsWorkspaceMember = board.workspace?.members.some(m => m.userId === userId);
+
+    if (!userToAssignIsOwner && !userToAssignIsMember && !userToAssignIsWorkspaceMember) {
+      return NextResponse.json({ error: "User is not a member of this board or workspace" }, { status: 400 });
     }
 
     const card = await prisma.card.findUnique({
