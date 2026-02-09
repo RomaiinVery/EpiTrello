@@ -99,6 +99,11 @@ jobs:
           NEXTAUTH_SECRET: test-secret-for-ci
           NEXTAUTH_URL: http://localhost:3000
           BASE_URL: http://localhost:3000
+          # Optional: Add dummy values for services not needed in tests
+          CLOUDINARY_CLOUD_NAME: test
+          CLOUDINARY_API_KEY: test
+          CLOUDINARY_API_SECRET: test
+          GOOGLE_API_KEY: test
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
