@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import { join } from "path";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../../auth/[...nextauth]/route";
 import { logActivity } from "@/app/lib/activity-logger";
+import { v2 as cloudinary } from "cloudinary";
 
 import { prisma } from "@/app/lib/prisma";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
   try {
@@ -76,14 +81,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const timestamp = Date.now();
-    const extension = file.name.split(".").pop();
-    const filename = `${cardId}-${timestamp}.${extension}`;
-    const filepath = join(process.cwd(), "public", "uploads", filename);
+    const base64Data = buffer.toString("base64");
+    const fileUri = `data:${file.type};base64,${base64Data}`;
 
-    await writeFile(filepath, buffer);
+    const uploadResponse = await cloudinary.uploader.upload(fileUri, {
+      folder: "epitrello/covers",
+      public_id: `card_${cardId}_${Date.now()}`,
+      transformation: [
+        { quality: "auto", fetch_format: "auto" }
+      ]
+    });
 
-    const imageUrl = `/uploads/${filename}`;
+    const imageUrl = uploadResponse.secure_url;
     const updatedCard = await prisma.card.update({
       where: { id: cardId },
       data: { coverImage: imageUrl },
@@ -186,15 +195,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "Card does not belong to this board" }, { status: 400 });
     }
 
-    if (card.coverImage) {
+    if (card.coverImage && card.coverImage.includes("cloudinary")) {
       try {
-        const { unlink } = await import("fs/promises");
-        const { join } = await import("path");
-        const relativePath = card.coverImage.startsWith('/') ? card.coverImage.slice(1) : card.coverImage;
-        const filepath = join(process.cwd(), "public", relativePath);
-        await unlink(filepath);
-      } catch (fileError) {
-        console.warn("Could not delete cover image file:", fileError);
+        const urlParts = card.coverImage.split("/");
+        const folderAndFile = urlParts.slice(urlParts.indexOf("epitrello")).join("/").replace(/\.[^.]+$/, "");
+        await cloudinary.uploader.destroy(folderAndFile);
+      } catch (cloudError) {
+        console.warn("Could not delete cover image from Cloudinary:", cloudError);
       }
     }
 
