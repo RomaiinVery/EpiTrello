@@ -16,10 +16,6 @@ test.describe('Authentication', () => {
     await page.fill('input[name="email"]', 'invalid@example.com');
     await page.fill('input[name="password"]', 'wrongpassword');
 
-    // Wait for button to be enabled and click
-    const submitButton = page.getByRole('button', { name: /se connecter/i });
-    await expect(submitButton).toBeEnabled();
-    await submitButton.click();
 
     // Setup waiter for the auth network request
     const authResponsePromise = page.waitForResponse(response =>
