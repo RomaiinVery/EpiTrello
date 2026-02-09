@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import { join } from "path";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../../auth/[...nextauth]/route";
 import { logActivity } from "@/app/lib/activity-logger";
+import { v2 as cloudinary } from "cloudinary";
 
 import { prisma } from "@/app/lib/prisma";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
     try {
@@ -63,20 +68,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
 
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        const timestamp = Date.now();
-        // Sanitize filename
         const originalName = file.name;
 
-        const safeName = originalName.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const filename = `${cardId}-${timestamp}-${safeName}`;
-        const filepath = join(process.cwd(), "public", "uploads", filename);
+        const base64Data = buffer.toString("base64");
+        const fileUri = `data:${file.type};base64,${base64Data}`;
 
-        await writeFile(filepath, buffer);
+        const uploadResponse = await cloudinary.uploader.upload(fileUri, {
+            folder: "epitrello/attachments",
+            public_id: `card_${cardId}_${Date.now()}`,
+            resource_type: "auto",
+        });
+
+        const fileUrl = uploadResponse.secure_url;
 
         const attachment = await prisma.attachment.create({
             data: {
                 name: originalName,
-                url: `/uploads/${filename}`,
+                url: fileUrl,
                 type: file.type,
                 size: file.size,
                 cardId: cardId,
