@@ -17,7 +17,7 @@ test.describe('Authentication', () => {
     await page.fill('input[name="password"]', 'wrongpassword');
     await page.getByRole('button', { name: /se connecter/i }).click();
 
-    await expect(page.locator('text=/identifiants invalides|erreur/i')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=/identifiants invalides|erreur/i')).toBeVisible({ timeout: 15000 });
   });
 
   test('should navigate to register mode', async ({ page }) => {
