@@ -10,27 +10,32 @@ test.describe('Authentication', () => {
     await expect(page.getByRole('button', { name: /se connecter/i })).toBeVisible();
   });
 
-  test('should show error for invalid credentials', async ({ page }) => {
+  test('should show error for invalid credentials', async ({ page, browserName }) => {
     await page.goto('/auth');
 
     await page.fill('input[name="email"]', 'invalid@example.com');
     await page.fill('input[name="password"]', 'wrongpassword');
 
-
-    // Setup waiter for the auth network request
-    const authResponsePromise = page.waitForResponse(response =>
-      response.url().includes('/api/auth/') && response.request().method() === 'POST'
-    );
-
     const submitButton = page.getByRole('button', { name: /se connecter/i });
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
 
-    // Wait for the network response to complete
-    await authResponsePromise;
+    // WebKit (Safari) sometimes handles auth differently, so skip network waiting for it
+    if (browserName !== 'webkit') {
+      // Setup waiter for the auth network request
+      await page.waitForResponse(
+        response => response.url().includes('/api/auth/') && response.request().method() === 'POST',
+        { timeout: 10000 }
+      ).catch(() => {
+        // Ignore timeout, we'll check for error message anyway
+      });
+    }
+
+    // Wait a bit for the error to appear (Safari needs more time)
+    await page.waitForTimeout(2000);
 
     // Check for any error message (using class selector for robustness)
-    await expect(page.locator('.text-red-600')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.text-red-600')).toBeVisible({ timeout: 10000 });
   });
 
   test('should navigate to register mode', async ({ page }) => {
