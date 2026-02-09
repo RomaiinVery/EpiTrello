@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/epitrello/coverage
+/playwright-report
+/epitrello/playwright-report
+/test-results
+/epitrello/test-results
 
 # next.js
 /.next/

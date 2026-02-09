@@ -11,6 +11,21 @@ jobs:
     name: Build & Lint
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,24 +42,78 @@ jobs:
           cd epitrello
           npm ci
 
+      - name: Wait for PostgreSQL
+        run: |
+          while ! nc -z localhost 5432; do   
+            sleep 0.1
+          done
+          echo "PostgreSQL started"
+
+      - name: Run Database Migrations
+        run: |
+          cd epitrello
+          npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+
       - name: Generate Prisma Client
         run: |
           cd epitrello
           npx prisma generate
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
 
       - name: Run Linter
         run: |
           cd epitrello
           npm run lint
 
+      - name: Run Unit & Integration Tests
+        run: |
+          cd epitrello
+          npm run test:coverage
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          NEXTAUTH_SECRET: test-secret-for-ci
+          NEXTAUTH_URL: http://localhost:3000
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: epitrello/coverage/
+          retention-days: 30
+
+      - name: Install Playwright Browsers
+        run: |
+          cd epitrello
+          npx playwright install --with-deps
+
+      - name: Run E2E Tests
+        run: |
+          cd epitrello
+          npm run test:e2e
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          NEXTAUTH_SECRET: test-secret-for-ci
+          NEXTAUTH_URL: http://localhost:3000
+          BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: epitrello/playwright-report/
+          retention-days: 30
+
       - name: Run Build
         run: |
           cd epitrello
           npm run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          NEXTAUTH_SECRET: test-secret-for-ci
+          NEXTAUTH_URL: http://localhost:3000
 
