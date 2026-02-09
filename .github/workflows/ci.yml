@@ -85,6 +85,14 @@ jobs:
           path: epitrello/coverage/
           retention-days: 30
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./epitrello/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
       - name: Install Playwright Browsers
         run: |
           cd epitrello
