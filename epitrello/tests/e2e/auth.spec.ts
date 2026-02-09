@@ -21,9 +21,14 @@ test.describe('Authentication', () => {
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
 
-    // Wait for error message with a more specific locator strategy
-    // The error message contains "Identifiants invalides"
-    await expect(page.locator('text=Identifiants invalides')).toBeVisible({ timeout: 15000 });
+    // Verify loading state appears to confirm click was registered
+    await expect(page.getByText('Traitement...')).toBeVisible();
+
+    // Verify loading state disappears (request finished)
+    await expect(page.getByText('Traitement...')).toBeHidden({ timeout: 15000 });
+
+    // Check for error message
+    await expect(page.locator('text=Identifiants invalides')).toBeVisible();
   });
 
   test('should navigate to register mode', async ({ page }) => {
