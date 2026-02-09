@@ -10,7 +10,7 @@ test.describe('Authentication', () => {
     await expect(page.getByRole('button', { name: /se connecter/i })).toBeVisible();
   });
 
-  test('should show error for invalid credentials', async ({ page, browserName }) => {
+  test('should show error for invalid credentials', async ({ page }) => {
     await page.goto('/auth');
 
     await page.fill('input[name="email"]', 'invalid@example.com');
@@ -18,24 +18,25 @@ test.describe('Authentication', () => {
 
     const submitButton = page.getByRole('button', { name: /se connecter/i });
     await expect(submitButton).toBeEnabled();
+
+    // Wait for the auth request to complete
+    const responsePromise = page.waitForResponse(
+      response => response.url().includes('/api/auth/') && response.request().method() === 'POST',
+      { timeout: 15000 }
+    );
+
     await submitButton.click();
 
-    // WebKit (Safari) sometimes handles auth differently, so skip network waiting for it
-    if (browserName !== 'webkit') {
-      // Setup waiter for the auth network request
-      await page.waitForResponse(
-        response => response.url().includes('/api/auth/') && response.request().method() === 'POST',
-        { timeout: 10000 }
-      ).catch(() => {
-        // Ignore timeout, we'll check for error message anyway
-      });
-    }
+    // Wait for the auth response
+    await responsePromise.catch(() => {
+      // Ignore timeout, we'll check for error message anyway
+    });
 
-    // Wait a bit for the error to appear (Safari needs more time)
-    await page.waitForTimeout(2000);
+    // Wait for the loading state to finish (button text changes back)
+    await expect(submitButton).toContainText(/se connecter/i, { timeout: 15000 });
 
-    // Check for any error message (using class selector for robustness)
-    await expect(page.locator('.text-red-600')).toBeVisible({ timeout: 10000 });
+    // Check for error message using data-testid for robustness
+    await expect(page.getByTestId('error-message')).toBeVisible({ timeout: 15000 });
   });
 
   test('should navigate to register mode', async ({ page }) => {
