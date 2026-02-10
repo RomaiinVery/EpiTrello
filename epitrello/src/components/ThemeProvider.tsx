@@ -101,14 +101,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, newTheme);
 
     // Update database asynchronously
-    fetch('/api/user/profile', {
+    fetch('/api/user/profile/theme', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         theme: newTheme,
-        displayName: 'placeholder', // Required by API, will be ignored if not changed
       }),
     }).catch(err => {
       console.error('Failed to save theme preference:', err);

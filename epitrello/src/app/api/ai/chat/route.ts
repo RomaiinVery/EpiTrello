@@ -151,7 +151,7 @@ const tools = [
 ];
 
 const model = genAI.getGenerativeModel({
-    model: "gemini-flash-latest",
+    model: "gemini-2.0-flash-exp", // Latest, fastest Gemini model
     tools: tools as unknown as Tool[],
 });
 
@@ -209,82 +209,95 @@ export async function POST(req: Request) {
         let finalText = result.response.text();
         let hasAction = false;
         let loopCount = 0;
-        const MAX_LOOPS = 5;
+        const MAX_LOOPS = 3; // Reduced from 5 to 3 for better performance
 
         while (call && call.length > 0 && loopCount < MAX_LOOPS) {
             loopCount++;
 
-            const functionResponses = [];
-
-            for (const functionCall of call) {
-                const { name, args } = functionCall;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const typedArgs = args as any;
-                let functionResult = {};
-
-                try {
-                    if (name === "createList") {
-                        await createList(boardId, typedArgs.title);
-                        functionResult = { success: true, message: `Created list "${typedArgs.title}"` };
-                        hasAction = true;
-                    } else if (name === "createCard") {
-                        await createCard(boardId, typedArgs.listName, typedArgs.cardTitle);
-                        functionResult = { success: true, message: `Created card "${typedArgs.cardTitle}" in "${typedArgs.listName}"` };
-                        hasAction = true;
-                    } else if (name === "addLabel") {
-                        await addLabel(boardId, typedArgs.cardTitle, typedArgs.labelName, typedArgs.color);
-                        functionResult = { success: true, message: `Added label "${typedArgs.labelName}" to "${typedArgs.cardTitle}"` };
-                        hasAction = true;
-                    } else if (name === "setDueDate") {
-                        await setDueDate(boardId, typedArgs.cardTitle, typedArgs.date);
-                        functionResult = { success: true, message: `Set due date for "${typedArgs.cardTitle}" to ${typedArgs.date}` };
-                        hasAction = true;
-                    } else if (name === "assignMember") {
-                        await assignMember(boardId, typedArgs.cardTitle, typedArgs.memberName);
-                        functionResult = { success: true, message: `Assigned "${typedArgs.memberName}" to "${typedArgs.cardTitle}"` };
-                        hasAction = true;
-                    } else if (name === "listMembers") {
-                        const members = await getBoardMembers(boardId);
-                        functionResult = { members };
-                    } else if (name === "addDescription") {
-                        await setCardDescription(boardId, typedArgs.cardTitle, typedArgs.description);
-                        functionResult = { success: true, message: `Updated description for "${typedArgs.cardTitle}"` };
-                        hasAction = true;
-                    } else if (name === "addComment") {
-                        await addCardComment(boardId, typedArgs.cardTitle, typedArgs.comment, userId);
-                        functionResult = { success: true, message: `Added comment to "${typedArgs.cardTitle}"` };
-                        hasAction = true;
-                    } else if (name === "moveCard") {
-                        await moveCard(boardId, typedArgs.cardTitle, typedArgs.targetListName);
-                        functionResult = { success: true, message: `Moved card "${typedArgs.cardTitle}" to "${typedArgs.targetListName}"` };
-                        hasAction = true;
-                    } else if (name === "deleteCard") {
-                        await deleteCard(boardId, typedArgs.cardTitle);
-                        functionResult = { success: true, message: `Deleted card "${typedArgs.cardTitle}"` };
-                        hasAction = true;
-                    } else if (name === "archiveCard") {
-                        await archiveCard(boardId, typedArgs.cardTitle);
-                        functionResult = { success: true, message: `Archived card "${typedArgs.cardTitle}"` };
-                        hasAction = true;
-                    } else if (name === "readBoard") {
-                        const boardData = await getBoardData(boardId);
-                        functionResult = { boardData };
-                    } else if (name === "listArchivedCards") {
-                        const archived = await getArchivedCards(boardId);
-                        functionResult = { archivedCards: archived };
-                    }
+            // Execute all function calls in parallel for better performance
+            const results = await Promise.all(
+                call.map(async (functionCall) => {
+                    const { name, args } = functionCall;
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } catch (e: any) {
-                    functionResult = { error: e.message };
-                }
+                    const typedArgs = args as any;
+                    let functionResult = {};
+                    let isAction = false;
 
-                functionResponses.push({
-                    functionResponse: {
-                        name: name,
-                        response: functionResult,
-                    },
-                });
+                    try {
+                        if (name === "createList") {
+                            await createList(boardId, typedArgs.title);
+                            functionResult = { success: true, message: `Created list "${typedArgs.title}"` };
+                            isAction = true;
+                        } else if (name === "createCard") {
+                            await createCard(boardId, typedArgs.listName, typedArgs.cardTitle);
+                            functionResult = { success: true, message: `Created card "${typedArgs.cardTitle}" in "${typedArgs.listName}"` };
+                            isAction = true;
+                        } else if (name === "addLabel") {
+                            await addLabel(boardId, typedArgs.cardTitle, typedArgs.labelName, typedArgs.color);
+                            functionResult = { success: true, message: `Added label "${typedArgs.labelName}" to "${typedArgs.cardTitle}"` };
+                            isAction = true;
+                        } else if (name === "setDueDate") {
+                            await setDueDate(boardId, typedArgs.cardTitle, typedArgs.date);
+                            functionResult = { success: true, message: `Set due date for "${typedArgs.cardTitle}" to ${typedArgs.date}` };
+                            isAction = true;
+                        } else if (name === "assignMember") {
+                            await assignMember(boardId, typedArgs.cardTitle, typedArgs.memberName);
+                            functionResult = { success: true, message: `Assigned "${typedArgs.memberName}" to "${typedArgs.cardTitle}"` };
+                            isAction = true;
+                        } else if (name === "listMembers") {
+                            const members = await getBoardMembers(boardId);
+                            functionResult = { members };
+                        } else if (name === "addDescription") {
+                            await setCardDescription(boardId, typedArgs.cardTitle, typedArgs.description);
+                            functionResult = { success: true, message: `Updated description for "${typedArgs.cardTitle}"` };
+                            isAction = true;
+                        } else if (name === "addComment") {
+                            await addCardComment(boardId, typedArgs.cardTitle, typedArgs.comment, userId);
+                            functionResult = { success: true, message: `Added comment to "${typedArgs.cardTitle}"` };
+                            isAction = true;
+                        } else if (name === "moveCard") {
+                            await moveCard(boardId, typedArgs.cardTitle, typedArgs.targetListName);
+                            functionResult = { success: true, message: `Moved card "${typedArgs.cardTitle}" to "${typedArgs.targetListName}"` };
+                            isAction = true;
+                        } else if (name === "deleteCard") {
+                            await deleteCard(boardId, typedArgs.cardTitle);
+                            functionResult = { success: true, message: `Deleted card "${typedArgs.cardTitle}"` };
+                            isAction = true;
+                        } else if (name === "archiveCard") {
+                            await archiveCard(boardId, typedArgs.cardTitle);
+                            functionResult = { success: true, message: `Archived card "${typedArgs.cardTitle}"` };
+                            isAction = true;
+                        } else if (name === "readBoard") {
+                            const boardData = await getBoardData(boardId);
+                            functionResult = { boardData };
+                        } else if (name === "listArchivedCards") {
+                            const archived = await getArchivedCards(boardId);
+                            functionResult = { archivedCards: archived };
+                        }
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (e: any) {
+                        functionResult = { error: e.message };
+                    }
+
+                    return {
+                        isAction,
+                        response: {
+                            functionResponse: {
+                                name: name,
+                                response: functionResult,
+                            },
+                        },
+                    };
+                })
+            );
+
+            // Check if any action was performed
+            if (results.some(r => r.isAction)) {
+                hasAction = true;
             }
+
+            // Extract just the function responses for Gemini
+            const functionResponses = results.map(r => r.response);
 
             // Send tool outputs back to the model to get the next step or final response
             const nextResult = await chat.sendMessage(functionResponses);
