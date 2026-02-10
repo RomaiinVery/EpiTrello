@@ -264,7 +264,10 @@ function AuthForm() {
             )}
 
             {errorMessage && (
-              <div className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 p-3 rounded-md flex items-center gap-2 animate-pulse">
+              <div
+                data-testid="error-message"
+                className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 p-3 rounded-md flex items-center gap-2 animate-pulse"
+              >
                 <span>⚠️</span>
                 {errorMessage}
               </div>

@@ -1,5 +1,8 @@
 # EpiTrello
 
+[![codecov](https://codecov.io/gh/RomaiinVery/EpiTrello/branch/main/graph/badge.svg)](https://codecov.io/gh/RomaiinVery/EpiTrello)
+[![CI](https://github.com/RomaiinVery/EpiTrello/workflows/CI/badge.svg)](https://github.com/RomaiinVery/EpiTrello/actions)
+
 **EpiTrello** is a comprehensive project management solution inspired by Trello, enhanced with developer-centric features like GitHub integration, Markdown support, and AI automation.
 
 ## Repository Structure
