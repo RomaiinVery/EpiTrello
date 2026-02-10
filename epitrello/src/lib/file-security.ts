@@ -29,20 +29,17 @@ const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const DEFAULT_MAX_COMPRESSION_RATIO = 100; // Alert if file expands more than 100x
 
 // Magic numbers (file signatures) for common file types
+// Archives and SVG removed for security hardening
 const FILE_SIGNATURES: { [key: string]: number[][] } = {
-  // Images
+  // Images (raster only - SVG removed)
   'image/jpeg': [[0xFF, 0xD8, 0xFF]],
   'image/png': [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
   'image/gif': [[0x47, 0x49, 0x46, 0x38, 0x37, 0x61], [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]],
   'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF
   'image/bmp': [[0x42, 0x4D]], // BM
-  'image/svg+xml': [[0x3C, 0x73, 0x76, 0x67], [0x3C, 0x3F, 0x78, 0x6D, 0x6C]], // <svg or <?xml
 
   // Documents
   'application/pdf': [[0x25, 0x50, 0x44, 0x46]], // %PDF
-  'application/zip': [[0x50, 0x4B, 0x03, 0x04], [0x50, 0x4B, 0x05, 0x06]], // PK
-  'application/x-rar-compressed': [[0x52, 0x61, 0x72, 0x21]], // Rar!
-  'application/x-7z-compressed': [[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C]], // 7z
 
   // Office documents (ZIP-based)
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [[0x50, 0x4B, 0x03, 0x04]], // .docx
@@ -56,14 +53,14 @@ const FILE_SIGNATURES: { [key: string]: number[][] } = {
 };
 
 // Allowed MIME types for attachments
+// SECURITY: Archives and SVG removed to prevent malicious file uploads
 const DEFAULT_ALLOWED_MIME_TYPES = [
-  // Images
+  // Images (raster only - SVG removed due to XSS risk)
   'image/jpeg',
   'image/jpg',
   'image/png',
   'image/gif',
   'image/webp',
-  'image/svg+xml',
   'image/bmp',
 
   // Documents
@@ -81,18 +78,16 @@ const DEFAULT_ALLOWED_MIME_TYPES = [
   'text/markdown',
   'application/json',
 
-  // Archives (with caution)
-  'application/zip',
-  'application/x-zip-compressed',
-  'application/x-rar-compressed',
-  'application/x-7z-compressed',
-  'application/gzip',
+  // Archives REMOVED for security:
+  // - Can contain executable files
+  // - Risk of zip bombs despite detection
+  // - Can be used to bypass file type restrictions
 ];
 
 // Allowed file extensions
 const DEFAULT_ALLOWED_EXTENSIONS = [
-  // Images
-  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp',
+  // Images (raster only)
+  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp',
 
   // Documents
   '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
@@ -100,8 +95,7 @@ const DEFAULT_ALLOWED_EXTENSIONS = [
   // Text
   '.txt', '.csv', '.md', '.json',
 
-  // Archives
-  '.zip', '.rar', '.7z', '.gz',
+  // Archives REMOVED: .zip, .rar, .7z, .gz
 ];
 
 /**
@@ -176,6 +170,8 @@ export async function validateFile(
   }
 
   // 6. Zip bomb detection for compressed files
+  // NOTE: Archives are currently disabled in whitelist for security hardening
+  // This code is kept for potential future use if archives are re-enabled with proper scanning
   if (enableZipBombDetection && isCompressedFile(file.type)) {
     const buffer = await file.arrayBuffer();
     const zipBombCheck = await detectZipBomb(buffer, file.type, maxCompressionRatio);
@@ -301,34 +297,12 @@ async function detectZipBomb(
 
 /**
  * Validate image files
+ * Note: SVG support removed for security reasons (XSS risk)
  */
 async function validateImage(file: File): Promise<FileValidationResult> {
   const warnings: string[] = [];
 
-  // SVG files need special handling (XML-based, can contain scripts)
-  if (file.type === 'image/svg+xml') {
-    const text = await file.text();
-
-    // Check for potentially dangerous elements
-    const dangerousPatterns = [
-      /<script/i,
-      /javascript:/i,
-      /on\w+\s*=/i, // event handlers like onclick=
-      /<iframe/i,
-      /<embed/i,
-      /<object/i,
-    ];
-
-    for (const pattern of dangerousPatterns) {
-      if (pattern.test(text)) {
-        return {
-          valid: false,
-          error: 'SVG file contains potentially dangerous content',
-        };
-      }
-    }
-  }
-
+  // Only raster images are allowed - SVG removed due to XSS vulnerabilities
   // For raster images, verify they can be loaded
   try {
     const buffer = await file.arrayBuffer();
@@ -378,6 +352,7 @@ function getFileExtension(filename: string): string {
 
 /**
  * Get expected MIME type from file extension
+ * Archives and SVG removed for security
  */
 function getMimeTypeFromExtension(extension: string): string | null {
   const mimeMap: { [key: string]: string } = {
@@ -386,13 +361,8 @@ function getMimeTypeFromExtension(extension: string): string | null {
     '.png': 'image/png',
     '.gif': 'image/gif',
     '.webp': 'image/webp',
-    '.svg': 'image/svg+xml',
     '.bmp': 'image/bmp',
     '.pdf': 'application/pdf',
-    '.zip': 'application/zip',
-    '.rar': 'application/x-rar-compressed',
-    '.7z': 'application/x-7z-compressed',
-    '.gz': 'application/gzip',
     '.txt': 'text/plain',
     '.csv': 'text/csv',
     '.json': 'application/json',
