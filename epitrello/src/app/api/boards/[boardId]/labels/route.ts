@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/route";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -21,20 +22,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ boardId:
 
     const { boardId } = await params;
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check READ permission
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.READ);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.READ)
+      }, { status: 403 });
     }
 
     const labels = await prisma.label.findMany({
@@ -71,20 +64,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ boardId
       return NextResponse.json({ error: "Name and color are required" }, { status: 400 });
     }
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check EDIT permission (VIEWERs cannot create labels)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
     }
 
     const existingLabel = await prisma.label.findUnique({

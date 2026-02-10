@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../auth/[...nextauth]/route";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -22,20 +23,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ boardId:
     const { boardId, labelId } = await params;
     const { name, color } = await req.json();
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check EDIT permission (VIEWERs cannot update labels)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
     }
 
     const existingLabel = await prisma.label.findUnique({
@@ -93,20 +86,12 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ board
 
     const { boardId, labelId } = await params;
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check DELETE permission (only OWNER and ADMIN can delete)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.DELETE);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.DELETE)
+      }, { status: 403 });
     }
 
     const existingLabel = await prisma.label.findUnique({

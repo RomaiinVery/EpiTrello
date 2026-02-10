@@ -5,6 +5,8 @@ import { logActivity } from "@/app/lib/activity-logger";
 import { v2 as cloudinary } from "cloudinary";
 
 import { prisma } from "@/app/lib/prisma";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
+import { validateCoverImage } from "@/lib/file-security";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -162,20 +164,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     const { cardId, boardId } = await params;
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check EDIT permission (VIEWERs cannot remove cover images)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
     }
 
     const card = await prisma.card.findUnique({

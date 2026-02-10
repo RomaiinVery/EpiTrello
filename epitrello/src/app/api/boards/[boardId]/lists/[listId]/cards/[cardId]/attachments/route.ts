@@ -6,6 +6,7 @@ import { v2 as cloudinary } from "cloudinary";
 
 import { prisma } from "@/app/lib/prisma";
 import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
+import { validateFile, sanitizeFilename } from "@/lib/file-security";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -30,21 +31,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
 
         const { cardId, boardId } = await params;
 
-        // Verify board access
-        const board = await prisma.board.findUnique({
-            where: { id: boardId },
-            include: { members: true },
-        });
-
-        if (!board) {
-            return NextResponse.json({ error: "Board not found" }, { status: 404 });
-        }
-
-        const isOwner = board.userId === user.id;
-        const isMember = board.members.some(member => member.id === user.id);
-
-        if (!isOwner && !isMember) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        // Check EDIT permission (VIEWERs cannot upload attachments)
+        const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+        if (!allowed) {
+            return NextResponse.json({
+                error: getPermissionErrorMessage(role, Permission.EDIT)
+            }, { status: 403 });
         }
 
         const card = await prisma.card.findUnique({
@@ -62,14 +54,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
         }
 
-        const maxSize = 10 * 1024 * 1024; // 10MB
-        if (file.size > maxSize) {
-            return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 400 });
+        // Validate file security
+        const validation = await validateFile(file);
+        if (!validation.valid) {
+            return NextResponse.json({
+                error: validation.error || "File validation failed"
+            }, { status: 400 });
+        }
+
+        // Log warnings if any
+        if (validation.warnings && validation.warnings.length > 0) {
+            console.warn("File validation warnings:", validation.warnings);
         }
 
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        const originalName = file.name;
+        const originalName = sanitizeFilename(file.name);
 
         const base64Data = buffer.toString("base64");
         const fileUri = `data:${file.type};base64,${base64Data}`;

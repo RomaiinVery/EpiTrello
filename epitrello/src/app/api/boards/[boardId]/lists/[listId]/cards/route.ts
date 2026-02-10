@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../auth/[...nextauth]/route";
 import { logActivity } from "@/app/lib/activity-logger";
 import { AutomationService, TriggerType } from "@/app/lib/automation";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -72,38 +73,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Missing listId parameter' }, { status: 400 });
     }
 
+    // Check EDIT permission (VIEWERs cannot create cards)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
+    }
+
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: {
-        members: true,
-        workspace: {
-          include: {
-            members: true,
-          },
-        },
+        workspace: true,
       },
     });
 
     if (!board) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isBoardOwner = board.userId === user.id;
-    const isBoardMember = board.members.some(member => member.userId === user.id);
-    const isWorkspaceOwner = board.workspace.userId === user.id;
-    const isWorkspaceMember = board.workspace.members.some(member => member.userId === user.id);
-
-    console.log("DEBUG PERMISSION:", {
-      userId: user.id,
-      boardOwnerId: board.userId,
-      isBoardOwner,
-      isBoardMember,
-      isWorkspaceOwner,
-      isWorkspaceMember,
-    });
-
-    if (!isBoardOwner && !isBoardMember && !isWorkspaceOwner && !isWorkspaceMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const list = await prisma.list.findUnique({

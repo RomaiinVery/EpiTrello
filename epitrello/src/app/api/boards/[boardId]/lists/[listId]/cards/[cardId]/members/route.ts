@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../../auth/[...nextauth]/route";
 import { logActivity } from "@/app/lib/activity-logger";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -23,21 +24,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
 
-    // Verify user has access to the board
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check READ permission
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.READ);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.READ)
+      }, { status: 403 });
     }
 
     // Get card members
@@ -88,8 +80,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
-    // Verify user has access to the board
-    // Verify user has access to the board
+    // Check EDIT permission (VIEWERs cannot assign members)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
+    }
+
+    // Get board with workspace info for validation
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: {
@@ -104,13 +103,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
 
     if (!board) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Verify the user to assign is a member of the board (owner or member) OR workspace member
@@ -224,21 +216,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
-    // Verify user has access to the board
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check EDIT permission (VIEWERs cannot unassign members)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
     }
 
     // Verify the card exists and belongs to the board

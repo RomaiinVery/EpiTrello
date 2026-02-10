@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../auth/[...nextauth]/route";
 import { logActivity } from "@/app/lib/activity-logger";
 import { AutomationService, TriggerType } from "@/app/lib/automation";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -23,24 +24,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
 
     const { cardId, boardId } = await params;
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: {
-        members: true,
-        workspace: { include: { members: true } }
-      },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isBoardMember = board.members.some(member => member.userId === user.id);
-    const isWorkspaceMember = board.workspace?.members.some(member => member.userId === user.id);
-
-    if (!isOwner && !isBoardMember && !isWorkspaceMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check READ permission
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.READ);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.READ)
+      }, { status: 403 });
     }
 
     const card = await prisma.card.findUnique({
@@ -116,29 +105,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
     const body = await request.json();
     const { title, content, coverImage, dueDate, startDate, isDone } = body;
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: {
-        members: true,
-        workspace: { include: { members: true } }
-      },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const boardMember = board.members.find(member => member.userId === user.id);
-    const workspaceMember = board.workspace?.members.find(member => member.userId === user.id);
-
-    if (!isOwner && !boardMember && !workspaceMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const role = boardMember?.role || workspaceMember?.role || "VIEWER";
-    if (!isOwner && role === "VIEWER") {
-      return NextResponse.json({ error: "Forbidden: Viewers cannot update content" }, { status: 403 });
+    // Check EDIT permission (VIEWERs cannot update cards)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
     }
 
     if (title === undefined && content === undefined && coverImage === undefined && dueDate === undefined && startDate === undefined && isDone === undefined) {
@@ -275,29 +247,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     const { cardId, boardId } = await params;
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: {
-        members: true,
-        workspace: { include: { members: true } }
-      },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const boardMember = board.members.find(member => member.userId === user.id);
-    const workspaceMember = board.workspace?.members.find(member => member.userId === user.id);
-
-    if (!isOwner && !boardMember && !workspaceMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const role = boardMember?.role || workspaceMember?.role || "VIEWER";
-    if (!isOwner && role === "VIEWER") {
-      return NextResponse.json({ error: "Forbidden: Viewers cannot modify content" }, { status: 403 });
+    // Check DELETE permission (only OWNER and ADMIN can delete)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.DELETE);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.DELETE)
+      }, { status: 403 });
     }
 
     const card = await prisma.card.findUnique({
