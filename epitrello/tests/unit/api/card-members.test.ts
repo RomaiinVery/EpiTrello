@@ -57,7 +57,9 @@ describe('Card Members API Routes', () => {
     title: 'Test Board',
     userId: 'user-1',
     members: [],
-    workspace: null,
+    workspace: {
+      members: []
+    },
   };
 
   const mockCard = {
@@ -141,6 +143,9 @@ describe('Card Members API Routes', () => {
         ...mockBoard,
         userId: 'different-user',
         members: [],
+        workspace: {
+          members: []
+        },
       } as any);
 
       const request = new Request('http://localhost/api/boards/board-1/lists/list-1/cards/card-1/members');
@@ -149,7 +154,7 @@ describe('Card Members API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return card members when user is board owner', async () => {
@@ -194,7 +199,10 @@ describe('Card Members API Routes', () => {
       const boardWithMember = {
         ...mockBoard,
         userId: 'other-user',
-        members: [{ id: 'user-1' }],
+        members: [{ userId: 'user-1', role: 'VIEWER' }],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -317,6 +325,9 @@ describe('Card Members API Routes', () => {
         ...mockBoard,
         userId: 'different-user',
         members: [],
+        workspace: {
+          members: []
+        },
       } as any);
 
       const request = new Request('http://localhost/api/boards/board-1/lists/list-1/cards/card-1/members', {
@@ -329,7 +340,7 @@ describe('Card Members API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 400 if user to assign is not a member of board or workspace', async () => {
@@ -353,7 +364,10 @@ describe('Card Members API Routes', () => {
     it('should return 404 if card not found', async () => {
       const boardWithMembers = {
         ...mockBoard,
-        members: [{ id: 'user-2' }],
+        members: [{ userId: 'user-2', role: 'VIEWER' }],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -377,7 +391,10 @@ describe('Card Members API Routes', () => {
     it('should return 404 if card list not found', async () => {
       const boardWithMembers = {
         ...mockBoard,
-        members: [{ id: 'user-2' }],
+        members: [{ userId: 'user-2', role: 'VIEWER' }],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -401,7 +418,10 @@ describe('Card Members API Routes', () => {
     it('should return 400 if card does not belong to board', async () => {
       const boardWithMembers = {
         ...mockBoard,
-        members: [{ id: 'user-2' }],
+        members: [{ userId: 'user-2', role: 'VIEWER' }],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -428,7 +448,10 @@ describe('Card Members API Routes', () => {
     it('should return 400 if user is already assigned to card', async () => {
       const boardWithMembers = {
         ...mockBoard,
-        members: [{ id: 'user-2' }],
+        members: [{ userId: 'user-2', role: 'VIEWER' }],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -460,7 +483,7 @@ describe('Card Members API Routes', () => {
       vi.mocked(prisma.board.findUnique).mockResolvedValue({
         ...mockBoard,
         userId: 'user-1', // This is the board owner
-        members: [{ id: 'user-2' }], // user-2 is also a member
+        members: [{ userId: 'user-2', role: 'VIEWER' }], // user-2 is also a member
       } as any);
       vi.mocked(prisma.card.findUnique).mockResolvedValue(mockCard as any);
       vi.mocked(prisma.cardMember.findUnique).mockResolvedValue(null);
@@ -512,7 +535,10 @@ describe('Card Members API Routes', () => {
       const boardWithMembers = {
         ...mockBoard,
         userId: 'other-user',
-        members: [{ id: 'user-1' }, { id: 'user-2' }],
+        members: [{ userId: 'user-1', role: 'VIEWER' }, { userId: 'user-2', role: 'VIEWER' }],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -678,6 +704,9 @@ describe('Card Members API Routes', () => {
         ...mockBoard,
         userId: 'different-user',
         members: [],
+        workspace: {
+          members: []
+        },
       } as any);
 
       const request = new Request('http://localhost/api/boards/board-1/lists/list-1/cards/card-1/members?userId=user-2', {
@@ -688,7 +717,7 @@ describe('Card Members API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if card not found', async () => {
