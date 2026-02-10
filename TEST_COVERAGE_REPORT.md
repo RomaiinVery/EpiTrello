@@ -27,9 +27,9 @@
 Ce document présente la stratégie de test et les résultats de couverture pour l'application EpiTrello, un outil de gestion de projets inspiré de Trello. L'application est développée avec Next.js 16, React 19, et Prisma ORM.
 
 ### Points Clés
-- **16 tests unitaires** implémentés couvrant les fonctionnalités critiques
-- **6 tests end-to-end** pour valider les parcours utilisateurs
-- **100% de couverture** sur les modules testés
+- **727 tests unitaires** implémentés couvrant les fonctionnalités critiques (730 total avec 3 skipped)
+- **24 tests end-to-end** pour valider les parcours utilisateurs
+- **92.81% de couverture globale** (Statements), dépassant l'objectif de 70%
 - **Pipeline CI/CD** automatisé avec GitHub Actions
 - **Rapports de couverture** générés automatiquement
 
@@ -41,9 +41,9 @@ L'architecture de test suit une approche pyramidale standard :
 
 ```
         ╱╲
-       ╱E2E╲         6 tests (Parcours utilisateurs complets)
+       ╱E2E╲         24 tests (Parcours utilisateurs complets)
       ╱──────╲
-     ╱  Unit  ╲      16 tests (Logique métier isolée)
+     ╱  Unit  ╲      727 tests (Logique métier isolée)
     ╱──────────╲
 ```
 
@@ -92,11 +92,13 @@ L'architecture de test suit une approche pyramidale standard :
 
 Les tests unitaires vérifient le comportement des fonctions et modules isolés. Ils représentent la base de la pyramide de tests.
 
-**Modules testés :**
-- `activity-logger.ts` : Journalisation des activités utilisateurs
-- Utilitaires de validation (emails, UUIDs, tailles de fichiers)
-- Logique de permissions et d'autorisation
-- Tri et ordonnancement des cartes
+**Modules testés (29 fichiers de tests) :**
+- **API Routes** : Activities, Analytics, Attachments, Auth, Automations, Boards, Board Members, Cards, Card Members, Checklists, Comments, Cover, GitHub Integration, GitHub PR, Labels, Lists, Lists Reorder, Search, User, Workspaces
+- **Actions** : Invitations
+- **Libraries** : Activity Logger, Automation, Board API, Email
+- **Hooks** : useDebounce
+- **Utilities** : Board Utils, Utils
+- **Middleware** : Route protection et authentification
 
 **Exemple de test unitaire :**
 ```typescript
@@ -155,12 +157,20 @@ Des tests spécifiques vérifient la robustesse de la validation des données :
 ### Couverture Globale
 
 ```
--------------------|---------|----------|---------|---------|
-File               | % Stmts | % Branch | % Funcs | % Lines |
--------------------|---------|----------|---------|---------|
-All files          |   100   |    100   |   100   |   100   |
- activity-logger   |   100   |    100   |   100   |   100   |
--------------------|---------|----------|---------|---------|
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   92.81 |    90.00 |   95.65 |   94.52 |
+ app/lib           |   92.41 |    89.65 |   94.44 |   94.24 |
+  activity-logger  |  100.00 |   100.00 |  100.00 |  100.00 |
+  automation       |   95.38 |    86.84 |   85.71 |  100.00 | 89,97,112,124-136
+  board-api        |  100.00 |   100.00 |  100.00 |  100.00 |
+  email            |   86.44 |    92.85 |  100.00 |   86.44 | 139-140,176-177
+ hooks             |  100.00 |   100.00 |  100.00 |  100.00 |
+  use-debounce     |  100.00 |   100.00 |  100.00 |  100.00 |
+ lib               |  100.00 |   100.00 |  100.00 |  100.00 |
+  utils            |  100.00 |   100.00 |  100.00 |  100.00 |
+-------------------|---------|----------|---------|---------|-------------------
 ```
 
 ### Objectifs de Couverture
@@ -172,7 +182,7 @@ Les seuils minimums configurés dans `vitest.config.ts` :
 - **Branches (Branches)** : 70%
 - **Instructions (Statements)** : 70%
 
-**Note** : Le projet actuel atteint 100% de couverture sur tous les fichiers testés, dépassant largement les objectifs.
+**Note** : Le projet actuel atteint **92.81%** de couverture globale (Statements), **90%** (Branches), **95.65%** (Functions), et **94.52%** (Lines), dépassant largement l'objectif de 70% sur tous les axes.
 
 ### Fichiers Exclus de la Couverture
 
@@ -262,6 +272,44 @@ Pour des raisons de pertinence, certains fichiers sont exclus :
   ✓ Image Type Validation (1 test)
 ```
 
+### Vue d'ensemble des Tests Unitaires
+
+**Total : 29 fichiers de tests | 727 tests passés | 3 tests skippés**
+
+| Fichier de test | Nombre de tests | Domaine |
+|-----------------|----------------|---------|
+| `api/activities.test.ts` | 11 | Journalisation des activités |
+| `api/analytics.test.ts` | 14 | Analytics et statistiques |
+| `api/attachments.test.ts` | 19 | Gestion des pièces jointes |
+| `api/auth.test.ts` | 22 | Authentification |
+| `api/automations.test.ts` | 16 | Automatisations |
+| `api/boards.test.ts` | 14 | Gestion des boards |
+| `api/board-members.test.ts` | 10 | Membres des boards |
+| `api/cards.test.ts` | 63 | Gestion des cartes |
+| `api/card-members.test.ts` | 34 | Membres des cartes |
+| `api/checklists.test.ts` | 69 | Checklists |
+| `api/comments.test.ts` | 60 | Commentaires |
+| `api/cover.test.ts` | 22 | Images de couverture |
+| `api/github-integration.test.ts` | 19 | Intégration GitHub |
+| `api/github-pr.test.ts` | 15 | GitHub Pull Requests |
+| `api/labels.test.ts` | 67 | Labels et étiquettes |
+| `api/lists.test.ts` | 29 | Gestion des listes |
+| `api/lists-reorder.test.ts` | 14 | Réorganisation des listes |
+| `api/search.test.ts` | 13 | Recherche |
+| `api/user.test.ts` | 56 (3 skipped) | Gestion des utilisateurs |
+| `api/workspaces.test.ts` | 45 | Gestion des workspaces |
+| `actions/invitations.test.ts` | 25 | Invitations |
+| `activity-logger.test.ts` | 3 | Logger d'activités |
+| `automation.test.ts` | 17 | Logique d'automation |
+| `board-api.test.ts` | 10 | API Board |
+| `board-utils.test.ts` | 13 | Utilitaires Board |
+| `email.test.ts` | 9 | Emails |
+| `middleware.test.ts` | 29 | Middleware de protection |
+| `use-debounce.test.ts` | 6 | Hook useDebounce |
+| `utils.test.ts` | 6 | Utilitaires généraux |
+
+**Durée totale d'exécution** : ~4.14s (setup + import + exécution)
+
 ---
 
 ## Tests End-to-End
@@ -324,6 +372,23 @@ Pour des raisons de pertinence, certains fichiers sont exclus :
    - Health check de l'API
    - Rejet des requêtes non authentifiées (statut 401)
 
+### Vue d'ensemble des Tests E2E
+
+**Total : 24 tests passés sur 3 navigateurs (Chromium, Firefox, WebKit)**
+
+Les tests E2E couvrent les parcours utilisateurs critiques :
+- **Authentification** : Login, Register, OAuth GitHub, gestion des erreurs
+- **Protection des routes** : Redirection automatique vers login
+- **Navigation** : Landing page, liens de navigation, accès aux ressources
+- **Sécurité API** : Rejet des requêtes non authentifiées
+
+**Durée moyenne d'exécution** : ~14.7s (incluant le démarrage du serveur de développement)
+
+**Navigateurs testés** :
+- ✅ Chromium (Chrome/Edge)
+- ✅ Firefox
+- ✅ WebKit (Safari)
+
 ---
 
 ## Intégration Continue
@@ -372,9 +437,9 @@ Deux artifacts sont conservés pendant 30 jours après chaque exécution :
 
 | Type de test | Nombre | Durée moyenne | Status |
 |--------------|--------|---------------|--------|
-| Unitaires | 16 | ~7ms | ✅ Passed |
-| E2E | 6 | ~5s (avec démarrage serveur) | ✅ Passed |
-| **Total** | **22** | **< 10s** | **✅ 100%** |
+| Unitaires | 727 (730 avec 3 skipped) | ~531ms pour 29 fichiers | ✅ Passed |
+| E2E | 24 | ~14.7s | ✅ Passed |
+| **Total** | **751** (754 avec skipped) | **~15s** | **✅ 100%** |
 
 ### Points Forts
 
@@ -397,17 +462,20 @@ Deux artifacts sont conservés pendant 30 jours après chaque exécution :
 
 ### Points d'Amélioration
 
-1. **Élargir la couverture**
-   - Actuellement : 1 module sur 15+ testés
-   - Objectif : atteindre 70% de couverture globale
+1. **Atteindre 100% de couverture**
+   - Actuellement : 92.81% de couverture globale
+   - Objectif : combler les 7.19% restants sur les modules critiques
+   - Focus sur les branches non couvertes dans `automation.ts` et `email.ts`
 
 2. **Ajouter des tests d'intégration API**
-   - Tests des endpoints REST complets
+   - Tests des endpoints REST complets avec base de données de test
    - Validation des schemas de réponse
+   - Tests de transactions complexes
 
 3. **Tests de charge**
    - Performance avec de nombreux utilisateurs
    - Temps de réponse des endpoints
+   - Stress test sur les opérations critiques
 
 4. **Tests de sécurité**
    - Injection SQL (déjà protégé par Prisma)
@@ -496,17 +564,17 @@ npm run test:all
 
 ## Conclusion
 
-La mise en place d'une stratégie de test complète pour EpiTrello constitue une base solide pour garantir la qualité et la fiabilité de l'application. Avec 22 tests automatisés et une couverture de 100% sur les modules critiques testés, le projet dispose désormais :
+La mise en place d'une stratégie de test complète pour EpiTrello constitue une base solide pour garantir la qualité et la fiabilité de l'application. Avec **751 tests automatisés** (727 unitaires + 24 E2E) et une **couverture de 92.81%** dépassant largement l'objectif de 70%, le projet dispose désormais :
 
 - D'une **protection contre les régressions** lors des évolutions futures
 - D'une **documentation vivante** du comportement attendu
 - D'un **processus de validation automatisé** via CI/CD
 - D'une **confiance accrue** dans le code déployé en production
 
-Les prochaines étapes consistent à étendre progressivement la couverture vers les 70% ciblés, tout en maintenant la qualité et la maintenabilité des tests existants.
+Les prochaines étapes consistent à atteindre les 100% de couverture sur les modules critiques restants, tout en maintenant la qualité et la maintenabilité des tests existants.
 
 ---
 
-**Document généré le:** 9 février 2026
-**Version:** 1.0
-**Statut:** ✅ Complet
+**Document généré le:** 10 février 2026
+**Version:** 2.0
+**Statut:** ✅ Complet et à jour avec les métriques réelles
