@@ -3,9 +3,11 @@ import {
   validateFile,
   validateCoverImage,
   sanitizeFilename,
-  type FileValidationResult,
   type FileSecurityConfig,
 } from '@/lib/file-security';
+
+// Type helper for mocking File with arrayBuffer method
+type MockFile = File & { arrayBuffer: () => Promise<ArrayBuffer> };
 
 /**
  * Helper to create mock File objects for testing
@@ -21,7 +23,7 @@ function createMockFile(
 
   // Ensure arrayBuffer method exists for Node.js environment
   if (!file.arrayBuffer) {
-    (file as any).arrayBuffer = async function() {
+    (file as unknown as MockFile).arrayBuffer = async function() {
       return array.buffer;
     };
   }
@@ -461,8 +463,8 @@ describe('file-security', () => {
         const corruptedFile = createMockFile('corrupt.png', 'image/png', pngHeader);
 
         // Override arrayBuffer to work once (for magic number check) then throw (for image validation)
-        const originalArrayBuffer = (corruptedFile as any).arrayBuffer;
-        (corruptedFile as any).arrayBuffer = async function() {
+        const originalArrayBuffer = (corruptedFile as unknown as MockFile).arrayBuffer;
+        (corruptedFile as unknown as MockFile).arrayBuffer = async function() {
           callCount++;
           if (callCount === 1) {
             // First call (magic number check) - return valid PNG header
