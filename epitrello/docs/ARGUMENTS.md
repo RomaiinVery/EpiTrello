@@ -296,8 +296,7 @@ Notre stack représente **l'état de l'art 2025** pour une application web moder
 
 📖 **Documentation complète:** [tech-stack.md](tech-stack.md)
 🏗️ **Architecture:** [architecture.md](architecture.md)
-📊 **Métriques:** [Lighthouse Report](#) (à générer)
-💻 **Code:** [GitHub Repository](#)
+💻 **Code:** [GitHub Repository](https://github.com/RomaiinVery/EpiTrello)
 
 ---
 
