@@ -1689,6 +1689,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
           setShowAutomationModal(false);
           alert("Please use the 'Invite' button in the board header to add members.");
         }}
+        currentUserRole={currentUserRole}
       />
 
       <AnalyticsModal

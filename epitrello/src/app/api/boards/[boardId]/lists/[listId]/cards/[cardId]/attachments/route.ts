@@ -5,6 +5,7 @@ import { logActivity } from "@/app/lib/activity-logger";
 import { v2 as cloudinary } from "cloudinary";
 
 import { prisma } from "@/app/lib/prisma";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -124,7 +125,29 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
 
 export async function GET(request: Request, { params }: { params: Promise<{ boardId: string; listId: string; cardId: string }> }) {
     try {
-        const { cardId } = await params;
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+        });
+
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        const { boardId, cardId } = await params;
+
+        // Check read permission
+        const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.READ);
+        if (!allowed) {
+            return NextResponse.json({
+                error: getPermissionErrorMessage(role, Permission.READ)
+            }, { status: 403 });
+        }
+
         const attachments = await prisma.attachment.findMany({
             where: { cardId },
             include: {

@@ -54,7 +54,7 @@ export function BoardChat({ boardId }: BoardChatProps) {
             const data = await res.json();
 
             if (data.error) {
-                setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I encountered an error." }]);
+                setMessages((prev) => [...prev, { role: "assistant", content: `❌ ${data.error}` }]);
             } else {
                 setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
 
@@ -91,7 +91,7 @@ export function BoardChat({ boardId }: BoardChatProps) {
             const data = await res.json();
 
             if (data.error) {
-                setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I encountered an error." }]);
+                setMessages((prev) => [...prev, { role: "assistant", content: `❌ ${data.error}` }]);
             } else {
                 setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
 
