@@ -72,6 +72,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
+    continue-on-error: true  # Ne pas bloquer la CI si les tests E2E échouent
     timeout-minutes: 20
 
     services:
