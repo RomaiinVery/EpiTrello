@@ -90,7 +90,7 @@ export function InviteMemberModal({
                         </div>
                         <div className="space-y-1">
                             <h3 className="font-medium">Invitation envoyée !</h3>
-                            <p className="text-sm text-gray-500">Un email a été envoyé à l&apos;adresse indiquée.</p>
+                            <p className="text-sm text-muted-foreground">Un email a été envoyé à l&apos;adresse indiquée.</p>
                         </div>
                         <Button variant="secondary" onClick={() => setIsOpen(false)} className="mt-4">
                             Fermer
@@ -116,11 +116,11 @@ export function InviteMemberModal({
                                     onClick={() => setRole("VIEWER")}
                                     className={`cursor-pointer border rounded-lg p-3 text-sm transition-all ${role === "VIEWER"
                                         ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
-                                        : "border-gray-200 hover:border-gray-300"
+                                        : "border-border hover:border-border"
                                         }`}
                                 >
-                                    <div className="font-medium text-gray-900 mb-1">Observateur</div>
-                                    <div className="text-gray-500 text-xs text-pretty">
+                                    <div className="font-medium text-foreground mb-1">Observateur</div>
+                                    <div className="text-muted-foreground text-xs text-pretty">
                                         Lecture seule. Ne peut pas modifier le contenu.
                                     </div>
                                 </div>
@@ -128,11 +128,11 @@ export function InviteMemberModal({
                                     onClick={() => setRole("EDITOR")}
                                     className={`cursor-pointer border rounded-lg p-3 text-sm transition-all ${role === "EDITOR"
                                         ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
-                                        : "border-gray-200 hover:border-gray-300"
+                                        : "border-border hover:border-border"
                                         }`}
                                 >
-                                    <div className="font-medium text-gray-900 mb-1">Éditeur</div>
-                                    <div className="text-gray-500 text-xs text-pretty">
+                                    <div className="font-medium text-foreground mb-1">Éditeur</div>
+                                    <div className="text-muted-foreground text-xs text-pretty">
                                         Peut ajouter, modifier et déplacer des cartes.
                                     </div>
                                 </div>

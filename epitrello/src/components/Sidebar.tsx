@@ -89,14 +89,14 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white border-r flex flex-col h-full hidden md:flex">
+    <aside className="w-64 bg-card border-r flex flex-col h-full hidden md:flex">
       {/* Header */}
       <div className="p-6 border-b">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
             <Layers className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
+          <h1 className="text-xl font-bold text-foreground group-hover:text-blue-600 transition-colors">
             EpiTrello
           </h1>
         </Link>
@@ -113,7 +113,7 @@ export function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive(item.href)
                   ? "bg-blue-50 text-blue-600"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                  : "text-foreground hover:bg-accent"
                   }`}
               >
                 <Icon className="w-5 h-5" />
@@ -126,24 +126,24 @@ export function Sidebar() {
         {/* Workspaces Section */}
         <div className="mt-6">
           <div className="flex items-center justify-between px-3 mb-2">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Mes Workspaces
             </h2>
             <Link
               href="/workspaces"
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              className="p-1 rounded hover:bg-accent transition-colors"
               title="Créer un workspace"
             >
-              <Plus className="w-4 h-4 text-gray-500" />
+              <Plus className="w-4 h-4 text-muted-foreground" />
             </Link>
           </div>
 
           {isLoading ? (
-            <div className="px-3 py-2 text-sm text-gray-500">
+            <div className="px-3 py-2 text-sm text-muted-foreground">
               Chargement...
             </div>
           ) : workspaces.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-500">
+            <div className="px-3 py-2 text-sm text-muted-foreground">
               Aucun workspace
             </div>
           ) : (
@@ -153,7 +153,7 @@ export function Sidebar() {
                   <div
                     className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${isWorkspaceActive(workspace.id)
                       ? "bg-blue-50 text-blue-600"
-                      : "text-gray-700 hover:bg-gray-100"
+                      : "text-foreground hover:bg-accent"
                       }`}
                   >
                     <Link
@@ -161,7 +161,7 @@ export function Sidebar() {
                       className="flex items-center gap-2 flex-1 min-w-0"
                     >
                       <div
-                        className={`w-2 h-2 rounded-full ${isWorkspaceActive(workspace.id) ? "bg-blue-600" : "bg-gray-400"
+                        className={`w-2 h-2 rounded-full ${isWorkspaceActive(workspace.id) ? "bg-blue-600" : "bg-muted-foreground"
                           }`}
                       />
                       <span className="truncate font-medium">{workspace.title}</span>
@@ -169,15 +169,15 @@ export function Sidebar() {
                     <div className="flex items-center gap-1">
                       {workspace.boards && workspace.boards.length > 0 && (
                         <>
-                          <span className="text-xs text-gray-500 px-1.5 py-0.5 bg-gray-100 rounded group-hover:bg-white transition-colors">
+                          <span className="text-xs text-muted-foreground px-1.5 py-0.5 bg-muted rounded group-hover:bg-card transition-colors">
                             {workspace.boards.length}
                           </span>
                           <button
                             onClick={(e) => toggleWorkspace(e, workspace.id)}
-                            className="p-0.5 hover:bg-gray-200 rounded-sm transition-colors focus:outline-none"
+                            className="p-0.5 hover:bg-accent rounded-sm transition-colors focus:outline-none"
                           >
                             <ChevronRight
-                              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${expandedWorkspaces.includes(workspace.id) ? "rotate-90" : ""
+                              className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${expandedWorkspaces.includes(workspace.id) ? "rotate-90" : ""
                                 }`}
                             />
                           </button>
@@ -189,14 +189,14 @@ export function Sidebar() {
                   {expandedWorkspaces.includes(workspace.id) &&
                     workspace.boards &&
                     workspace.boards.length > 0 && (
-                      <div className="ml-4 mt-1 border-l-2 border-gray-100 pl-2 space-y-0.5">
+                      <div className="ml-4 mt-1 border-l-2 border-border pl-2 space-y-0.5">
                         {workspace.boards.map((board) => (
                           <Link
                             key={board.id}
                             href={`/workspaces/${workspace.id}/boards/${board.id}`}
                             className={`block px-2 py-1.5 rounded text-sm truncate transition-colors ${isBoardActive(workspace.id, board.id)
                               ? "bg-blue-50 text-blue-600 font-medium"
-                              : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                              : "text-muted-foreground hover:text-foreground hover:bg-accent"
                               }`}
                           >
                             {board.title}
@@ -222,11 +222,11 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t bg-gray-50">
+      <div className="border-t bg-muted">
         {/* User Profile */}
         <Link
           href="/settings"
-          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors"
         >
           {profileImage ? (
             <Image
@@ -235,7 +235,7 @@ export function Sidebar() {
               width={40}
               height={40}
               unoptimized
-              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+              className="w-10 h-10 rounded-full object-cover border-2 border-border"
             />
           ) : (
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
@@ -243,14 +243,14 @@ export function Sidebar() {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="text-sm font-medium text-foreground truncate">
               {session?.user?.name || "Utilisateur"}
             </p>
-            <p className="text-xs text-gray-500 truncate">
+            <p className="text-xs text-muted-foreground truncate">
               {session?.user?.email}
             </p>
           </div>
-          <Settings className="w-4 h-4 text-gray-400" />
+          <Settings className="w-4 h-4 text-muted-foreground" />
         </Link>
 
         {/* New Workspace Button */}

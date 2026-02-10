@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
+import { useTheme } from "@/components/ThemeProvider";
 
 type SettingsState = {
   displayName: string;
@@ -26,13 +27,14 @@ type PasswordState = {
 export default function SettingsPage() {
   const router = useRouter();
   const { data: session, status, update } = useSession();
+  const { theme, setTheme } = useTheme();
 
   const [values, setValues] = useState<SettingsState>({
     displayName: "",
     email: "",
     timezone: "UTC",
     language: "en",
-    theme: "system",
+    theme: "system", // Not used anymore, managed by ThemeProvider
     emailNotifications: true,
     pushNotifications: false,
     smsNotifications: false,
@@ -409,14 +411,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 md:p-10 font-sans text-gray-900">
+    <div className="max-w-4xl mx-auto p-6 md:p-10 font-sans text-foreground">
 
       {/* Header with Back Button */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600"
+            className="p-2 rounded-full hover:bg-accent transition-colors text-muted-foreground"
             aria-label="Go back"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -424,8 +426,8 @@ export default function SettingsPage() {
             </svg>
           </button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Settings</h1>
-            <p className="text-gray-500 mt-1">Manage your profile preferences and security settings.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
+            <p className="text-muted-foreground mt-1">Manage your profile preferences and security settings.</p>
           </div>
         </div>
 
@@ -433,7 +435,7 @@ export default function SettingsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => signOut({ callbackUrl: "/auth" })}
-            className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-red-600 bg-card border border-border rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors"
           >
             Logout
           </button>
@@ -463,12 +465,12 @@ export default function SettingsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full">
             <h3 className="text-xl font-bold mb-4">Vérification de l&apos;email</h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               Veuillez entrer le code à 6 chiffres envoyé à <strong>{pendingVerificationEmail || values.email}</strong>.
             </p>
             <input
               type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-2xl tracking-widest font-mono mb-4"
+              className="w-full px-3 py-2 border border-border rounded-lg text-center text-2xl tracking-widest font-mono mb-4"
               value={verificationCode}
               onChange={(e) => setVerificationCode(e.target.value)}
               placeholder="123456"
@@ -477,7 +479,7 @@ export default function SettingsPage() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={handleCancelVerification}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-muted-foreground hover:bg-accent rounded-lg"
               >
                 Annuler
               </button>
@@ -496,8 +498,8 @@ export default function SettingsPage() {
       <div className="space-y-6">
 
         {/* SECTION 1: Profile */}
-        <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Profile Information</h2>
+        <section className="bg-card p-6 rounded-xl border border-border shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground mb-4 border-b border-border pb-2">Profile Information</h2>
 
           {/* Profile Picture Section */}
           <div className="mb-6 flex items-center gap-6">
@@ -509,7 +511,7 @@ export default function SettingsPage() {
                   width={96}
                   height={96}
                   unoptimized
-                  className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                  className="w-24 h-24 rounded-full object-cover border-2 border-border"
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold">
@@ -542,34 +544,34 @@ export default function SettingsPage() {
                   Supprimer la photo
                 </button>
               )}
-              <p className="text-xs text-gray-500">JPG, PNG, GIF. Max 5MB.</p>
+              <p className="text-xs text-muted-foreground">JPG, PNG, GIF. Max 5MB.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Display Name</label>
+              <label className="text-sm font-medium text-foreground">Display Name</label>
               <input
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 value={values.displayName}
                 onChange={(e) => handleChange("displayName", e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Email Address</label>
+              <label className="text-sm font-medium text-foreground">Email Address</label>
               <input
                 type="email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 value={values.email}
                 onChange={(e) => handleChange("email", e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Timezone</label>
+              <label className="text-sm font-medium text-foreground">Timezone</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 value={values.timezone}
                 onChange={(e) => handleChange("timezone", e.target.value)}
               >
@@ -582,9 +584,9 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Language</label>
+                <label className="text-sm font-medium text-foreground">Language</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   value={values.language}
                   onChange={(e) => handleChange("language", e.target.value)}
                 >
@@ -594,11 +596,11 @@ export default function SettingsPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Theme</label>
+                <label className="text-sm font-medium text-foreground">Theme</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                  value={values.theme}
-                  onChange={(e) => handleChange("theme", e.target.value as SettingsState["theme"])}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
                 >
                   <option value="system">System</option>
                   <option value="light">Light</option>
@@ -610,8 +612,8 @@ export default function SettingsPage() {
         </section>
 
         {/* SECTION 2: Notifications */}
-        <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Notifications</h2>
+        <section className="bg-card p-6 rounded-xl border border-border shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground mb-4 border-b border-border pb-2">Notifications</h2>
           <div className="space-y-4">
             {[
               { key: "emailNotifications", label: "Email Notifications", desc: "Receive daily digests and important alerts." },
@@ -626,8 +628,8 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-900 block">{item.label}</label>
-                  <p className="text-sm text-gray-500">{item.desc}</p>
+                  <label className="text-sm font-medium text-foreground block">{item.label}</label>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -635,32 +637,32 @@ export default function SettingsPage() {
         </section>
 
         {/* SECTION 3: Security */}
-        <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Security</h2>
+        <section className="bg-card p-6 rounded-xl border border-border shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground mb-4 border-b border-border pb-2">Security</h2>
           <form onSubmit={handleSecuritySubmit} className="max-w-md space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Current Password</label>
+              <label className="text-sm font-medium text-foreground">Current Password</label>
               <input
                 type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={passwords.current}
                 onChange={(e) => handlePasswordChange(e, 'current')}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">New Password</label>
+              <label className="text-sm font-medium text-foreground">New Password</label>
               <input
                 type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={passwords.newP}
                 onChange={(e) => handlePasswordChange(e, 'newP')}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
+              <label className="text-sm font-medium text-foreground">Confirm New Password</label>
               <input
                 type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={passwords.confirm}
                 onChange={(e) => handlePasswordChange(e, 'confirm')}
               />
@@ -671,7 +673,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="mt-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
+              className="mt-2 px-4 py-2 text-sm font-medium text-foreground bg-accent border border-border rounded-lg hover:bg-accent transition-colors"
             >
               Update Password
             </button>
@@ -679,20 +681,20 @@ export default function SettingsPage() {
         </section>
 
         {/* SECTION 4: Connected Accounts */}
-        <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Connected Accounts</h2>
+        <section className="bg-card p-6 rounded-xl border border-border shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground mb-4 border-b border-border pb-2">Connected Accounts</h2>
 
           <div className="space-y-4">
             {/* GitHub Account */}
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-foreground" fill="currentColor" viewBox="0 0 24 24">
                     <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900">GitHub</h3>
+                  <h3 className="text-sm font-medium text-foreground">GitHub</h3>
                   {githubStatus.isLinked ? (
                     <div className="flex items-center gap-2 mt-1">
                       {githubStatus.avatarUrl && (
@@ -705,12 +707,12 @@ export default function SettingsPage() {
                           className="w-5 h-5 rounded-full"
                         />
                       )}
-                      <p className="text-sm text-gray-500">
-                        Connecté en tant que <span className="font-medium text-gray-700">@{githubStatus.username}</span>
+                      <p className="text-sm text-muted-foreground">
+                        Connecté en tant que <span className="font-medium text-foreground">@{githubStatus.username}</span>
                       </p>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">Non connecté</p>
+                    <p className="text-sm text-muted-foreground">Non connecté</p>
                   )}
                 </div>
               </div>
@@ -727,7 +729,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleLinkGitHub}
                     disabled={loadingGithub}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-gray-800 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />

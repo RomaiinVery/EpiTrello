@@ -25,12 +25,12 @@ export function ColorPicker({ selectedColor, onChange }: ColorPickerProps) {
                     key={color.value}
                     type="button"
                     onClick={() => onChange(color.value)}
-                    className={`w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 ${selectedColor === color.value ? "ring-2 ring-offset-1 ring-blue-500 scale-110" : ""
+                    className={`w-8 h-8 rounded-full border border-border flex items-center justify-center transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 ${selectedColor === color.value ? "ring-2 ring-offset-1 ring-blue-500 scale-110" : ""
                         }`}
                     style={{ backgroundColor: color.value }}
                     title={color.name}
                 >
-                    {selectedColor === color.value && <Check size={14} className="text-gray-700" />}
+                    {selectedColor === color.value && <Check size={14} className="text-foreground" />}
                 </button>
             ))}
         </div>

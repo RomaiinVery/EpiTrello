@@ -258,14 +258,14 @@ export function ChecklistSection({
     return (
         <div className="border-t pt-4">
             <div className="flex items-center gap-2 mb-4">
-                <CheckSquare className="w-4 h-4 text-gray-500" />
-                <h3 className="text-sm font-semibold text-gray-700">Checklists</h3>
+                <CheckSquare className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">Checklists</h3>
             </div>
 
             {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
 
             {loading ? (
-                <p className="text-sm text-gray-400 italic text-center py-4">
+                <p className="text-sm text-muted-foreground italic text-center py-4">
                     Chargement...
                 </p>
             ) : (
@@ -279,7 +279,7 @@ export function ChecklistSection({
                             totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
 
                         return (
-                            <div key={checklist.id} className="bg-gray-50 rounded-lg p-3">
+                            <div key={checklist.id} className="bg-muted rounded-lg p-3">
                                 <div className="flex items-center justify-between mb-2">
                                     {editingChecklistId === checklist.id ? (
                                         <div className="flex-1 flex items-center gap-2">
@@ -319,15 +319,15 @@ export function ChecklistSection({
                                         <>
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2">
-                                                    <h4 className="text-sm font-medium text-gray-700">
+                                                    <h4 className="text-sm font-medium text-foreground">
                                                         {checklist.title}
                                                     </h4>
-                                                    <span className="text-xs text-gray-500">
+                                                    <span className="text-xs text-muted-foreground">
                                                         ({checkedCount}/{totalCount})
                                                     </span>
                                                 </div>
                                                 {totalCount > 0 && (
-                                                    <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+                                                    <div className="mt-1 w-full bg-secondary rounded-full h-1.5">
                                                         <div
                                                             className="bg-blue-500 h-1.5 rounded-full transition-all"
                                                             style={{ width: `${progress}%` }}
@@ -342,14 +342,14 @@ export function ChecklistSection({
                                                             setEditingChecklistId(checklist.id);
                                                             setEditingChecklistTitle(checklist.title);
                                                         }}
-                                                        className="text-gray-400 hover:text-blue-600 transition-colors"
+                                                        className="text-muted-foreground hover:text-primary transition-colors"
                                                         aria-label="Modifier"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeleteChecklist(checklist.id)}
-                                                        className="text-gray-400 hover:text-red-600 transition-colors"
+                                                        className="text-muted-foreground hover:text-destructive transition-colors"
                                                         aria-label="Supprimer"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -378,8 +378,8 @@ export function ChecklistSection({
                                             />
                                             <span
                                                 className={`flex-1 ${item.checked
-                                                    ? "line-through text-gray-400"
-                                                    : "text-gray-700"
+                                                    ? "line-through text-muted-foreground"
+                                                    : "text-foreground"
                                                     }`}
                                             >
                                                 {item.text}
@@ -387,7 +387,7 @@ export function ChecklistSection({
                                             {!readOnly && (
                                                 <button
                                                     onClick={() => handleDeleteItem(checklist.id, item.id)}
-                                                    className="text-gray-400 hover:text-red-600 transition-colors"
+                                                    className="text-muted-foreground hover:text-destructive transition-colors"
                                                     aria-label="Supprimer"
                                                 >
                                                     <X className="w-3 h-3" />
@@ -432,7 +432,7 @@ export function ChecklistSection({
 
                     {/* Create New Checklist */}
                     {!readOnly && (
-                        <div className="border border-dashed border-gray-300 rounded-lg p-3">
+                        <div className="border border-dashed border-border rounded-lg p-3">
                             <div className="flex items-center gap-2">
                                 <Input
                                     value={newChecklistTitle}

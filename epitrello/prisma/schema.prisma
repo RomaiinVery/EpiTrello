@@ -25,6 +25,7 @@ model User {
   resetTokenExpiry DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+  theme            String?   @default("system")
 
   githubId          String? @unique
   githubAccessToken String?

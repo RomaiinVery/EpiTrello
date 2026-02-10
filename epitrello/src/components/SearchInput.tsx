@@ -68,11 +68,11 @@ export function SearchInput() {
     return (
         <div className="relative w-full max-w-2xl" ref={containerRef}>
             <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <input
                     type="text"
                     placeholder="Rechercher..."
-                    className="w-full pl-9 pr-4 py-2 bg-gray-100 border-none rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full pl-9 pr-4 py-2 bg-muted border-none rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => {
@@ -81,30 +81,30 @@ export function SearchInput() {
                 />
                 {loading && (
                     <div className="absolute right-3 top-2.5">
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     </div>
                 )}
             </div>
 
             {open && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-md shadow-lg border border-gray-200 text-sm max-h-[300px] overflow-y-auto z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-md shadow-lg border border-border text-sm max-h-[300px] overflow-y-auto z-50">
                     {results.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">Aucun résultat</div>
+                        <div className="p-4 text-center text-muted-foreground">Aucun résultat</div>
                     ) : (
                         <div className="py-2">
-                            <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            <div className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 Cartes
                             </div>
                             {results.map((result) => (
                                 <button
                                     key={result.id}
                                     onClick={() => handleSelect(result)}
-                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 flex flex-col gap-0.5"
+                                    className="w-full text-left px-4 py-2 hover:bg-accent flex flex-col gap-0.5"
                                 >
-                                    <span className="font-medium text-gray-700">{result.title}</span>
-                                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                                        dans <span className="font-medium text-gray-600">{result.list.title}</span>
-                                        sur <span className="font-medium text-gray-600">{result.list.board.title}</span>
+                                    <span className="font-medium text-foreground">{result.title}</span>
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                        dans <span className="font-medium text-foreground">{result.list.title}</span>
+                                        sur <span className="font-medium text-foreground">{result.list.board.title}</span>
                                     </span>
                                 </button>
                             ))}

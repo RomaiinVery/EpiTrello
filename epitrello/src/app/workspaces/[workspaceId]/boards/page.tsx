@@ -190,7 +190,7 @@ export default function BoardsByWorkspacePage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <Link href="/workspaces" className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors mb-2 inline-block">
+          <Link href="/workspaces" className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors mb-2 inline-block">
             ← Retour aux workspaces
           </Link>
           <div className="flex items-center gap-4 mt-2">
@@ -217,19 +217,19 @@ export default function BoardsByWorkspacePage() {
         {boards.map((b) => (
           <li
             key={b.id}
-            className="flex justify-between items-center p-2 border rounded-md hover:bg-gray-50 transition"
+            className="flex justify-between items-center p-2 border rounded-md hover:bg-muted transition"
           >
             <Link href={`/workspaces/${workspaceId}/boards/${b.id}`} className="flex flex-col flex-1 ml-2">
               <span className="font-semibold hover:underline">{b.title}</span>
               {b.description && (
-                <span className="text-gray-500 text-sm line-clamp-1">{b.description}</span>
+                <span className="text-muted-foreground text-sm line-clamp-1">{b.description}</span>
               )}
             </Link>
 
             {workspace?.currentUserRole && workspace.currentUserRole !== "VIEWER" && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="text-gray-400 hover:text-gray-700 text-xl">
+                  <button className="text-muted-foreground hover:text-foreground text-xl">
                     ⋯
                   </button>
                 </DropdownMenuTrigger>
@@ -257,7 +257,7 @@ export default function BoardsByWorkspacePage() {
         ))}
       </ul>
       {boards.length === 0 && (
-        <div className="flex items-center justify-center h-64 text-gray-500">
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
           Aucune board pour le moment
         </div>
       )}
@@ -304,14 +304,14 @@ export default function BoardsByWorkspacePage() {
               <input
                 type="checkbox"
                 id="linkGithub"
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
                 checked={linkGithub}
                 onChange={(e) => setLinkGithub(e.target.checked)}
                 disabled={!isGithubLinked}
               />
               <label
                 htmlFor="linkGithub"
-                className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${!isGithubLinked ? "text-gray-400" : "text-gray-700"}`}
+                className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${!isGithubLinked ? "text-muted-foreground" : "text-foreground"}`}
               >
                 Lier à un dépôt GitHub
               </label>
@@ -324,11 +324,11 @@ export default function BoardsByWorkspacePage() {
             )}
 
             {linkGithub && isGithubLinked && (
-              <div className="ml-6 space-y-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <div className="ml-6 space-y-3 p-3 bg-muted rounded-md border border-border">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Dépôt GitHub</label>
+                  <label className="text-xs font-medium text-muted-foreground">Dépôt GitHub</label>
                   {reposLoading ? (
-                    <div className="text-xs text-gray-400 py-2">Chargement des dépôts...</div>
+                    <div className="text-xs text-muted-foreground py-2">Chargement des dépôts...</div>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex gap-2">
