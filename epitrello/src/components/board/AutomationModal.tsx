@@ -123,7 +123,8 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite, cur
         try {
             const res = await fetch(`/api/boards/${boardId}/members`);
             if (res.ok) {
-                setMembers(await res.json());
+                const data = await res.json();
+                setMembers(data.members || []);
             }
         } catch (error) {
             console.error("Failed to load members", error);
