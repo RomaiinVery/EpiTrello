@@ -147,11 +147,11 @@ function AuthForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center text-5xl mb-4">📋</div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
           {variant === "LOGIN"
             ? "Connexion"
             : variant === "REGISTER"
@@ -159,20 +159,20 @@ function AuthForm() {
               : "Vérification email"}
         </h2>
         {variant === "VERIFY" && (
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
             Un code a été envoyé à <strong>{data.email}</strong>
           </p>
         )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
 
           <form className="space-y-6" onSubmit={handleSubmit}>
 
             {variant === "REGISTER" && (
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Nom complet
                 </label>
                 <div className="mt-1">
@@ -184,7 +184,7 @@ function AuthForm() {
                     disabled={isLoading}
                     value={data.name}
                     onChange={handleChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
               </div>
@@ -192,7 +192,7 @@ function AuthForm() {
 
             {variant === "VERIFY" ? (
               <div>
-                <label htmlFor="code" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Code de vérification (6 chiffres)
                 </label>
                 <div className="mt-1">
@@ -205,7 +205,7 @@ function AuthForm() {
                     disabled={isLoading}
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-center tracking-widest text-lg"
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-center tracking-widest text-lg"
                   />
                 </div>
               </div>
@@ -213,7 +213,7 @@ function AuthForm() {
               // Login/Register fields
               <>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Adresse email
                   </label>
                   <div className="mt-1">
@@ -226,16 +226,16 @@ function AuthForm() {
                       disabled={isLoading}
                       value={data.email}
                       onChange={handleChange}
-                      className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${errorMessage && errorMessage.toLowerCase().includes("email")
+                      className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${errorMessage && errorMessage.toLowerCase().includes("email")
                         ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                        : "border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
                         } `}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Mot de passe
                   </label>
                   <div className="mt-1">
@@ -248,14 +248,14 @@ function AuthForm() {
                       disabled={isLoading}
                       value={data.password}
                       onChange={handleChange}
-                      className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${errorMessage && errorMessage.toLowerCase().includes("mot de passe")
+                      className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${errorMessage && errorMessage.toLowerCase().includes("mot de passe")
                         ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                        : "border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
                         } `}
                     />
                   </div>
                   <div className="text-right mt-1">
-                    <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">
+                    <Link href="/auth/forgot-password" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
                       Mot de passe oublié ?
                     </Link>
                   </div>
@@ -266,7 +266,7 @@ function AuthForm() {
             {errorMessage && (
               <div
                 data-testid="error-message"
-                className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 p-3 rounded-md flex items-center gap-2 animate-pulse"
+                className="text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 rounded-md flex items-center gap-2 animate-pulse"
               >
                 <span>⚠️</span>
                 {errorMessage}
@@ -299,10 +299,10 @@ function AuthForm() {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-gray-300 dark:border-gray-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                   {variant === "LOGIN" ? "Nouveau ici ?" : variant === "REGISTER" ? "Déjà un compte ?" : "Erreur d'email ?"}
                 </span>
               </div>
@@ -311,7 +311,7 @@ function AuthForm() {
             <div className="mt-6">
               <button
                 onClick={toggleVariant}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 {variant === "LOGIN" ? "Créer un compte"
                   : variant === "REGISTER" ? "Se connecter"
@@ -329,7 +329,7 @@ function AuthForm() {
 export default function AuthPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full" />
       </div>
     }>

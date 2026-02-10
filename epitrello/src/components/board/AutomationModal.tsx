@@ -48,14 +48,18 @@ interface AutomationModalProps {
     boardId: string;
     lists: { id: string; title: string }[];
     onInvite?: () => void;
+    currentUserRole?: string;
 }
 
-export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: AutomationModalProps) {
+export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite, currentUserRole }: AutomationModalProps) {
     const [rules, setRules] = useState<AutomationRule[]>([]);
     const [labels, setLabels] = useState<Label[]>([]);
     const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(false);
     const [view, setView] = useState<"LIST" | "CREATE">("LIST");
+
+    // Check if user can edit automations (VIEWER cannot)
+    const canEdit = currentUserRole !== "VIEWER";
 
     // Management State
     const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
@@ -243,25 +247,27 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                     {view === "LIST" ? (
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-muted-foreground">
                                     Automations allow you to configure actions triggered by events on your board.
                                 </p>
-                                <Button onClick={() => { resetForm(); setView("CREATE"); }} size="sm">
-                                    <Plus className="w-4 h-4 mr-1" />
-                                    Create Rule
-                                </Button>
+                                {canEdit && (
+                                    <Button onClick={() => { resetForm(); setView("CREATE"); }} size="sm">
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Create Rule
+                                    </Button>
+                                )}
                             </div>
 
                             {loading ? (
-                                <div className="text-center py-10 text-gray-500">Loading...</div>
+                                <div className="text-center py-10 text-muted-foreground">Loading...</div>
                             ) : rules.length === 0 ? (
-                                <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed">
-                                    <p className="text-gray-500">No automations configured yet.</p>
+                                <div className="text-center py-10 bg-muted rounded-lg border border-dashed">
+                                    <p className="text-muted-foreground">No automations configured yet.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                                     {rules.map(rule => (
-                                        <div key={rule.id} className="relative p-3 bg-white border rounded-lg flex items-center justify-between shadow-sm group overflow-hidden">
+                                        <div key={rule.id} className="relative p-3 bg-card border border-border rounded-lg flex items-center justify-between shadow-sm group overflow-hidden">
                                             {ruleToDelete === rule.id ? (
                                                 <div className="absolute inset-0 bg-red-50 flex items-center justify-between px-4 z-10 animate-in fade-in zoom-in-95 duration-200">
                                                     <div className="flex items-center gap-2 text-red-600 font-medium">
@@ -269,7 +275,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                                         <span>Delete this rule?</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <Button size="sm" variant="ghost" className="h-7 text-gray-600 hover:text-gray-900" onClick={() => setRuleToDelete(null)}>Cancel</Button>
+                                                        <Button size="sm" variant="ghost" className="h-7" onClick={() => setRuleToDelete(null)}>Cancel</Button>
                                                         <Button size="sm" variant="destructive" className="h-7" onClick={() => handleDelete(rule.id)}>Delete</Button>
                                                     </div>
                                                 </div>
@@ -277,7 +283,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
 
                                             <div className="flex flex-col gap-1 text-sm flex-1">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
+                                                    <span className="font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded text-xs">
                                                         WHEN
                                                     </span>
                                                     <span>{getTriggerDescription(rule)}</span>
@@ -286,12 +292,12 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                                     </span>
                                                 </div>
                                                 <div className="flex items-start gap-2">
-                                                    <span className="font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs mt-0.5">
+                                                    <span className="font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded text-xs mt-0.5">
                                                         THEN
                                                     </span>
                                                     <div className="flex flex-col gap-1">
                                                         {rule.actions.map((action, idx) => (
-                                                            <div key={idx} className="bg-gray-50 px-2 py-0.5 rounded border text-gray-700">
+                                                            <div key={idx} className="bg-muted px-2 py-0.5 rounded border border-border text-foreground">
                                                                 {getActionDescription(action)}
                                                             </div>
                                                         ))}
@@ -299,14 +305,16 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity self-start mt-1">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600" onClick={() => startEdit(rule)}>
-                                                    <Pencil className="w-4 h-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-600" onClick={() => setRuleToDelete(rule.id)}>
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
+                                            {canEdit && (
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity self-start mt-1">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400" onClick={() => startEdit(rule)}>
+                                                        <Pencil className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600 dark:hover:text-red-400" onClick={() => setRuleToDelete(rule.id)}>
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -321,16 +329,16 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
 
                             <div className="flex-1 overflow-y-auto space-y-6 p-1">
                                 {/* TRIGGER SECTION */}
-                                <div className="space-y-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
-                                    <h4 className="font-semibold text-blue-900 text-sm flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-blue-200 flex items-center justify-center text-xs font-bold text-blue-700">1</div>
+                                <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/30">
+                                    <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-blue-200 dark:bg-blue-800/50 flex items-center justify-center text-xs font-bold text-blue-700 dark:text-blue-300">1</div>
                                         Trigger
                                     </h4>
                                     <div className="pl-8 space-y-3">
                                         <div className="flex items-center gap-3">
-                                            <span className="text-sm font-medium w-16 text-gray-600">Event</span>
+                                            <span className="text-sm font-medium w-16 text-muted-foreground">Event</span>
                                             <select
-                                                className="flex-1 p-2 border rounded bg-white shadow-sm text-sm"
+                                                className="flex-1 p-2 border border-border rounded bg-background shadow-sm text-sm text-foreground"
                                                 value={triggerType}
                                                 onChange={(e) => setTriggerType(e.target.value)}
                                                 disabled={!!editingRule}
@@ -341,9 +349,9 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                         </div>
 
                                         <div className="flex items-center gap-3">
-                                            <span className="text-sm font-medium w-16 text-gray-600">List</span>
+                                            <span className="text-sm font-medium w-16 text-muted-foreground">List</span>
                                             <select
-                                                className="flex-1 p-2 border rounded bg-white shadow-sm text-sm"
+                                                className="flex-1 p-2 border border-border rounded bg-background shadow-sm text-sm text-foreground"
                                                 value={triggerVal}
                                                 onChange={(e) => setTriggerVal(e.target.value)}
                                             >
@@ -357,27 +365,27 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                 </div>
 
                                 {/* ACTIONS SECTION */}
-                                <div className="space-y-4 p-4 bg-green-50/50 rounded-lg border border-green-100">
-                                    <h4 className="font-semibold text-green-900 text-sm flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-green-200 flex items-center justify-center text-xs font-bold text-green-700">2</div>
+                                <div className="space-y-4 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/30">
+                                    <h4 className="font-semibold text-green-900 dark:text-green-300 text-sm flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-green-200 dark:bg-green-800/50 flex items-center justify-center text-xs font-bold text-green-700 dark:text-green-300">2</div>
                                         Actions
                                     </h4>
 
                                     <div className="pl-8 space-y-4">
                                         {actions.length === 0 ? (
-                                            <p className="text-sm text-gray-500 italic">No actions added yet.</p>
+                                            <p className="text-sm text-muted-foreground italic">No actions added yet.</p>
                                         ) : (
                                             <div className="space-y-3">
                                                 {actions.map((action, index) => (
-                                                    <div key={index} className="flex items-center gap-2 bg-white p-2 rounded border shadow-sm">
-                                                        <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-mono font-bold">
+                                                    <div key={index} className="flex items-center gap-2 bg-background p-2 rounded border border-border shadow-sm">
+                                                        <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded text-xs font-mono font-bold">
                                                             {index + 1}
                                                         </span>
                                                         <span className="text-sm flex-1">{getActionDescription(action)}</span>
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-6 w-6 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                                            className="h-6 w-6 text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
                                                             onClick={() => {
                                                                 const newActions = [...actions];
                                                                 newActions.splice(index, 1);
@@ -392,11 +400,11 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                         )}
 
                                         <div className="pt-2 border-t mt-4">
-                                            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Add Action</p>
-                                            <div className="space-y-3 p-3 bg-white rounded border border-dashed">
+                                            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Add Action</p>
+                                            <div className="space-y-3 p-3 bg-background rounded border border-dashed border-border">
                                                 <div className="flex items-center gap-3">
                                                     <select
-                                                        className="flex-1 p-2 border rounded bg-white shadow-sm text-sm"
+                                                        className="flex-1 p-2 border border-border rounded bg-background shadow-sm text-sm text-foreground"
                                                         value={newActionType}
                                                         onChange={(e) => {
                                                             setNewActionType(e.target.value);
@@ -416,7 +424,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
 
                                                 {(newActionType === "ADD_LABEL" || newActionType === "REMOVE_LABEL") && (
                                                     <select
-                                                        className="w-full p-2 border rounded bg-white shadow-sm text-sm"
+                                                        className="w-full p-2 border border-border rounded bg-background shadow-sm text-sm text-foreground"
                                                         value={newActionVal}
                                                         onChange={(e) => setNewActionVal(e.target.value)}
                                                     >
@@ -431,7 +439,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
 
                                                 {newActionType === "MOVE_CARD" && (
                                                     <select
-                                                        className="w-full p-2 border rounded bg-white shadow-sm text-sm"
+                                                        className="w-full p-2 border border-border rounded bg-background shadow-sm text-sm text-foreground"
                                                         value={newActionVal}
                                                         onChange={(e) => setNewActionVal(e.target.value)}
                                                     >
@@ -445,7 +453,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                                 {newActionType === "ASSIGN_MEMBER" && (
                                                     <div className="space-y-2">
                                                         <select
-                                                            className="w-full p-2 border rounded bg-white shadow-sm text-sm"
+                                                            className="w-full p-2 border border-border rounded bg-background shadow-sm text-sm text-foreground"
                                                             value={newActionVal}
                                                             onChange={(e) => setNewActionVal(e.target.value)}
                                                         >
@@ -455,7 +463,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                                             ))}
                                                         </select>
                                                         {members.length === 0 && (
-                                                            <div className="text-xs text-gray-500 flex items-center gap-2">
+                                                            <div className="text-xs text-muted-foreground flex items-center gap-2">
                                                                 No members found.
                                                                 {onInvite && (
                                                                     <Button variant="link" className="p-0 h-auto font-normal text-blue-600 text-xs" onClick={onInvite}>
@@ -471,7 +479,7 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite }: A
                                                 {newActionType === "SET_DUE_DATE" && (
                                                     <div className="flex gap-2">
                                                         <select
-                                                            className="w-[140px] p-2 border rounded bg-white shadow-sm text-sm"
+                                                            className="w-[140px] p-2 border border-border rounded bg-background shadow-sm text-sm text-foreground"
                                                             value={newActionVal}
                                                             onChange={(e) => {
                                                                 setNewActionVal(e.target.value);
