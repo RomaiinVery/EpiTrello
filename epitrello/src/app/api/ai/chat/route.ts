@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { createList, createCard, addLabel, setDueDate, assignMember, getBoardMembers, setCardDescription, addCardComment, moveCard, deleteCard, archiveCard, getBoardData, getArchivedCards } from "@/app/lib/ai-actions";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -177,6 +178,14 @@ export async function POST(req: Request) {
 
         if (!boardId) {
             return NextResponse.json({ error: "Board ID is required" }, { status: 400 });
+        }
+
+        // Check permissions: user must have EDIT permission to use AI actions
+        const { allowed, role } = await checkBoardPermission(userId, boardId, Permission.EDIT);
+        if (!allowed) {
+            return NextResponse.json({
+                error: getPermissionErrorMessage(role, Permission.EDIT)
+            }, { status: 403 });
         }
 
         // Format history for Gemini (excluding the last user message which is the prompt)
