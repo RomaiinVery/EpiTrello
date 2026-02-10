@@ -91,7 +91,8 @@ Created a comprehensive file security utility (`/src/lib/file-security.ts`) that
 #### Allowed File Types
 
 **Images:**
-- JPEG, JPG, PNG, GIF, WebP, SVG, BMP
+- JPEG, JPG, PNG, GIF, WebP, BMP
+- ~~SVG~~ ⚠️ **REMOVED** - See Security Hardening section below
 
 **Documents:**
 - PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX
@@ -100,7 +101,7 @@ Created a comprehensive file security utility (`/src/lib/file-security.ts`) that
 - TXT, CSV, MD, JSON
 
 **Archives (with detection):**
-- ZIP, RAR, 7Z, GZ
+- ~~ZIP, RAR, 7Z, GZ~~ ⚠️ **REMOVED** - See Security Hardening section below
 
 ## Permission Hierarchy
 
@@ -219,16 +220,152 @@ const validation = await validateCoverImage(file);
 - ℹ️ All permission checks are backward compatible with existing board member roles
 - ℹ️ File security is opt-in via function parameters - default settings are secure
 
+## Security Hardening Update (February 10, 2026)
+
+### Additional File Type Restrictions
+
+After initial implementation, additional security hardening was applied to further reduce attack surface:
+
+#### Removed File Types
+
+**1. SVG Files Removed (`image/svg+xml`)**
+
+**Rationale:**
+- SVG files are XML-based and can contain embedded JavaScript
+- Despite sanitization, SVG remains a complex format with multiple XSS vectors
+- Attack examples:
+  ```xml
+  <svg onload="alert('XSS')">
+  <svg><script>malicious code</script></svg>
+  <svg><use href="javascript:alert(1)"/>
+  ```
+- Even with comprehensive sanitization, new XSS techniques are regularly discovered
+- **Risk Level:** HIGH - Can execute arbitrary JavaScript in user's browser
+
+**Mitigation:**
+- Users requiring vector graphics should convert to PNG/JPG before upload
+- Alternative: Implement server-side SVG-to-raster conversion
+
+**2. Archive Files Removed (`.zip`, `.rar`, `.7z`, `.gz`)**
+
+**Rationale:**
+- Archives can contain executable files that bypass type restrictions
+- Zip bomb detection is heuristic-based and not 100% reliable
+- Attack examples:
+  - Nested archives expanding to terabytes (zip bombs)
+  - Archive containing malware disguised as documents
+  - Archive with `.exe` or `.sh` files that could be extracted elsewhere
+- Users may download and extract archives on their local systems
+- **Risk Level:** MEDIUM-HIGH - Potential for malware distribution
+
+**Mitigation:**
+- Users should share documents directly, not as archives
+- Alternative: Implement server-side archive extraction with content scanning
+- Alternative: Integrate with antivirus service before accepting archives
+
+#### Updated Allowed File Types
+
+**Images (Raster Only):**
+```typescript
+'image/jpeg'   // .jpg, .jpeg
+'image/png'    // .png
+'image/gif'    // .gif
+'image/webp'   // .webp
+'image/bmp'    // .bmp
+```
+
+**Documents:**
+```typescript
+'application/pdf'
+'application/msword'                    // .doc
+'application/vnd.openxmlformats-officedocument.wordprocessingml.document' // .docx
+'application/vnd.ms-excel'             // .xls
+'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'      // .xlsx
+'application/vnd.ms-powerpoint'        // .ppt
+'application/vnd.openxmlformats-officedocument.presentationml.presentation' // .pptx
+```
+
+**Text:**
+```typescript
+'text/plain'       // .txt
+'text/csv'         // .csv
+'text/markdown'    // .md
+'application/json' // .json
+```
+
+#### Defense in Depth Strategy
+
+Our file security now implements multiple layers:
+
+1. **Whitelist Approach** - Only explicitly allowed types accepted
+2. **Extension Validation** - File extension must match whitelist
+3. **MIME Type Validation** - Content-Type header must match whitelist
+4. **Magic Number Verification** - File signature must match declared type
+5. **Size Limits** - 10MB for attachments, 5MB for covers
+6. **Filename Sanitization** - Removes path traversal and dangerous characters
+7. **Image Integrity Check** - Validates image files can be decoded
+
+#### Remaining Risks & Recommendations
+
+**PDF Files (Still Allowed - Medium Risk):**
+- PDFs can contain JavaScript and embedded files
+- **Recommendation:** Consider integrating PDF sanitization library
+- **Recommendation:** Serve PDFs with `Content-Disposition: attachment` header
+- **Recommendation:** Add virus scanning (ClamAV, VirusTotal API)
+
+**Office Documents (Still Allowed - Medium Risk):**
+- DOCX/XLSX/PPTX are ZIP-based and can contain macros
+- **Recommendation:** Add macro detection and removal
+- **Recommendation:** Consider converting to PDF server-side
+- **Recommendation:** Add virus scanning integration
+
+**Content-Type Spoofing (Mitigated):**
+- Magic number verification prevents most spoofing
+- **Current Protection:** ✅ File signature validation
+- **Additional Recommendation:** Use `X-Content-Type-Options: nosniff` header when serving
+
+#### Testing Checklist for New Restrictions
+
+**SVG Rejection:**
+```bash
+# Should be REJECTED
+curl -X POST /api/upload \
+  -F "file=@image.svg" \
+  -H "Content-Type: image/svg+xml"
+# Expected: 400 Bad Request - "File type 'image/svg+xml' is not allowed"
+```
+
+**Archive Rejection:**
+```bash
+# Should be REJECTED
+curl -X POST /api/upload \
+  -F "file=@archive.zip" \
+  -H "Content-Type: application/zip"
+# Expected: 400 Bad Request - "File type 'application/zip' is not allowed"
+```
+
+**Allowed Types Still Work:**
+```bash
+# Should SUCCEED
+curl -X POST /api/upload \
+  -F "file=@image.png" \
+  -H "Content-Type: image/png"
+# Expected: 200 OK
+```
+
 ## Next Steps
 
-1. Deploy to staging environment
-2. Run comprehensive permission tests
-3. Test file upload security with various file types
-4. Monitor logs for validation warnings
-5. Update frontend to show appropriate error messages
-6. Consider adding rate limiting for file uploads
-7. Consider adding virus scanning integration (e.g., ClamAV)
-8. Document new permission requirements for API consumers
+1. ✅ **COMPLETED:** Remove SVG and archive support from file-security.ts
+2. Deploy to staging environment
+3. Run comprehensive permission tests
+4. Test file upload security with various file types
+5. Monitor logs for validation warnings
+6. Update frontend to show appropriate error messages for new restrictions
+7. Update user documentation about allowed file types
+8. Consider adding rate limiting for file uploads
+9. **RECOMMENDED:** Add virus scanning integration (e.g., ClamAV, VirusTotal)
+10. **RECOMMENDED:** Add Content-Security-Policy headers for uploaded files
+11. Document new permission requirements for API consumers
 
 ## Security Compliance
 
