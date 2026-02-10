@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../../../../auth/[...nextauth]/route";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -27,20 +28,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ boar
       return NextResponse.json({ error: "Checklist title is required" }, { status: 400 });
     }
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check EDIT permission (VIEWERs cannot update checklists)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
     }
 
     const checklist = await prisma.checklist.findUnique({
@@ -101,20 +94,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ b
 
     const { cardId, boardId, checklistId } = await params;
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check DELETE permission (only OWNER and ADMIN can delete)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.DELETE);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.DELETE)
+      }, { status: 403 });
     }
 
     const checklist = await prisma.checklist.findUnique({
