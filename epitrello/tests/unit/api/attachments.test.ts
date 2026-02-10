@@ -165,8 +165,8 @@ describe('Attachments API Routes', () => {
       const response = await POST(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -190,7 +190,7 @@ describe('Attachments API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if card not found', async () => {

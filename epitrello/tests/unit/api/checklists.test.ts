@@ -146,8 +146,8 @@ describe('Checklists API Routes', () => {
       const response = await getChecklists(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not board owner or member', async () => {
@@ -155,6 +155,9 @@ describe('Checklists API Routes', () => {
         ...mockBoard,
         userId: 'other-user',
         members: [],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -167,7 +170,7 @@ describe('Checklists API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if card not found', async () => {
@@ -260,7 +263,10 @@ describe('Checklists API Routes', () => {
       const boardWithMember = {
         ...mockBoard,
         userId: 'other-user',
-        members: [{ id: 'user-1' }],
+        members: [{ role: 'ADMIN' }],
+        workspace: {
+          members: []
+        },
       };
       const mockChecklists = [mockChecklist];
 
@@ -442,8 +448,8 @@ describe('Checklists API Routes', () => {
       const response = await createChecklist(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not board owner or member', async () => {
@@ -467,7 +473,7 @@ describe('Checklists API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if card not found', async () => {
@@ -577,7 +583,10 @@ describe('Checklists API Routes', () => {
       const boardWithMember = {
         ...mockBoard,
         userId: 'other-user',
-        members: [{ id: 'user-1' }],
+        members: [{ role: 'ADMIN' }],
+        workspace: {
+          members: []
+        },
       };
       const newChecklist = { ...mockChecklist, items: [] };
 
