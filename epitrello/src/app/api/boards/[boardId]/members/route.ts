@@ -26,11 +26,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ boardId:
         }
       },
       members: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          profileImage: true
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              profileImage: true
+            }
+          }
         }
       }
     }
@@ -39,15 +43,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ boardId:
   if (!board) return NextResponse.json({ error: "Board not found" }, { status: 404 });
 
   // Check if user has access to this board
-  const hasAccess = board.userId === currentUser.id || board.members.some(m => m.id === currentUser.id);
+  const hasAccess = board.userId === currentUser.id || board.members.some(m => m.userId === currentUser.id);
   if (!hasAccess) {
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
 
   // Combine owner and members, marking the owner
   const allMembers = [
-    { ...board.user, isOwner: true },
-    ...board.members.map(member => ({ ...member, isOwner: false }))
+    { ...board.user, isOwner: true, role: "OWNER" },
+    ...board.members.map(member => ({
+      id: member.user.id,
+      name: member.user.name,
+      email: member.user.email,
+      profileImage: member.user.profileImage,
+      isOwner: false,
+      role: member.role
+    }))
   ];
 
   return NextResponse.json({ members: allMembers });

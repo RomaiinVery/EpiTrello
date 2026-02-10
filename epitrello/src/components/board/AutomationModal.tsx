@@ -61,6 +61,9 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite, cur
     // Check if user can edit automations (VIEWER cannot)
     const canEdit = currentUserRole !== "VIEWER";
 
+    // Check if user can delete automations (only OWNER and ADMIN)
+    const canDelete = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
+
     // Management State
     const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
     const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
@@ -310,9 +313,11 @@ export function AutomationModal({ isOpen, onClose, boardId, lists, onInvite, cur
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400" onClick={() => startEdit(rule)}>
                                                         <Pencil className="w-4 h-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600 dark:hover:text-red-400" onClick={() => setRuleToDelete(rule.id)}>
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
+                                                    {canDelete && (
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600 dark:hover:text-red-400" onClick={() => setRuleToDelete(rule.id)}>
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
