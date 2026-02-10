@@ -188,8 +188,8 @@ export function CardActions({
             {/* Dates Section */}
             <div className="border-t pt-4">
                 <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <h3 className="text-sm font-semibold text-gray-700">Dates</h3>
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold text-foreground">Dates</h3>
                 </div>
                 <div className="mb-2">
                     <DropdownMenu>
@@ -260,8 +260,8 @@ export function CardActions({
             {/* Assigned Members Section */}
             <div className="border-t pt-4">
                 <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-gray-500" />
-                    <h3 className="text-sm font-semibold text-gray-700">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold text-foreground">
                         Membres assignés
                     </h3>
                 </div>
@@ -289,13 +289,13 @@ export function CardActions({
                                                 : member.email.charAt(0).toUpperCase()}
                                         </div>
                                     )}
-                                    <span className="text-sm text-gray-700">
+                                    <span className="text-sm text-foreground">
                                         {member.name || member.email}
                                     </span>
                                     {!readOnly &&
                                         <button
                                             onClick={() => handleUnassignMember(member.id)}
-                                            className="ml-1 text-gray-400 hover:text-red-600 transition-colors"
+                                            className="ml-1 text-muted-foreground hover:text-red-600 transition-colors"
                                             aria-label="Retirer le membre"
                                         >
                                             <X className="w-3 h-3" />
@@ -305,7 +305,7 @@ export function CardActions({
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-400 italic">
+                        <p className="text-sm text-muted-foreground italic">
                             Aucun membre assigné
                         </p>
                     )}
@@ -316,7 +316,7 @@ export function CardActions({
                                 if (e.target.value) handleAssignMember(e.target.value);
                             }}
                             disabled={isAssigningMember || readOnly}
-                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="w-full border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                         >
                             <option value="">Assigner un membre...</option>
                             {boardMembers

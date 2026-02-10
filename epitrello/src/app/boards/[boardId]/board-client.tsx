@@ -81,7 +81,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
       <div
         ref={setNodeRef}
         style={style}
-        className="bg-gray-200 rounded shadow p-2 mb-2 h-24 opacity-50"
+        className="bg-secondary rounded shadow p-2 mb-2 h-24 opacity-50"
       />
     );
   }
@@ -91,7 +91,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`bg-white rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden relative ${card.archived ? "opacity-60 grayscale bg-gray-50" : ""}`}
+      className={`bg-card rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden relative ${card.archived ? "opacity-60 grayscale bg-muted" : ""}`}
       onClick={(e) => {
         if (!isDragging && !(e.target as HTMLElement).closest('[role="menuitem"]')) {
           onClick(card.listId, card.id);
@@ -99,7 +99,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
       }}
     >
       {card.archived && (
-        <div className="absolute top-0 right-0 bg-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-bl z-10">
+        <div className="absolute top-0 right-0 bg-secondary text-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-bl z-10">
           ARCHIVED
         </div>
       )}
@@ -116,7 +116,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
       <div className="p-2">
         <div className="flex justify-between items-center mb-2">
           <h3
-            className="font-semibold text-gray-700 flex-1"
+            className="font-semibold text-foreground flex-1"
             {...listeners}
           >
             {card.title}
@@ -125,7 +125,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                  className="text-muted-foreground hover:text-foreground focus:outline-none"
                   aria-label="Menu"
                   type="button"
                   onClick={(e) => e.stopPropagation()}
@@ -151,7 +151,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
           )}
         </div>
         {card.content && (
-          <p className="text-gray-600 text-sm line-clamp-2">{card.content}</p>
+          <p className="text-foreground text-sm line-clamp-2">{card.content}</p>
         )}
         {card.labels && card.labels.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
@@ -177,7 +177,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
                 ? "bg-red-100 text-red-700"
                 : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
                   ? "bg-yellow-100 text-yellow-700"
-                  : "bg-gray-100 text-gray-600"
+                  : "bg-muted text-foreground"
               } `}
             title={card.isDone ? "Terminée" : "Date d'échéance"}
           >
@@ -193,7 +193,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="mt-2 ml-1 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            className="mt-2 ml-1 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 bg-muted text-foreground hover:bg-secondary transition-colors"
             title="Voir l'issue GitHub"
           >
             <Github className="w-3 h-3" />
@@ -234,7 +234,7 @@ function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRol
               if (totalCount === 0) return null;
 
               return (
-                <div key={checklist.id} className="flex items-center gap-2 text-xs text-gray-600">
+                <div key={checklist.id} className="flex items-center gap-2 text-xs text-foreground">
                   <CheckSquare className="w-3 h-3" />
                   <span className="flex-1">{checklist.title}</span>
                   <span className="font-medium">
@@ -299,7 +299,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
       <div
         ref={setNodeRef}
         style={style}
-        className="w-64 min-w-[16rem] bg-gray-200 rounded-lg p-3 shadow-sm h-full opacity-50"
+        className="w-64 min-w-[16rem] bg-secondary rounded-lg p-3 shadow-sm h-full opacity-50"
       />
     );
   }
@@ -308,15 +308,15 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
     <div
       ref={setNodeRef}
       style={style}
-      className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-sm relative flex flex-col max-h-[calc(100vh-12rem)]"
+      className="w-64 min-w-[16rem] bg-muted rounded-lg p-3 shadow-sm relative flex flex-col max-h-[calc(100vh-12rem)]"
     >
       <div {...attributes} {...listeners} className={`flex justify-between items-center mb-2 ${currentUserRole === "VIEWER" ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}>
-        <h2 className="font-semibold text-gray-800">{list.title}</h2>
+        <h2 className="font-semibold text-foreground">{list.title}</h2>
         {currentUserRole !== "VIEWER" && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                className="text-muted-foreground hover:text-foreground focus:outline-none"
                 aria-label="Menu"
                 type="button"
               >
@@ -350,7 +350,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
               />
             ))
           ) : (
-            <p className="text-sm text-gray-500 italic mb-2">Aucune carte</p>
+            <p className="text-sm text-muted-foreground italic mb-2">Aucune carte</p>
           )}
         </SortableContext>
       </div>
@@ -360,7 +360,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
           if (currentUserRole === "VIEWER") return;
           onAddCard(list)
         }}
-        className={`mt-auto flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 transition-colors py-1 ${currentUserRole === "VIEWER" ? "opacity-50 cursor-not-allowed" : "hover:text-gray-700 hover:border-gray-400"}`}
+        className={`mt-auto flex items-center justify-center w-full border-2 border-dashed border-border rounded-lg text-muted-foreground transition-colors py-1 ${currentUserRole === "VIEWER" ? "opacity-50 cursor-not-allowed" : "hover:text-foreground hover:border-border"}`}
         type="button"
         disabled={currentUserRole === "VIEWER"}
       >
@@ -1203,13 +1203,13 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       <div className="p-6 h-full flex flex-col">
         <Link
           href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
-          className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
+          className="text-muted-foreground hover:text-foreground mb-4 inline-block text-sm font-medium transition-colors"
         >
           ← Retour aux boards
         </Link>
         <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
         {board.description && (
-          <p className="text-gray-600 mb-4">{board.description}</p>
+          <p className="text-foreground mb-4">{board.description}</p>
         )}
         <hr className="my-4" />
         <div className="flex-1">
@@ -1223,14 +1223,14 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       <div className="flex items-center justify-between mb-4">
         <Link
           href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
-          className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
+          className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
         >
           ← Retour aux boards
         </Link>
         {currentUserRole === "OWNER" && (
           <button
             onClick={() => setShowSettingsModal(true)}
-            className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-black/5 transition-colors"
+            className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-black/5 transition-colors"
             title="Paramètres"
           >
             <Settings className="w-5 h-5" />
@@ -1253,7 +1253,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
             />
           </div>
           {board.description && (
-            <p className="text-gray-600 mb-4">{board.description}</p>
+            <p className="text-foreground mb-4">{board.description}</p>
           )}
         </div>
         <div>
@@ -1268,16 +1268,16 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
             </div>
           </div>
           <div className="flex gap-2">
-            <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+            <div className="bg-muted p-1 rounded-lg flex items-center">
               <button
                 onClick={() => setViewMode("kanban")}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "kanban" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Kanban
               </button>
               <button
                 onClick={() => setViewMode("gantt")}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "gantt" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "gantt" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Gantt
               </button>
@@ -1285,7 +1285,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
             <button
               onClick={() => setShowAutomationModal(true)}
-              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ml-2"
+              className="bg-card border border-border hover:bg-muted text-foreground px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ml-2"
             >
               <Zap className="w-4 h-4 text-yellow-500 fill-current" />
               Automations
@@ -1293,7 +1293,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
             <button
               onClick={() => setShowAnalyticsModal(true)}
-              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ml-2"
+              className="bg-card border border-border hover:bg-muted text-foreground px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ml-2"
             >
               <Activity className="w-4 h-4 text-blue-500" />
               Analytics
@@ -1341,7 +1341,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
                 {currentUserRole !== "VIEWER" && (
                   <button
                     onClick={handleAddListClick}
-                    className="w-64 min-w-[16rem] h-12 bg-gray-200/50 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-medium transition-colors"
+                    className="w-64 min-w-[16rem] h-12 bg-secondary/50 hover:bg-secondary rounded-lg flex items-center justify-center text-foreground font-medium transition-colors"
                     type="button"
                   >
                     + Ajouter une liste
@@ -1353,15 +1353,15 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
             {isMounted ? createPortal(
               <DragOverlay>
                 {activeList && (
-                  <div className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
-                    <h2 className="font-semibold text-gray-800">{activeList.title}</h2>
+                  <div className="w-64 min-w-[16rem] bg-muted rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
+                    <h2 className="font-semibold text-foreground">{activeList.title}</h2>
                   </div>
                 )}
                 {activeCard && (
-                  <div className="bg-white rounded shadow p-2 mb-2 w-64 opacity-90">
-                    <h3 className="font-semibold text-gray-700">{activeCard.title}</h3>
+                  <div className="bg-card rounded shadow p-2 mb-2 w-64 opacity-90">
+                    <h3 className="font-semibold text-foreground">{activeCard.title}</h3>
                     {activeCard.content && (
-                      <p className="text-gray-600 text-sm">{activeCard.content}</p>
+                      <p className="text-foreground text-sm">{activeCard.content}</p>
                     )}
                   </div>
                 )}
@@ -1378,11 +1378,11 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       {
         showDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
               <h3 className="text-lg font-semibold mb-3">Ajouter une liste</h3>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Titre de la liste"
                 value={newListTitle}
                 onChange={(e) => setNewListTitle(e.target.value)}
@@ -1397,7 +1397,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               )}
               <div className="flex justify-end gap-2 mt-2">
                 <button
-                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
                   onClick={handleDialogCancel}
                   disabled={addingList}
                   type="button"
@@ -1421,11 +1421,11 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       {
         showRenameDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
               <h3 className="text-lg font-semibold mb-3">Renommer la liste</h3>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Nouveau titre"
                 value={renameTitle}
                 onChange={(e) => setRenameTitle(e.target.value)}
@@ -1440,7 +1440,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               )}
               <div className="flex justify-end gap-2 mt-2">
                 <button
-                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
                   onClick={handleRenameCancel}
                   disabled={renaming}
                   type="button"
@@ -1464,7 +1464,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       {
         showDeleteDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
               <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
               <p className="mb-4">
                 Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
@@ -1474,7 +1474,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               )}
               <div className="flex justify-end gap-2 mt-2">
                 <button
-                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
                   onClick={handleDeleteCancel}
                   disabled={deleting}
                   type="button"
@@ -1498,11 +1498,11 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       {
         showAddCardDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
               <h3 className="text-lg font-semibold mb-3">Ajouter une carte</h3>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Titre de la carte"
                 value={cardTitle}
                 onChange={(e) => setCardTitle(e.target.value)}
@@ -1513,7 +1513,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
                 }}
               />
               <textarea
-                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
                 placeholder="Contenu (optionnel)"
                 value={cardContent}
                 onChange={(e) => setCardContent(e.target.value)}
@@ -1525,7 +1525,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               )}
               <div className="flex justify-end gap-2 mt-2">
                 <button
-                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
                   onClick={handleAddCardCancel}
                   disabled={addingCard}
                   type="button"
@@ -1549,11 +1549,11 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       {
         showRenameCardDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
               <h3 className="text-lg font-semibold mb-3">Renommer la carte</h3>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Nouveau titre"
                 value={renameCardTitle}
                 onChange={(e) => setRenameCardTitle(e.target.value)}
@@ -1568,7 +1568,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               )}
               <div className="flex justify-end gap-2 mt-2">
                 <button
-                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
                   onClick={handleRenameCardCancel}
                   disabled={renamingCard}
                   type="button"
@@ -1592,7 +1592,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       {
         showDeleteCardDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
               <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
               <p className="mb-4">
                 Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
@@ -1602,7 +1602,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               )}
               <div className="flex justify-end gap-2 mt-2">
                 <button
-                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
                   onClick={handleDeleteCardCancel}
                   disabled={deletingCard}
                   type="button"

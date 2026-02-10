@@ -121,8 +121,8 @@ export function CoverImage({
   return (
     <div className="border-t pt-4">
       <div className="flex items-center gap-2 mb-2">
-        <ImageIcon className="w-4 h-4 text-gray-500" />
-        <h3 className="text-sm font-semibold text-gray-700">
+        <ImageIcon className="w-4 h-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold text-foreground">
           Image de couverture
         </h3>
       </div>
@@ -162,9 +162,9 @@ export function CoverImage({
             </div>
           </div>
         ) : (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-500 mb-3">
+          <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+            <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">
               Aucune image de couverture
             </p>
             <Button

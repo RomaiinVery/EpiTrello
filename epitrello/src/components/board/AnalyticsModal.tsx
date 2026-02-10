@@ -109,7 +109,7 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
 
                     <div className="flex items-center gap-2">
                         <select
-                            className="text-sm border rounded-md px-2 py-1 bg-white"
+                            className="text-sm border rounded-md px-2 py-1 bg-card"
                             value={dateRange}
                             onChange={(e) => setDateRange(e.target.value as "7d" | "30d" | "90d" | "all")}
                         >
@@ -131,7 +131,7 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
 
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center">
-                        <div className="text-gray-500 animate-pulse">Loading data...</div>
+                        <div className="text-muted-foreground animate-pulse">Loading data...</div>
                     </div>
                 ) : !data ? (
                     <div className="flex-1 flex items-center justify-center">
@@ -161,7 +161,7 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
                                     <div className="text-xs text-muted-foreground">
                                         {completionRate}% completion rate
                                     </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-1 mt-2">
+                                    <div className="w-full bg-secondary rounded-full h-1 mt-2">
                                         <div
                                             className="bg-green-500 h-1 rounded-full transition-all duration-500"
                                             style={{ width: `${completionRate}%` }}
@@ -197,12 +197,12 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-semibold">Visual Breakdown</h3>
-                                <div className="flex bg-gray-100 p-1 rounded-lg">
+                                <div className="flex bg-muted p-1 rounded-lg">
                                     <button
                                         onClick={() => setChartView("EVOLUTION")}
                                         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${chartView === "EVOLUTION"
-                                            ? "bg-white text-gray-900 shadow-sm"
-                                            : "text-gray-500 hover:text-gray-900"
+                                            ? "bg-card text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
                                             }`}
                                     >
                                         <TrendingUp className="w-4 h-4" />
@@ -211,8 +211,8 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
                                     <button
                                         onClick={() => setChartView("LIST")}
                                         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${chartView === "LIST"
-                                            ? "bg-white text-gray-900 shadow-sm"
-                                            : "text-gray-500 hover:text-gray-900"
+                                            ? "bg-card text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
                                             }`}
                                     >
                                         <BarChartIcon className="w-4 h-4" />
@@ -221,8 +221,8 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
                                     <button
                                         onClick={() => setChartView("MEMBER")}
                                         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${chartView === "MEMBER"
-                                            ? "bg-white text-gray-900 shadow-sm"
-                                            : "text-gray-500 hover:text-gray-900"
+                                            ? "bg-card text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
                                             }`}
                                     >
                                         <PieChartIcon className="w-4 h-4" />
@@ -231,7 +231,7 @@ export function AnalyticsModal({ isOpen, onClose, boardId }: AnalyticsModalProps
                                 </div>
                             </div>
 
-                            <div className="h-[350px] w-full bg-white rounded-lg border p-4">
+                            <div className="h-[350px] w-full bg-card rounded-lg border p-4">
                                 <ResponsiveContainer width="100%" height="100%">
                                     {chartView === "LIST" ? (
                                         <BarChart data={data.listDistribution}>

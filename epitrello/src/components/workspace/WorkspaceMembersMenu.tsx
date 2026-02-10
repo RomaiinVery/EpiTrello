@@ -104,7 +104,7 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
 
                 {loading ? (
                     <div className="flex justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
                 ) : error ? (
                     <div className="text-red-500 text-center py-4 text-sm">{error}</div>
@@ -122,11 +122,11 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
                                         )}
                                     </div>
                                     <div>
-                                        <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                        <div className="text-sm font-medium text-foreground flex items-center gap-1">
                                             {owner.name || "Utilisateur"}
                                             <Shield className="h-3 w-3 text-yellow-500" fill="currentColor" />
                                         </div>
-                                        <div className="text-xs text-gray-500">{owner.email}</div>
+                                        <div className="text-xs text-muted-foreground">{owner.email}</div>
                                     </div>
                                 </div>
                                 <div className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
@@ -135,14 +135,14 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
                             </div>
                         )}
 
-                        <div className="border-t border-gray-100 my-2"></div>
+                        <div className="border-t border-border my-2"></div>
 
                         {/* Members List */}
                         {members.length === 0 ? (
-                            <p className="text-center text-sm text-gray-500 py-2">Aucun autre membre.</p>
+                            <p className="text-center text-sm text-muted-foreground py-2">Aucun autre membre.</p>
                         ) : (
                             members.map((member) => (
-                                <div key={member.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors min-h-[56px]">
+                                <div key={member.id} className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors min-h-[56px]">
                                     {confirmDeleteId === member.id ? (
                                         <div className="flex items-center justify-between w-full bg-red-50 p-2 -m-2 rounded-lg animate-in fade-in zoom-in-95 duration-200">
                                             <div className="text-sm text-red-700 font-medium">
@@ -172,22 +172,22 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
                                     ) : (
                                         <>
                                             <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+                                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-gray-200">
                                                     {member.user.profileImage ? (
                                                         <Image src={member.user.profileImage} alt={member.user.name || ""} width={32} height={32} unoptimized className="h-full w-full object-cover" />
                                                     ) : (
-                                                        <span className="text-xs font-bold text-gray-600">{(member.user.name || member.user.email)[0].toUpperCase()}</span>
+                                                        <span className="text-xs font-bold text-foreground">{(member.user.name || member.user.email)[0].toUpperCase()}</span>
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <div className="text-sm font-medium text-gray-900">{member.user.name || "Utilisateur"}</div>
-                                                    <div className="text-xs text-gray-500">{member.user.email}</div>
+                                                    <div className="text-sm font-medium text-foreground">{member.user.name || "Utilisateur"}</div>
+                                                    <div className="text-xs text-muted-foreground">{member.user.email}</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${member.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
                                                     member.role === 'EDITOR' ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-gray-100 text-gray-600'
+                                                        'bg-muted text-foreground'
                                                     }`}>
                                                     {member.role === 'VIEWER' ? 'Observateur' :
                                                         member.role === 'EDITOR' ? 'Éditeur' : 'Admin'}
@@ -197,7 +197,7 @@ export function WorkspaceMembersMenu({ workspaceId, currentUserRole }: Workspace
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-gray-400 hover:text-red-600"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-red-600"
                                                         onClick={() => handleRequestRemove(member.id)}
                                                     >
                                                         <Trash2 className="h-4 w-4" />

@@ -13,7 +13,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (status === "unauthenticated" || forceFullScreen.includes(pathname)) {
     return (
-      <main className="min-h-screen bg-white text-gray-900">
+      <main className="min-h-screen bg-background text-foreground">
         {children}
       </main>
     );
@@ -21,7 +21,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (status === "loading") {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-muted">
         <div className="animate-pulse flex flex-col items-center">
           <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
         </div>
@@ -34,7 +34,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const isBoardDetail = pathname?.includes("/boards/") && pathname.split("/boards/")[1]?.length > 0;
 
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900">
+    <div className="flex h-screen bg-background text-foreground">
       <Sidebar />
       <div className="flex flex-col flex-1 h-screen overflow-hidden">
         <Navbar />

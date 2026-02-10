@@ -52,14 +52,14 @@ export function FilterPopover({ labels, members, onFilterChange, activeFilters }
                     <Filter className="mr-2 h-4 w-4" />
                     Filtres
                     {hasActiveFilters && (
-                        <span className="ml-2 rounded-sm px-1 font-normal lg:hidden bg-gray-200 text-gray-800 text-xs">
+                        <span className="ml-2 rounded-sm px-1 font-normal lg:hidden bg-secondary text-foreground text-xs">
                             {activeFilters.labelIds.length + activeFilters.memberIds.length + (activeFilters.dueDate !== "none" ? 1 : 0)}
                         </span>
                     )}
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="start">
-                <div className="p-4 bg-gray-50 border-b flex items-center justify-between">
+                <div className="p-4 bg-muted border-b flex items-center justify-between">
                     <h4 className="font-medium text-sm">Filtrer les cartes</h4>
                     {hasActiveFilters && (
                         <Button variant="ghost" size="sm" onClick={clearFilters} className="h-auto p-0 text-xs text-red-500 hover:text-red-600 hover:bg-transparent">
@@ -71,12 +71,12 @@ export function FilterPopover({ labels, members, onFilterChange, activeFilters }
                 <div className="p-4 space-y-4">
                     {/* Labels */}
                     <div className="space-y-2">
-                        <h4 className="font-medium text-xs text-gray-500 uppercase flex items-center gap-2">
+                        <h4 className="font-medium text-xs text-muted-foreground uppercase flex items-center gap-2">
                             <Tag className="w-3 h-3" />
                             Étiquettes
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                            {labels.length === 0 && <span className="text-sm text-gray-400 italic">Aucune étiquette</span>}
+                            {labels.length === 0 && <span className="text-sm text-muted-foreground italic">Aucune étiquette</span>}
                             {labels.map((label) => {
                                 const isActive = activeFilters.labelIds.includes(label.id);
                                 return (
@@ -100,21 +100,21 @@ export function FilterPopover({ labels, members, onFilterChange, activeFilters }
 
                     {/* Members */}
                     <div className="space-y-2">
-                        <h4 className="font-medium text-xs text-gray-500 uppercase flex items-center gap-2">
+                        <h4 className="font-medium text-xs text-muted-foreground uppercase flex items-center gap-2">
                             <UserIcon className="w-3 h-3" />
                             Membres
                         </h4>
                         <div className="space-y-1">
-                            {members.length === 0 && <span className="text-sm text-gray-400 italic">Aucun membre</span>}
+                            {members.length === 0 && <span className="text-sm text-muted-foreground italic">Aucun membre</span>}
                             {members.map((member) => {
                                 const isActive = activeFilters.memberIds.includes(member.id);
                                 return (
                                     <div
                                         key={member.id}
                                         onClick={() => onFilterChange({ ...activeFilters, memberIds: toggleItem(activeFilters.memberIds, member.id) })}
-                                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-gray-100 ${isActive ? "bg-blue-50 text-blue-700" : "text-gray-700"}`}
+                                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted ${isActive ? "bg-blue-50 text-blue-700" : "text-foreground"}`}
                                     >
-                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${isActive ? "border-blue-500 bg-blue-200" : "border-gray-300 bg-gray-100"}`}>
+                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${isActive ? "border-blue-500 bg-blue-200" : "border-border bg-muted"}`}>
                                             {isActive && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
                                         </div>
                                         <span className="text-sm">{member.name || member.email}</span>
@@ -128,7 +128,7 @@ export function FilterPopover({ labels, members, onFilterChange, activeFilters }
 
                     {/* Due Date */}
                     <div className="space-y-2">
-                        <h4 className="font-medium text-xs text-gray-500 uppercase flex items-center gap-2">
+                        <h4 className="font-medium text-xs text-muted-foreground uppercase flex items-center gap-2">
                             <Calendar className="w-3 h-3" />
                             Date d&apos;échéance
                         </h4>
@@ -144,9 +144,9 @@ export function FilterPopover({ labels, members, onFilterChange, activeFilters }
                                         const newVal = activeFilters.dueDate === opt.id ? "none" : opt.id as FilterState["dueDate"];
                                         onFilterChange({ ...activeFilters, dueDate: newVal });
                                     }}
-                                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-gray-100 ${activeFilters.dueDate === opt.id ? "bg-blue-50 text-blue-700" : "text-gray-700"}`}
+                                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted ${activeFilters.dueDate === opt.id ? "bg-blue-50 text-blue-700" : "text-foreground"}`}
                                 >
-                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${activeFilters.dueDate === opt.id ? "border-blue-500 bg-blue-200" : "border-gray-300 bg-gray-100"}`}>
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${activeFilters.dueDate === opt.id ? "border-blue-500 bg-blue-200" : "border-border bg-muted"}`}>
                                         {activeFilters.dueDate === opt.id && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
                                     </div>
                                     <span className="text-sm">{opt.label}</span>

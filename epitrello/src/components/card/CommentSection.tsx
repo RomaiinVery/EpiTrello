@@ -143,10 +143,10 @@ export function CommentSection({
     return (
         <div className="border-t pt-4">
             <div className="flex items-center gap-2 mb-4">
-                <MessageSquare className="w-4 h-4 text-gray-500" />
-                <h3 className="text-sm font-semibold text-gray-700">Commentaires</h3>
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">Commentaires</h3>
                 {comments.length > 0 && (
-                    <span className="text-xs text-gray-500">({comments.length})</span>
+                    <span className="text-xs text-muted-foreground">({comments.length})</span>
                 )}
             </div>
 
@@ -159,7 +159,7 @@ export function CommentSection({
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         placeholder="Écrire un commentaire..."
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none min-h-[80px]"
+                        className="w-full border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none min-h-[80px]"
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                                 e.preventDefault();
@@ -169,7 +169,7 @@ export function CommentSection({
                         disabled={postingComment}
                     />
                     <div className="flex justify-between items-center mt-2">
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                             Appuyez sur Cmd/Ctrl + Entrée pour publier
                         </p>
                         <Button
@@ -186,12 +186,12 @@ export function CommentSection({
             {/* Comments List */}
             <div className="space-y-3">
                 {comments.length === 0 ? (
-                    <p className="text-sm text-gray-400 italic text-center py-4">
+                    <p className="text-sm text-muted-foreground italic text-center py-4">
                         Aucun commentaire pour le moment
                     </p>
                 ) : (
                     comments.map((comment) => (
-                        <div key={comment.id} className="bg-gray-50 rounded-lg p-3">
+                        <div key={comment.id} className="bg-muted rounded-lg p-3">
                             <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold">
@@ -200,10 +200,10 @@ export function CommentSection({
                                             : comment.user.email.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-700">
+                                        <p className="text-sm font-medium text-foreground">
                                             {comment.user.name || comment.user.email}
                                         </p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-muted-foreground">
                                             {new Date(comment.createdAt).toLocaleDateString("fr-FR", {
                                                 day: "numeric",
                                                 month: "short",
@@ -244,14 +244,14 @@ export function CommentSection({
                                                         setEditingCommentId(comment.id);
                                                         setEditingCommentContent(comment.content);
                                                     }}
-                                                    className="text-gray-400 hover:text-blue-600 transition-colors"
+                                                    className="text-muted-foreground hover:text-primary transition-colors"
                                                     aria-label="Modifier"
                                                 >
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteComment(comment.id)}
-                                                    className="text-gray-400 hover:text-red-600 transition-colors"
+                                                    className="text-muted-foreground hover:text-destructive transition-colors"
                                                     aria-label="Supprimer"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -265,7 +265,7 @@ export function CommentSection({
                                 <textarea
                                     value={editingCommentContent}
                                     onChange={(e) => setEditingCommentContent(e.target.value)}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none min-h-[60px]"
+                                    className="w-full border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none min-h-[60px]"
                                     autoFocus
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -275,7 +275,7 @@ export function CommentSection({
                                     }}
                                 />
                             ) : (
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                <p className="text-sm text-foreground whitespace-pre-wrap">
                                     {comment.content}
                                 </p>
                             )}

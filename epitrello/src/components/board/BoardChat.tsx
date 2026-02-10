@@ -133,10 +133,10 @@ export function BoardChat({ boardId }: BoardChatProps) {
                 </div>
             </CardHeader>
 
-            <CardContent className="flex-1 p-0 flex flex-col overflow-hidden bg-gray-50/50">
+            <CardContent className="flex-1 p-0 flex flex-col overflow-hidden bg-muted/50">
                 <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
                     {messages.length === 0 && (
-                        <div className="text-center text-sm text-gray-500 mt-20 px-6">
+                        <div className="text-center text-sm text-muted-foreground mt-20 px-6">
                             <Sparkles className="w-10 h-10 mx-auto mb-3 text-purple-300" />
                             <p>Hi! I can help you manage your board.</p>
                             <p className="mt-2 text-xs">Try: &quot;Create a list for Bugs&quot; or &quot;Add a card &apos;Fix Login&apos; to Bugs&quot;</p>
@@ -148,7 +148,7 @@ export function BoardChat({ boardId }: BoardChatProps) {
                                 "max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm",
                                 m.role === "user"
                                     ? "bg-indigo-600 text-white rounded-br-none"
-                                    : "bg-white border border-gray-100 text-gray-800 rounded-bl-none prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0"
+                                    : "bg-card border border-border text-foreground rounded-bl-none prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0"
                             )}>
                                 {m.role === "user" ? (
                                     m.content
@@ -160,15 +160,15 @@ export function BoardChat({ boardId }: BoardChatProps) {
                     ))}
                     {isLoading && (
                         <div className="flex justify-start w-full animate-pulse">
-                            <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-2">
+                            <div className="bg-card border border-border rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-purple-500 animate-spin" />
-                                <span className="text-xs text-gray-500 font-medium">Thinking...</span>
+                                <span className="text-xs text-muted-foreground font-medium">Thinking...</span>
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="p-3 bg-white border-t shrink-0 flex flex-col gap-2">
+                <div className="p-3 bg-card border-t shrink-0 flex flex-col gap-2">
                     {/* Quick Actions (Chips) */}
                     {messages.length < 2 && (
                         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -193,7 +193,7 @@ export function BoardChat({ boardId }: BoardChatProps) {
                                         // Let's modify handleSubmit to accept an optional override.
                                         handleQuickAction(action.prompt);
                                     }}
-                                    className="whitespace-nowrap px-3 py-1 bg-gray-100 hover:bg-gray-200 text-xs rounded-full border border-gray-200 transition-colors text-gray-700"
+                                    className="whitespace-nowrap px-3 py-1 bg-muted hover:bg-accent text-xs rounded-full border border-border transition-colors text-foreground"
                                 >
                                     {action.label}
                                 </button>
@@ -212,7 +212,7 @@ export function BoardChat({ boardId }: BoardChatProps) {
                                 }
                             }}
                             placeholder="Ask me to do something... (Shift+Enter for new line)"
-                            className="flex-1 min-h-[80px] max-h-[160px] p-2 text-sm border rounded-md resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            className="flex-1 min-h-[80px] max-h-[160px] p-2 text-sm border border-border bg-background text-foreground rounded-md resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                             disabled={isLoading}
                             rows={3}
                         />

@@ -73,16 +73,16 @@ export function DescriptionEditor({
         return (
             <div>
                 <div className="flex items-center gap-2 mb-2">
-                    <AlignLeft className="w-4 h-4 text-gray-500" />
-                    <h3 className="text-sm font-semibold text-gray-700">Description</h3>
+                    <AlignLeft className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold text-foreground">Description</h3>
                 </div>
-                <div className="min-h-[60px] p-3 bg-gray-50 rounded">
+                <div className="min-h-[60px] p-3 bg-muted rounded">
                     {initialDescription ? (
-                        <p className="text-gray-700 whitespace-pre-wrap">
+                        <p className="text-foreground whitespace-pre-wrap">
                             {initialDescription}
                         </p>
                     ) : (
-                        <p className="text-gray-400 italic">
+                        <p className="text-muted-foreground italic">
                             Aucune description.
                         </p>
                     )}
@@ -94,8 +94,8 @@ export function DescriptionEditor({
     return (
         <div>
             <div className="flex items-center gap-2 mb-2">
-                <AlignLeft className="w-4 h-4 text-gray-500" />
-                <h3 className="text-sm font-semibold text-gray-700">Description</h3>
+                <AlignLeft className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">Description</h3>
             </div>
 
             {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
@@ -107,26 +107,26 @@ export function DescriptionEditor({
                         onChange={(e) => setDescription(e.target.value)}
                         onBlur={handleSave}
                         onKeyDown={handleKeyDown}
-                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none min-h-[100px]"
+                        className="w-full border border-border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none min-h-[100px]"
                         placeholder="Ajouter une description plus détaillée..."
                         autoFocus
                         disabled={saving}
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                         Appuyez sur Cmd/Ctrl + Entrée pour sauvegarder, Esc pour annuler
                     </p>
                 </div>
             ) : (
                 <div
-                    className="min-h-[60px] p-3 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer transition-colors"
+                    className="min-h-[60px] p-3 bg-muted rounded hover:bg-accent cursor-pointer transition-colors"
                     onClick={() => setIsEditing(true)}
                 >
                     {initialDescription ? (
-                        <p className="text-gray-700 whitespace-pre-wrap">
+                        <p className="text-foreground whitespace-pre-wrap">
                             {initialDescription}
                         </p>
                     ) : (
-                        <p className="text-gray-400 italic">
+                        <p className="text-muted-foreground italic">
                             Ajouter une description plus détaillée...
                         </p>
                     )}
