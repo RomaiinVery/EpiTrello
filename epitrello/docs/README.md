@@ -18,6 +18,7 @@ Welcome to the complete documentation for EpiTrello!
 
 ### Developer Guides
 - [Architecture Overview](architecture.md) - System design
+- [Tech Stack & Justifications](tech-stack.md) - Why we chose these technologies 🆕
 - [API Documentation](api.md) - REST API reference
 - [Database Schema](database.md) - Database structure
 - [Contributing Guide](contributing.md) - How to contribute

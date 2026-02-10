@@ -117,31 +117,45 @@ npm start
 
 ## Tech Stack
 
+> 📖 **[Voir la justification détaillée des choix techniques →](docs/tech-stack.md)**
+
 ### Frontend
-- **[Next.js 16](https://nextjs.org/)** - React framework with App Router
-- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript
-- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
-- **[shadcn/ui](https://ui.shadcn.com/)** - Beautiful UI components
-- **[@dnd-kit](https://dndkit.com/)** - Drag and drop functionality
-- **[Jotai](https://jotai.org/)** - Lightweight state management
-- **[SWR](https://swr.vercel.app/)** - Data fetching and caching
+- **[Next.js 16](https://nextjs.org/)** (App Router + Turbopack) - React framework full-stack
+- **[React 19](https://react.dev/)** - UI library avec Server Components
+- **[TypeScript 5](https://www.typescriptlang.org/)** - Type safety et DX améliorée
+- **[Tailwind CSS 4](https://tailwindcss.com/)** - Utility-first styling
+- **[shadcn/ui](https://ui.shadcn.com/)** - Composants accessibles (Radix UI + Tailwind)
+- **[Lucide React](https://lucide.dev/)** - Icônes modernes (1000+)
+- **[@dnd-kit](https://dndkit.com/)** - Drag & drop performant
+
+### État & Data
+- **[Jotai](https://jotai.org/)** - State management atomique (3kb)
+- **[SWR](https://swr.vercel.app/)** - Data fetching avec cache intelligent
+- **[Zod](https://zod.dev/)** - Validation type-safe
 
 ### Backend
-- **[Next.js API Routes](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)** - Serverless API endpoints
-- **[Prisma](https://www.prisma.io/)** - Next-generation ORM
-- **[PostgreSQL](https://www.postgresql.org/)** - Relational database
-- **[NextAuth.js](https://next-auth.js.org/)** - Authentication solution
+- **[Next.js API Routes](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)** - Endpoints serverless
+- **[NextAuth.js](https://next-auth.js.org/)** - Authentification multi-provider
+- **[Prisma 7](https://www.prisma.io/)** - ORM type-safe avec migrations
+- **[PostgreSQL](https://www.postgresql.org/)** - Base de données relationnelle
+- **[bcryptjs](https://github.com/dcodeIO/bcrypt.js)** - Hashing de mots de passe
 
-### Integrations
-- **[Cloudinary](https://cloudinary.com/)** - Image and file hosting
-- **[Google Gemini](https://ai.google.dev/)** - AI-powered chatbot
-- **[Nodemailer](https://nodemailer.com/)** - Email sending
-- **[GitHub API](https://docs.github.com/en/rest)** - GitHub integration
+### Intégrations
+- **[Cloudinary](https://cloudinary.com/)** - Stockage & optimisation d'images
+- **[Google Gemini AI](https://ai.google.dev/)** - Chatbot intelligent
+- **[GitHub API](https://docs.github.com/en/rest)** - Intégration issues/PRs
+- **[Nodemailer](https://nodemailer.com/)** - Envoi d'emails
 
 ### Testing
-- **[Vitest](https://vitest.dev/)** - Unit and integration testing
-- **[Playwright](https://playwright.dev/)** - End-to-end testing
-- **[@testing-library/react](https://testing-library.com/react)** - Component testing
+- **[Vitest](https://vitest.dev/)** - Tests unitaires ultra-rapides
+- **[Playwright](https://playwright.dev/)** - Tests E2E multi-navigateurs
+- **[Testing Library](https://testing-library.com/)** - Tests orientés utilisateur
+- **[MSW](https://mswjs.io/)** - Mocking d'APIs
+
+### DevTools
+- **[ESLint 9](https://eslint.org/)** - Linting moderne
+- **[Turbopack](https://turbo.build/pack)** - Bundler next-gen (Rust)
+- **[Prisma Studio](https://www.prisma.io/studio)** - GUI base de données
 
 ---
 
@@ -152,6 +166,7 @@ npm start
 
 ### Developer Guides
 - [Architecture Overview](docs/architecture.md)
+- [Tech Stack & Justifications](docs/tech-stack.md) 🆕
 - [API Documentation](docs/api.md)
 - [Database Schema](docs/database.md)
 - [Testing Guide](TESTING.md)
