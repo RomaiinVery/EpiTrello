@@ -139,8 +139,8 @@ describe('Labels API Routes', () => {
       const response = await getLabels(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -160,7 +160,7 @@ describe('Labels API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return all labels for a board', async () => {
@@ -208,7 +208,10 @@ describe('Labels API Routes', () => {
       const boardWithMember = {
         ...mockBoard,
         userId: 'other-user',
-        members: [{ id: 'user-1' }],
+        members: [{ role: 'ADMIN' }],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -322,8 +325,8 @@ describe('Labels API Routes', () => {
       const response = await createLabel(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -347,7 +350,7 @@ describe('Labels API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 400 if label with same name exists', async () => {
@@ -426,7 +429,10 @@ describe('Labels API Routes', () => {
       const boardWithMember = {
         ...mockBoard,
         userId: 'other-user',
-        members: [{ id: 'user-1' }],
+        members: [{ role: 'ADMIN' }],
+        workspace: {
+          members: []
+        },
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
@@ -516,8 +522,8 @@ describe('Labels API Routes', () => {
       const response = await updateLabel(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -541,7 +547,7 @@ describe('Labels API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if label not found', async () => {
@@ -801,8 +807,8 @@ describe('Labels API Routes', () => {
       const response = await deleteLabel(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -825,7 +831,7 @@ describe('Labels API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if label not found', async () => {
@@ -947,8 +953,8 @@ describe('Labels API Routes', () => {
       const response = await getCardLabels(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -968,7 +974,7 @@ describe('Labels API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return all labels for a card', async () => {
@@ -1104,8 +1110,8 @@ describe('Labels API Routes', () => {
       const response = await addCardLabel(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -1129,7 +1135,7 @@ describe('Labels API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if label not found', async () => {
@@ -1385,8 +1391,8 @@ describe('Labels API Routes', () => {
       const response = await removeCardLabel(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -1409,7 +1415,7 @@ describe('Labels API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should remove label from card successfully', async () => {

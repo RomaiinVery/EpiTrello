@@ -4,6 +4,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock modules
 vi.mock('@/app/lib/prisma', () => ({
   prisma: {
+    user: {
+      findUnique: vi.fn(),
+    },
     board: {
       findUnique: vi.fn(),
     },
@@ -30,13 +33,29 @@ vi.mock('@/app/lib/activity-logger', () => ({
 }));
 
 import { prisma } from '@/app/lib/prisma';
+import { getServerSession } from 'next-auth';
 import { GET as getLists, POST as createList } from '@/app/api/boards/[boardId]/lists/route';
 import { GET as getList, PUT as updateList, DELETE as deleteList, PATCH as patchList } from '@/app/api/boards/[boardId]/lists/[listId]/route';
 
 describe('Lists API Routes', () => {
+  const mockUser = {
+    id: 'user-1',
+    email: 'test@example.com',
+    name: 'Test User',
+  };
+
+  const mockSession = {
+    user: {
+      email: 'test@example.com',
+    },
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Set up default auth mocks
+    vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
   });
 
   describe('GET /api/boards/[boardId]/lists', () => {
@@ -48,11 +67,8 @@ describe('Lists API Routes', () => {
       const response = await getLists(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
-      expect(prisma.board.findUnique).toHaveBeenCalledWith({
-        where: { id: 'board-1' },
-      });
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return all lists for a board', async () => {
@@ -60,6 +76,8 @@ describe('Lists API Routes', () => {
         id: 'board-1',
         title: 'Test Board',
         userId: 'user-1',
+        members: [],
+        workspace: null,
       };
 
       const mockLists = [
@@ -112,6 +130,8 @@ describe('Lists API Routes', () => {
         id: 'board-1',
         title: 'Test Board',
         userId: 'user-1',
+        members: [],
+        workspace: null,
       };
 
       vi.mocked(prisma.board.findUnique).mockResolvedValue(mockBoard as any);
@@ -170,7 +190,7 @@ describe('Lists API Routes', () => {
       expect(data.error).toBe("Missing or invalid 'title'");
     });
 
-    it('should return 404 if board not found', async () => {
+    it('should return 403 if board not found', async () => {
       vi.mocked(prisma.board.findUnique).mockResolvedValue(null);
 
       const request = new Request('http://localhost/api/boards/board-1/lists', {
@@ -182,11 +202,8 @@ describe('Lists API Routes', () => {
       const response = await createList(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
-      expect(prisma.board.findUnique).toHaveBeenCalledWith({
-        where: { id: 'board-1' },
-      });
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should create list successfully with default position', async () => {
@@ -194,6 +211,8 @@ describe('Lists API Routes', () => {
         id: 'board-1',
         title: 'Test Board',
         userId: 'user-1',
+        members: [],
+        workspace: null,
       };
 
       const mockList = {
@@ -234,6 +253,8 @@ describe('Lists API Routes', () => {
         id: 'board-1',
         title: 'Test Board',
         userId: 'user-1',
+        members: [],
+        workspace: null,
       };
 
       const mockList = {
@@ -274,6 +295,8 @@ describe('Lists API Routes', () => {
         id: 'board-1',
         title: 'Test Board',
         userId: 'user-1',
+        members: [],
+        workspace: null,
       };
 
       const mockList = {

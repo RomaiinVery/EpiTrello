@@ -132,8 +132,8 @@ describe('Card Members API Routes', () => {
       const response = await GET(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -314,8 +314,8 @@ describe('Card Members API Routes', () => {
       const response = await POST(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {
@@ -364,7 +364,7 @@ describe('Card Members API Routes', () => {
     it('should return 404 if card not found', async () => {
       const boardWithMembers = {
         ...mockBoard,
-        members: [{ userId: 'user-2', role: 'VIEWER' }],
+        members: [{ id: 'user-1', role: 'EDITOR' }, { id: 'user-2', role: 'VIEWER' }],
         workspace: {
           members: []
         },
@@ -391,7 +391,7 @@ describe('Card Members API Routes', () => {
     it('should return 404 if card list not found', async () => {
       const boardWithMembers = {
         ...mockBoard,
-        members: [{ userId: 'user-2', role: 'VIEWER' }],
+        members: [{ id: 'user-1', role: 'EDITOR' }, { id: 'user-2', role: 'VIEWER' }],
         workspace: {
           members: []
         },
@@ -418,7 +418,7 @@ describe('Card Members API Routes', () => {
     it('should return 400 if card does not belong to board', async () => {
       const boardWithMembers = {
         ...mockBoard,
-        members: [{ userId: 'user-2', role: 'VIEWER' }],
+        members: [{ id: 'user-1', role: 'EDITOR' }, { id: 'user-2', role: 'VIEWER' }],
         workspace: {
           members: []
         },
@@ -448,7 +448,7 @@ describe('Card Members API Routes', () => {
     it('should return 400 if user is already assigned to card', async () => {
       const boardWithMembers = {
         ...mockBoard,
-        members: [{ userId: 'user-2', role: 'VIEWER' }],
+        members: [{ id: 'user-1', role: 'EDITOR' }, { id: 'user-2', role: 'VIEWER' }],
         workspace: {
           members: []
         },
@@ -483,7 +483,10 @@ describe('Card Members API Routes', () => {
       vi.mocked(prisma.board.findUnique).mockResolvedValue({
         ...mockBoard,
         userId: 'user-1', // This is the board owner
-        members: [{ userId: 'user-2', role: 'VIEWER' }], // user-2 is also a member
+        members: [{ id: 'user-2', role: 'VIEWER' }], // user-2 is also a member
+        workspace: {
+          members: []
+        },
       } as any);
       vi.mocked(prisma.card.findUnique).mockResolvedValue(mockCard as any);
       vi.mocked(prisma.cardMember.findUnique).mockResolvedValue(null);
@@ -535,7 +538,7 @@ describe('Card Members API Routes', () => {
       const boardWithMembers = {
         ...mockBoard,
         userId: 'other-user',
-        members: [{ userId: 'user-1', role: 'VIEWER' }, { userId: 'user-2', role: 'VIEWER' }],
+        members: [{ id: 'user-1', role: 'EDITOR' }, { id: 'user-2', role: 'VIEWER' }],
         workspace: {
           members: []
         },
@@ -606,7 +609,7 @@ describe('Card Members API Routes', () => {
 
     it('should handle server errors', async () => {
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
-      vi.mocked(prisma.user.findUnique).mockRejectedValueOnce(new Error('Database error'));
+      vi.mocked(prisma.user.findUnique).mockRejectedValue(new Error('Database error'));
 
       const request = new Request('http://localhost/api/boards/board-1/lists/list-1/cards/card-1/members', {
         method: 'POST',
@@ -653,7 +656,7 @@ describe('Card Members API Routes', () => {
 
     it('should return 404 if user not found', async () => {
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
-      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 
       const request = new Request('http://localhost/api/boards/board-1/lists/list-1/cards/card-1/members?userId=user-2', {
         method: 'DELETE',
@@ -693,8 +696,8 @@ describe('Card Members API Routes', () => {
       const response = await DELETE(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not owner or member', async () => {

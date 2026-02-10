@@ -4,6 +4,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock modules
 vi.mock('@/app/lib/prisma', () => ({
   prisma: {
+    user: {
+      findUnique: vi.fn(),
+    },
     automationRule: {
       findMany: vi.fn(),
       create: vi.fn(),
@@ -24,13 +27,31 @@ vi.mock('next-auth', () => {
   };
 });
 
+vi.mock('@/lib/permissions', () => ({
+  checkBoardPermission: vi.fn(),
+  Permission: {
+    READ: 'READ',
+    EDIT: 'EDIT',
+    DELETE: 'DELETE',
+    ADMIN: 'ADMIN',
+  },
+  getPermissionErrorMessage: vi.fn(),
+}));
+
 import { prisma } from '@/app/lib/prisma';
 import { getServerSession } from 'next-auth';
+import { checkBoardPermission } from '@/lib/permissions';
 import { GET, POST } from '@/app/api/boards/[boardId]/automations/route';
 import { DELETE, PUT } from '@/app/api/boards/[boardId]/automations/[ruleId]/route';
 import { GET as GET_LOGS } from '@/app/api/boards/[boardId]/automations/logs/route';
 
 describe('Automations API Routes', () => {
+  const mockUser = {
+    id: 'user-1',
+    email: 'test@example.com',
+    name: 'Test User',
+  };
+
   const mockSession = {
     user: {
       email: 'test@example.com',
@@ -205,6 +226,8 @@ describe('Automations API Routes', () => {
 
     it('should delete an automation rule', async () => {
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(checkBoardPermission).mockResolvedValue({ allowed: true, role: 'ADMIN', isOwner: false } as any);
       vi.mocked(prisma.automationRule.delete).mockResolvedValue(mockRule as any);
 
       const request = new Request('http://localhost/api/boards/board-1/automations/rule-1', {
@@ -269,6 +292,8 @@ describe('Automations API Routes', () => {
       };
 
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(checkBoardPermission).mockResolvedValue({ allowed: true, role: 'ADMIN', isOwner: false } as any);
       vi.mocked(prisma.automationRule.update).mockResolvedValue(updatedRule as any);
 
       const request = new Request('http://localhost/api/boards/board-1/automations/rule-1', {

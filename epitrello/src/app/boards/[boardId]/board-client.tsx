@@ -1247,7 +1247,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               members={[
                 ...(board.user ? [{ ...board.user, id: board.user.id, role: 'OWNER' } as unknown as User] : []),
                 ...(board.members?.map((m: Members) => m.user) || []),
-                ...(board.workspace?.members?.map((m: any) => m.user) || [])
+                ...(board.workspace?.members?.map((m: Members) => m.user) || [])
               ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)}
               activeFilters={filters}
               onFilterChange={setFilters}
