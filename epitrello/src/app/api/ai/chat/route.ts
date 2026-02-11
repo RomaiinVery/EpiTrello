@@ -151,7 +151,7 @@ const tools = [
 ];
 
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-exp", // Latest, fastest Gemini model
+    model: "gemini-2.5-flash", // Gemini 2.5 Flash - latest stable version
     tools: tools as unknown as Tool[],
 });
 
