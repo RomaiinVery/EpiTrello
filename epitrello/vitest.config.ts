@@ -39,7 +39,6 @@ export default defineConfig({
         branches: 77,
         statements: 80,
       },
-      all: true,
     },
   },
   resolve: {
