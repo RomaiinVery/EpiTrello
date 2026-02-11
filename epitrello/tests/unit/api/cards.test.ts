@@ -302,8 +302,8 @@ describe('Cards API Routes', () => {
       const response = await createCard(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not authorized', async () => {
@@ -331,7 +331,7 @@ describe('Cards API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if list not found', async () => {
@@ -738,8 +738,8 @@ describe('Cards API Routes', () => {
       const response = await getCard(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not authorized', async () => {
@@ -763,7 +763,7 @@ describe('Cards API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 404 if card not found', async () => {
@@ -886,7 +886,8 @@ describe('Cards API Routes', () => {
     it('should handle database errors', async () => {
       vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
       vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
-      vi.mocked(prisma.board.findUnique).mockRejectedValue(new Error('Database error'));
+      vi.mocked(prisma.board.findUnique).mockResolvedValue(mockBoard as any);
+      vi.mocked(prisma.card.findUnique).mockRejectedValue(new Error('Database error'));
 
       const request = new Request('http://localhost/api/boards/board-1/lists/list-1/cards/card-1');
       const params = Promise.resolve({ boardId: 'board-1', listId: 'list-1', cardId: 'card-1' });
@@ -960,8 +961,8 @@ describe('Cards API Routes', () => {
       const response = await updateCard(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not authorized', async () => {
@@ -989,7 +990,7 @@ describe('Cards API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is a viewer', async () => {
@@ -1017,7 +1018,7 @@ describe('Cards API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden: Viewers cannot update content');
+      expect(data.error).toBe('VIEWERs cannot modify this resource');
     });
 
     it('should return 400 if no updateable fields provided', async () => {
@@ -1444,8 +1445,8 @@ describe('Cards API Routes', () => {
       const response = await deleteCard(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not authorized', async () => {
@@ -1472,7 +1473,7 @@ describe('Cards API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is a viewer', async () => {
@@ -1499,7 +1500,7 @@ describe('Cards API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden: Viewers cannot modify content');
+      expect(data.error).toBe('VIEWERs cannot delete this resource');
     });
 
     it('should return 404 if card not found', async () => {
@@ -1665,8 +1666,8 @@ describe('Cards API Routes', () => {
       const response = await reorderCards(request, { params });
       const data = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(data.error).toBe('Board not found');
+      expect(response.status).toBe(403);
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should return 403 if user is not authorized', async () => {
@@ -1694,7 +1695,7 @@ describe('Cards API Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(403);
-      expect(data.error).toBe('Forbidden');
+      expect(data.error).toBe('You do not have access to this board');
     });
 
     it('should reorder cards successfully within same list', async () => {
