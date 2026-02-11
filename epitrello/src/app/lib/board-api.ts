@@ -57,6 +57,7 @@ export type Card = {
   checklists?: Checklist[];
   githubIssueNumber?: number | null;
   githubIssueUrl?: string | null;
+  archived?: boolean;
 };
 
 export type Board = {
@@ -66,6 +67,7 @@ export type Board = {
   description?: string | null;
   workspaceId: string;
   lists?: List[];
+  labels?: Label[];
   githubRepo?: string | null;
   user?: User;
 };
@@ -76,6 +78,7 @@ export async function fetchBoard(boardId: string): Promise<Board | null> {
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: {
+        labels: true,
         members: {
           include: {
             user: {

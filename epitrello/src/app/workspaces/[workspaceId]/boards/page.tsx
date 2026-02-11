@@ -19,9 +19,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InviteMemberModal } from "@/components/modals/InviteMemberModal";
+import { ColorPicker } from "@/components/board/ColorPicker";
 import { WorkspaceMembersMenu } from "@/components/workspace/WorkspaceMembersMenu";
+import { SettingsModal } from "@/components/board/SettingsModal";
 
-type Board = { id: string; title: string; description?: string };
+type Board = { id: string; title: string; description?: string; background?: string | null };
 type Workspace = { id: string; title: string; currentUserRole?: string };
 
 export default function BoardsByWorkspacePage() {
@@ -37,6 +39,7 @@ export default function BoardsByWorkspacePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
+  const [createBackground, setCreateBackground] = useState("#F5F5F5");
   const [linkGithub, setLinkGithub] = useState(false);
   const [githubRepo, setGithubRepo] = useState("");
   /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -51,6 +54,9 @@ export default function BoardsByWorkspacePage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [boardToEdit, setBoardToEdit] = useState<Board | null>(null);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -70,8 +76,21 @@ export default function BoardsByWorkspacePage() {
       });
 
     fetch(`/api/boards?workspaceId=${workspaceId}`)
-      .then((res) => res.json())
-      .then((data) => setBoards(data));
+      .then(async (res) => {
+        if (!res.ok) {
+          console.error(`Error fetching boards: Status ${res.status}`);
+          return [];
+        }
+        try {
+          return await res.json();
+        } catch (e) {
+          console.error("Failed to parse boards JSON", e);
+          const text = await res.text().catch(() => "No text");
+          console.error("Response text:", text);
+          return [];
+        }
+      })
+      .then((data) => setBoards(data || []));
 
     fetch("/api/user/github")
       .then((res) => res.json())
@@ -119,10 +138,11 @@ export default function BoardsByWorkspacePage() {
   const handleCreate = async () => {
     if (!createTitle || !workspaceId) return;
 
-    const payload: { title: string; description: string; workspaceId: string; githubRepo?: string; githubBranch?: string } = {
+    const payload: { title: string; description: string; workspaceId: string; githubRepo?: string; githubBranch?: string; background: string } = {
       title: createTitle,
       description: createDescription,
       workspaceId,
+      background: createBackground,
     };
 
     if (linkGithub && githubRepo) {
@@ -142,6 +162,7 @@ export default function BoardsByWorkspacePage() {
       setCreateOpen(false);
       setCreateTitle("");
       setCreateDescription("");
+      setCreateBackground("#F5F5F5");
       setLinkGithub(false);
       setGithubRepo("");
       window.dispatchEvent(new Event("sidebarUpdated"));
@@ -169,7 +190,7 @@ export default function BoardsByWorkspacePage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <Link href="/workspaces" className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors mb-2 inline-block">
+          <Link href="/workspaces" className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors mb-2 inline-block">
             ← Retour aux workspaces
           </Link>
           <div className="flex items-center gap-4 mt-2">
@@ -196,23 +217,29 @@ export default function BoardsByWorkspacePage() {
         {boards.map((b) => (
           <li
             key={b.id}
-            className="flex justify-between items-center p-2 border rounded-md hover:bg-gray-50 transition"
+            className="flex justify-between items-center p-2 border rounded-md hover:bg-muted transition"
           >
             <Link href={`/workspaces/${workspaceId}/boards/${b.id}`} className="flex flex-col flex-1 ml-2">
               <span className="font-semibold hover:underline">{b.title}</span>
               {b.description && (
-                <span className="text-gray-500 text-sm line-clamp-1">{b.description}</span>
+                <span className="text-muted-foreground text-sm line-clamp-1">{b.description}</span>
               )}
             </Link>
 
             {workspace?.currentUserRole && workspace.currentUserRole !== "VIEWER" && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="text-gray-400 hover:text-gray-700 text-xl">
+                  <button className="text-muted-foreground hover:text-foreground text-xl">
                     ⋯
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => {
+                    setBoardToEdit(b);
+                    setSettingsOpen(true);
+                  }}>
+                    Modifier
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     setRenameBoardId(b.id);
                     setNewTitle(b.title);
@@ -230,7 +257,7 @@ export default function BoardsByWorkspacePage() {
         ))}
       </ul>
       {boards.length === 0 && (
-        <div className="flex items-center justify-center h-64 text-gray-500">
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
           Aucune board pour le moment
         </div>
       )}
@@ -277,14 +304,14 @@ export default function BoardsByWorkspacePage() {
               <input
                 type="checkbox"
                 id="linkGithub"
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
                 checked={linkGithub}
                 onChange={(e) => setLinkGithub(e.target.checked)}
                 disabled={!isGithubLinked}
               />
               <label
                 htmlFor="linkGithub"
-                className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${!isGithubLinked ? "text-gray-400" : "text-gray-700"}`}
+                className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${!isGithubLinked ? "text-muted-foreground" : "text-foreground"}`}
               >
                 Lier à un dépôt GitHub
               </label>
@@ -297,11 +324,11 @@ export default function BoardsByWorkspacePage() {
             )}
 
             {linkGithub && isGithubLinked && (
-              <div className="ml-6 space-y-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <div className="ml-6 space-y-3 p-3 bg-muted rounded-md border border-border">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Dépôt GitHub</label>
+                  <label className="text-xs font-medium text-muted-foreground">Dépôt GitHub</label>
                   {reposLoading ? (
-                    <div className="text-xs text-gray-400 py-2">Chargement des dépôts...</div>
+                    <div className="text-xs text-muted-foreground py-2">Chargement des dépôts...</div>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex gap-2">
@@ -341,6 +368,11 @@ export default function BoardsByWorkspacePage() {
                 </div>
               </div>
             )}
+
+            <div className="space-y-2 pt-2">
+              <label className="text-sm font-medium">Couleur de fond</label>
+              <ColorPicker selectedColor={createBackground} onChange={setCreateBackground} />
+            </div>
           </div>
           <DialogFooter>
             <Button onClick={handleCreate} disabled={!createTitle}>OK</Button>
@@ -372,6 +404,23 @@ export default function BoardsByWorkspacePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {boardToEdit && (
+        <SettingsModal
+          isOpen={settingsOpen}
+          onClose={() => {
+            setSettingsOpen(false);
+            setBoardToEdit(null);
+          }}
+          boardId={boardToEdit.id}
+          initialTitle={boardToEdit.title}
+          initialDescription={boardToEdit.description}
+          initialBackground={boardToEdit.background || "#F5F5F5"}
+          onUpdate={(updatedBoard) => {
+            setBoards((prev) => prev.map(b => b.id === updatedBoard.id ? { ...b, ...updatedBoard } : b));
+          }}
+        />
+      )}
     </div>
   );
 }

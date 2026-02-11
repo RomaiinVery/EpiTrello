@@ -1,16 +1,33 @@
 import { NextResponse } from "next/server";
-
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/app/lib/prisma";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
+
+
 
 export async function GET(request: Request, { params }: { params: Promise<{ boardId: string }> }) {
-  const { boardId } = await params;
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const board = await prisma.board.findUnique({
-    where: { id: boardId },
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
   });
 
-  if (!board) {
-    return NextResponse.json({ error: "Board not found" }, { status: 404 });
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const { boardId } = await params;
+
+  // Check read permission
+  const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.READ);
+  if (!allowed) {
+    return NextResponse.json({
+      error: getPermissionErrorMessage(role, Permission.READ)
+    }, { status: 403 });
   }
 
   const lists = await prisma.list.findMany({
@@ -21,6 +38,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ boar
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ boardId: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
   const { boardId } = await params;
   const { title, position } = await request.json();
 
@@ -31,12 +61,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ boa
     );
   }
 
-  const board = await prisma.board.findUnique({
-    where: { id: boardId },
-  });
-
-  if (!board) {
-    return NextResponse.json({ error: "Board not found" }, { status: 404 });
+  // Check edit permission
+  const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+  if (!allowed) {
+    return NextResponse.json({
+      error: getPermissionErrorMessage(role, Permission.EDIT)
+    }, { status: 403 });
   }
 
   const list = await prisma.list.create({

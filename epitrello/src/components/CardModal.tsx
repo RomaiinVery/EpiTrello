@@ -79,6 +79,13 @@ export function CardModal({
                   if (!allMembers.some(ex => ex.id === m.id)) allMembers.push(m);
                 });
               }
+              if (boardData.workspace?.members) {
+                boardData.workspace.members.forEach((wm: { user: User }) => {
+                  if (wm.user && !allMembers.some(ex => ex.id === wm.user.id)) {
+                    allMembers.push(wm.user);
+                  }
+                });
+              }
               const found = allMembers.find(m => m.email === session.user.email);
               if (found) setCurrentUser(found);
             }
@@ -154,7 +161,7 @@ export function CardModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-200"
+        className="bg-card rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -177,20 +184,20 @@ export function CardModal({
                   autoFocus
                   disabled={savingTitle}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Entrée pour sauvegarder, Esc pour annuler
                 </p>
               </div>
             ) : (
               <h2
-                className={`text-xl font-semibold text-gray-800 p-2 -m-2 rounded ${canEdit ? "cursor-pointer hover:bg-gray-100" : ""}`}
+                className={`text-xl font-semibold text-foreground p-2 -m-2 rounded ${canEdit ? "cursor-pointer hover:bg-muted" : ""}`}
                 onClick={() => canEdit && setIsEditingTitle(true)}
               >
                 {card?.title || "Chargement..."}
               </h2>
             )}
             {card?.list && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Dans la liste{" "}
                 <span className="font-medium">{card.list.title}</span>
               </p>
@@ -198,7 +205,7 @@ export function CardModal({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded p-2 transition-colors"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted rounded p-2 transition-colors"
             aria-label="Fermer"
           >
             <X className="w-5 h-5" />
@@ -247,6 +254,7 @@ export function CardModal({
                       dueDate={card.dueDate}
                       onUpdate={onUpdate}
                       onCardUpdate={handleCardUpdate}
+                      onFetchCard={fetchCardDetails}
                       onActivityUpdate={triggerActivityUpdate}
                       readOnly={!canEdit}
                     />
@@ -293,9 +301,9 @@ export function CardModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t p-4 bg-gray-50">
+        <div className="border-t p-4 bg-muted">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-muted-foreground">
               {card?.createdAt && (
                 <span>
                   Créée le{" "}

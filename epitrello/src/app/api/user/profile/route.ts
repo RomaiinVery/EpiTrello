@@ -21,6 +21,7 @@ export async function GET() {
                 email: true,
                 pendingEmail: true,
                 profileImage: true,
+                theme: true,
                 // Add other fields if needed
             }
         });
@@ -48,11 +49,18 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { displayName, email } = body;
+        const { displayName, email, theme } = body;
 
         if (!displayName || typeof displayName !== "string") {
             return NextResponse.json(
                 { error: "Display name is required" },
+                { status: 400 }
+            );
+        }
+
+        if (theme && !["light", "dark", "system"].includes(theme)) {
+            return NextResponse.json(
+                { error: "Invalid theme value" },
                 { status: 400 }
             );
         }
@@ -105,11 +113,12 @@ export async function POST(req: Request) {
             verificationNeeded = true;
         }
 
-        // Update name
+        // Update name and theme
         const updatedUser = await prisma.user.update({
             where: { id: currentUser.id }, // Safe
             data: {
                 name: displayName,
+                ...(theme && { theme }),
             },
         });
 

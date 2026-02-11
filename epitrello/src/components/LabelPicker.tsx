@@ -139,7 +139,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, r
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">Étiquettes</h3>
+        <h3 className="text-sm font-semibold text-foreground">Étiquettes</h3>
       </div>
 
       {/* Selected Labels */}
@@ -168,11 +168,11 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, r
 
       {/* Available Labels */}
       <div className="space-y-2">
-        <p className="text-xs text-gray-500">Étiquettes disponibles</p>
+        <p className="text-xs text-muted-foreground">Étiquettes disponibles</p>
         {loading ? (
-          <div className="text-sm text-gray-400">Chargement...</div>
+          <div className="text-sm text-muted-foreground">Chargement...</div>
         ) : labels.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">Aucune étiquette disponible</p>
+          <p className="text-sm text-muted-foreground italic">Aucune étiquette disponible</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {labels.map((label) => {
@@ -204,7 +204,7 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, r
       {/* Create New Label */}
       {!readOnly && (
         showCreate ? (
-          <div className="border rounded-lg p-3 space-y-2 bg-gray-50">
+          <div className="border rounded-lg p-3 space-y-2 bg-muted">
             <Input
               value={newLabelName}
               onChange={(e) => setNewLabelName(e.target.value)}
@@ -224,15 +224,15 @@ export function LabelPicker({ boardId, cardId, selectedLabels, onLabelsChange, r
 
             {/* Color Picker */}
             <div className="space-y-1">
-              <p className="text-xs text-gray-500">Couleur</p>
+              <p className="text-xs text-muted-foreground">Couleur</p>
               <div className="flex flex-wrap gap-2">
                 {PRESET_COLORS.map((color) => (
                   <button
                     key={color}
                     onClick={() => setNewLabelColor(color)}
                     className={`w-8 h-8 rounded border-2 transition-all ${newLabelColor === color
-                      ? "border-gray-800 scale-110"
-                      : "border-gray-300 hover:border-gray-500"
+                      ? "border-foreground scale-110"
+                      : "border-border hover:border-border"
                       }`}
                     style={{ backgroundColor: color }}
                     type="button"

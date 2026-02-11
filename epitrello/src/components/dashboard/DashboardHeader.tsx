@@ -16,14 +16,14 @@ export function DashboardHeader() {
     return (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                <h1 className="text-3xl font-bold text-foreground tracking-tight">
                     Bonjour, {userName} 👋
                 </h1>
-                <p className="text-gray-500 mt-1 text-lg">
+                <p className="text-muted-foreground mt-1 text-lg">
                     Voici ce qui se passe avec vos projets aujourd&apos;hui.
                 </p>
             </div>
-            <div className="text-gray-400 font-medium text-sm md:text-right capitalize">
+            <div className="text-muted-foreground font-medium text-sm md:text-right capitalize">
                 {today}
             </div>
         </div>

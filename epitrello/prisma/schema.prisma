@@ -25,6 +25,7 @@ model User {
   resetTokenExpiry DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+  theme            String?   @default("system")
 
   githubId          String? @unique
   githubAccessToken String?
@@ -88,7 +89,10 @@ model Board {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  members BoardMember[]
+  members         BoardMember[]
+  automationRules AutomationRule[]
+
+  background String?
 }
 
 model BoardMember {
@@ -251,4 +255,36 @@ model ChecklistItem {
   checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model AutomationRule {
+  id          String   @id @default(cuid())
+  boardId     String
+  board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  triggerType String // e.g., "CARD_MOVED_TO_LIST"
+  triggerVal  String // e.g., "Done List ID"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  actions AutomationAction[]
+  logs    AutomationLog[]
+}
+
+model AutomationAction {
+  id        String         @id @default(cuid())
+  ruleId    String
+  rule      AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  type      String // e.g., "ARCHIVE_CARD"
+  value     String? // e.g. Label ID
+  createdAt DateTime       @default(now())
+}
+
+model AutomationLog {
+  id        String         @id @default(cuid())
+  ruleId    String
+  rule      AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  status    String // "SUCCESS", "FAILURE"
+  message   String?
+  createdAt DateTime       @default(now())
 }

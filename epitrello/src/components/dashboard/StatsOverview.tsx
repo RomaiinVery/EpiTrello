@@ -64,7 +64,7 @@ export function StatsOverview() {
         return (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-24 bg-gray-50 rounded-2xl animate-pulse border border-gray-100"></div>
+                    <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse border border-border"></div>
                 ))}
             </div>
         );
@@ -75,14 +75,14 @@ export function StatsOverview() {
             {statItems.map((stat, index) => (
                 <div
                     key={index}
-                    className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col items-start gap-3"
+                    className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow flex flex-col items-start gap-3"
                 >
                     <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
                         <stat.icon size={20} />
                     </div>
                     <div>
-                        <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                        <div className="text-sm text-gray-500 font-medium">{stat.label}</div>
+                        <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                        <div className="text-sm text-muted-foreground font-medium">{stat.label}</div>
                     </div>
                 </div>
             ))}

@@ -39,21 +39,21 @@ export function ActivityLog({ boardId, cardId, lastUpdate }: ActivityLogProps) {
     return (
         <div className="border-t pt-4">
             <div className="flex items-center gap-2 mb-4">
-                <History className="w-4 h-4 text-gray-500" />
-                <h3 className="text-sm font-semibold text-gray-700">
+                <History className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">
                     Historique des activités
                 </h3>
                 {activities.length > 0 && (
-                    <span className="text-xs text-gray-500">({activities.length})</span>
+                    <span className="text-xs text-muted-foreground">({activities.length})</span>
                 )}
             </div>
 
             {loading ? (
-                <p className="text-sm text-gray-400 italic text-center py-4">
+                <p className="text-sm text-muted-foreground italic text-center py-4">
                     Chargement...
                 </p>
             ) : activities.length === 0 ? (
-                <p className="text-sm text-gray-400 italic text-center py-4">
+                <p className="text-sm text-muted-foreground italic text-center py-4">
                     Aucune activité pour le moment
                 </p>
             ) : (
@@ -61,19 +61,19 @@ export function ActivityLog({ boardId, cardId, lastUpdate }: ActivityLogProps) {
                     <div className="space-y-2">
                         {(showAll ? activities : activities.slice(0, 1)).map((activity) => (
                             <div key={activity.id} className="flex items-start gap-2 text-sm">
-                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-semibold flex-shrink-0 mt-0.5">
+                                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-foreground text-xs font-semibold flex-shrink-0 mt-0.5">
                                     {activity.user.name
                                         ? activity.user.name.charAt(0).toUpperCase()
                                         : activity.user.email.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-gray-700">
+                                    <p className="text-foreground">
                                         <span className="font-medium">
                                             {activity.user.name || activity.user.email}
                                         </span>{" "}
                                         {activity.description}
                                     </p>
-                                    <p className="text-xs text-gray-500 mt-0.5">
+                                    <p className="text-xs text-muted-foreground mt-0.5">
                                         {new Date(activity.createdAt).toLocaleDateString("fr-FR", {
                                             day: "numeric",
                                             month: "short",
@@ -92,7 +92,7 @@ export function ActivityLog({ boardId, cardId, lastUpdate }: ActivityLogProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowAll(!showAll)}
-                            className="w-full text-xs text-gray-500 hover:text-gray-900 h-8"
+                            className="w-full text-xs text-muted-foreground hover:text-foreground h-8"
                         >
                             {showAll
                                 ? "Masquer l'historique"

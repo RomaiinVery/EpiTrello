@@ -5,6 +5,92 @@ import { authOptions } from "../../../auth/[...nextauth]/route";
 
 import { prisma } from "@/app/lib/prisma";
 
+export async function GET(req: Request, { params }: { params: Promise<{ boardId: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!currentUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  const { boardId } = await params;
+
+  const board = await prisma.board.findUnique({
+    where: { id: boardId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          profileImage: true
+        }
+      },
+      members: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              profileImage: true
+            }
+          }
+        }
+      },
+      workspace: {
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  profileImage: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!board) return NextResponse.json({ error: "Board not found" }, { status: 404 });
+
+  // Check if user has access to this board (owner, board member, or workspace member)
+  const hasAccess =
+    board.userId === currentUser.id ||
+    board.members.some(m => m.userId === currentUser.id) ||
+    board.workspace.members.some(m => m.userId === currentUser.id);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Access denied" }, { status: 403 });
+  }
+
+  // Combine owner, board members, and workspace members
+  const allMembers = [
+    { ...board.user, isOwner: true, role: "OWNER" },
+    ...board.members.map(member => ({
+      id: member.user.id,
+      name: member.user.name,
+      email: member.user.email,
+      profileImage: member.user.profileImage,
+      isOwner: false,
+      role: member.role
+    })),
+    ...board.workspace.members.map(member => ({
+      id: member.user.id,
+      name: member.user.name,
+      email: member.user.email,
+      profileImage: member.user.profileImage,
+      isOwner: false,
+      role: member.role
+    }))
+  ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i); // Remove duplicates
+
+  return NextResponse.json({ members: allMembers });
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ boardId: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

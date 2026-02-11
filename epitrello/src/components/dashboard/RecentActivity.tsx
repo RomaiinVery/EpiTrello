@@ -44,16 +44,16 @@ export function RecentActivity() {
         if (type.includes("comment")) return <MessageSquare size={14} className="text-blue-500" />;
         if (type.includes("create")) return <Plus size={14} className="text-green-500" />;
         if (type.includes("move")) return <Move size={14} className="text-orange-500" />;
-        return <Activity size={14} className="text-gray-500" />;
+        return <Activity size={14} className="text-muted-foreground" />;
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
             <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                     <Activity size={20} />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Recent Activity</h2>
+                <h2 className="text-lg font-bold text-foreground">Recent Activity</h2>
             </div>
 
             <div className="space-y-6">
@@ -61,25 +61,25 @@ export function RecentActivity() {
                     <div className="space-y-4">
                         {[1, 2, 3].map(i => (
                             <div key={i} className="flex gap-4 animate-pulse">
-                                <div className="w-8 h-8 rounded-full bg-gray-200" />
+                                <div className="w-8 h-8 rounded-full bg-muted" />
                                 <div className="flex-1 space-y-2">
-                                    <div className="h-3 bg-gray-200 w-3/4 rounded" />
-                                    <div className="h-2 bg-gray-200 w-1/2 rounded" />
+                                    <div className="h-3 bg-muted w-3/4 rounded" />
+                                    <div className="h-2 bg-muted w-1/2 rounded" />
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : activities.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center">No recent activity.</p>
+                    <p className="text-muted-foreground text-sm text-center">No recent activity.</p>
                 ) : (
                     activities.map((act) => (
                         <div key={act.id} className="relative flex gap-4">
                             {/* Vertical connector line */}
-                            <div className="absolute left-[15px] top-8 bottom-[-24px] w-0.5 bg-gray-100 last:hidden"></div>
+                            <div className="absolute left-[15px] top-8 bottom-[-24px] w-0.5 bg-accent last:hidden"></div>
 
                             <div className="relative">
                                 {act.user.profileImage ? (
-                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-100 relative">
+                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-border relative">
                                         <Image
                                             src={act.user.profileImage}
                                             alt={act.user.name || "User"}
@@ -88,27 +88,27 @@ export function RecentActivity() {
                                         />
                                     </div>
                                 ) : (
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
+                                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
                                         {act.user.name?.[0]?.toUpperCase() || "U"}
                                     </div>
                                 )}
-                                <div className="absolute -bottom-1 -right-1 bg-white p-0.5 rounded-full border border-gray-100">
+                                <div className="absolute -bottom-1 -right-1 bg-card p-0.5 rounded-full border border-border">
                                     {getActivityIcon(act.type)}
                                 </div>
                             </div>
 
                             <div className="flex-1 pb-1">
-                                <p className="text-sm text-gray-800 leading-snug">
+                                <p className="text-sm text-foreground leading-snug">
                                     <span className="font-semibold">{act.user.name || "Someone"}</span> {act.description}
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs text-gray-400">
+                                    <span className="text-xs text-muted-foreground">
                                         {new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                     {act.board && (
                                         <>
-                                            <span className="text-gray-300">•</span>
-                                            <span className="text-xs font-medium text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+                                            <span className="text-muted-foreground">•</span>
+                                            <span className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                                 {act.board.title}
                                             </span>
                                         </>

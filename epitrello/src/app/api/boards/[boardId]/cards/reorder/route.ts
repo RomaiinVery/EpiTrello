@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { logActivity } from "@/app/lib/activity-logger";
+import { AutomationService, TriggerType } from "@/app/lib/automation";
+import { checkBoardPermission, Permission, getPermissionErrorMessage } from "@/lib/permissions";
 
 import { prisma } from "@/app/lib/prisma";
 
@@ -38,20 +40,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: { members: true },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
-    }
-
-    const isOwner = board.userId === user.id;
-    const isMember = board.members.some(member => member.id === user.id);
-
-    if (!isOwner && !isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check EDIT permission (VIEWERs cannot reorder cards)
+    const { allowed, role } = await checkBoardPermission(user.id, boardId, Permission.EDIT);
+    if (!allowed) {
+      return NextResponse.json({
+        error: getPermissionErrorMessage(role, Permission.EDIT)
+      }, { status: 403 });
     }
 
     const oldCards = await prisma.card.findMany({
@@ -116,6 +110,15 @@ export async function PATCH(
               newListTitle: newList.title,
             },
           });
+
+          // AUTOMATION TRIGGER
+          // Fire and forget automation to not block response
+          AutomationService.processTrigger(
+            boardId,
+            TriggerType.CARD_MOVED_TO_LIST,
+            card.listId, // The list ID it was moved TO
+            { cardId: card.id }
+          ).catch(e => console.error("Automation Trigger Error:", e));
         }
       }
     }

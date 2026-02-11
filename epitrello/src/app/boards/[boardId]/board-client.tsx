@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useMemo, useEffect } from "react";
+import useSWR from "swr";
 import React from "react";
 import {
   DropdownMenu,
@@ -30,7 +31,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
-import { type List, type Card, type Board } from "@/app/lib/board-api";
+import { type List, type Card, type Board, type Members } from "@/app/lib/board-api";
+import { User } from "@/types";
 import { CardModal } from "@/components/CardModal";
 import { CreatePullRequestModal } from "@/components/board/CreatePullRequestModal";
 import { CheckSquare, Clock, Github } from "lucide-react";
@@ -38,11 +40,18 @@ import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { GanttView } from "@/components/board/GanttView";
 import { MemberAvatar } from "../memberAvatar";
+import { AutomationModal } from "@/components/board/AutomationModal";
+import { Zap, Activity, Settings } from "lucide-react";
+import { AnalyticsModal } from "@/components/board/AnalyticsModal";
+import { BoardChat } from "@/components/board/BoardChat";
+import { SettingsModal } from "@/components/board/SettingsModal";
+import { FilterPopover, FilterState } from "@/components/board/FilterPopover";
 
-function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
+function CardItem({ card, onRename, onDelete, onArchive, onClick, currentUserRole }: {
   card: Card;
   onRename: (listId: string, cardId: string) => void;
   onDelete: (listId: string, cardId: string) => void;
+  onArchive: (listId: string, cardId: string) => void;
   onClick: (listId: string, cardId: string) => void;
   currentUserRole?: string;
 }) {
@@ -72,7 +81,7 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
       <div
         ref={setNodeRef}
         style={style}
-        className="bg-gray-200 rounded shadow p-2 mb-2 h-24 opacity-50"
+        className="bg-secondary rounded shadow p-2 mb-2 h-24 opacity-50"
       />
     );
   }
@@ -82,13 +91,18 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="bg-white rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+      className={`bg-card rounded shadow mb-2 cursor-pointer hover:shadow-md transition-shadow overflow-hidden relative ${card.archived ? "opacity-60 grayscale bg-muted" : ""}`}
       onClick={(e) => {
         if (!isDragging && !(e.target as HTMLElement).closest('[role="menuitem"]')) {
           onClick(card.listId, card.id);
         }
       }}
     >
+      {card.archived && (
+        <div className="absolute top-0 right-0 bg-secondary text-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-bl z-10">
+          ARCHIVED
+        </div>
+      )}
       {card.coverImage && (
         <Image
           src={card.coverImage}
@@ -102,7 +116,7 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
       <div className="p-2">
         <div className="flex justify-between items-center mb-2">
           <h3
-            className="font-semibold text-gray-700 flex-1"
+            className="font-semibold text-foreground flex-1"
             {...listeners}
           >
             {card.title}
@@ -111,7 +125,7 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                  className="text-muted-foreground hover:text-foreground focus:outline-none"
                   aria-label="Menu"
                   type="button"
                   onClick={(e) => e.stopPropagation()}
@@ -126,6 +140,9 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
                 <DropdownMenuItem onClick={() => onClick(card.listId, card.id)}>
                   Modifier
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onArchive(card.listId, card.id)}>
+                  {card.archived ? "Désarchiver" : "Archiver"}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onDelete(card.listId, card.id)}>
                   Supprimer
                 </DropdownMenuItem>
@@ -134,7 +151,7 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
           )}
         </div>
         {card.content && (
-          <p className="text-gray-600 text-sm line-clamp-2">{card.content}</p>
+          <p className="text-foreground text-sm line-clamp-2">{card.content}</p>
         )}
         {card.labels && card.labels.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
@@ -160,7 +177,7 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
                 ? "bg-red-100 text-red-700"
                 : isToday(new Date(card.dueDate)) || isTomorrow(new Date(card.dueDate))
                   ? "bg-yellow-100 text-yellow-700"
-                  : "bg-gray-100 text-gray-600"
+                  : "bg-muted text-foreground"
               } `}
             title={card.isDone ? "Terminée" : "Date d'échéance"}
           >
@@ -176,7 +193,7 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="mt-2 ml-1 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            className="mt-2 ml-1 inline-flex items-center gap-1.5 text-xs font-medium rounded px-2 py-1 bg-muted text-foreground hover:bg-secondary transition-colors"
             title="Voir l'issue GitHub"
           >
             <Github className="w-3 h-3" />
@@ -217,7 +234,7 @@ function CardItem({ card, onRename, onDelete, onClick, currentUserRole }: {
               if (totalCount === 0) return null;
 
               return (
-                <div key={checklist.id} className="flex items-center gap-2 text-xs text-gray-600">
+                <div key={checklist.id} className="flex items-center gap-2 text-xs text-foreground">
                   <CheckSquare className="w-3 h-3" />
                   <span className="flex-1">{checklist.title}</span>
                   <span className="font-medium">
@@ -242,7 +259,7 @@ function isLabelColorLight(color: string): boolean {
   return brightness > 155;
 }
 
-function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard, onCardClick, currentUserRole }: {
+function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onRenameCard, onDeleteCard, onArchiveCard, onCardClick, currentUserRole }: {
   list: List;
   cards: Card[];
   onRenameList: (listId: string) => void;
@@ -250,6 +267,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
   onAddCard: (list: List) => void;
   onRenameCard: (listId: string, cardId: string) => void;
   onDeleteCard: (listId: string, cardId: string) => void;
+  onArchiveCard: (listId: string, cardId: string) => void;
   onCardClick: (listId: string, cardId: string) => void;
   currentUserRole?: string;
 }) {
@@ -281,7 +299,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
       <div
         ref={setNodeRef}
         style={style}
-        className="w-64 min-w-[16rem] bg-gray-200 rounded-lg p-3 shadow-sm h-full opacity-50"
+        className="w-64 min-w-[16rem] bg-secondary rounded-lg p-3 shadow-sm h-full opacity-50"
       />
     );
   }
@@ -290,15 +308,15 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
     <div
       ref={setNodeRef}
       style={style}
-      className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-sm relative flex flex-col max-h-[calc(100vh-12rem)]"
+      className="w-64 min-w-[16rem] bg-muted rounded-lg p-3 shadow-sm relative flex flex-col max-h-[calc(100vh-12rem)]"
     >
       <div {...attributes} {...listeners} className={`flex justify-between items-center mb-2 ${currentUserRole === "VIEWER" ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}>
-        <h2 className="font-semibold text-gray-800">{list.title}</h2>
+        <h2 className="font-semibold text-foreground">{list.title}</h2>
         {currentUserRole !== "VIEWER" && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                className="text-muted-foreground hover:text-foreground focus:outline-none"
                 aria-label="Menu"
                 type="button"
               >
@@ -326,12 +344,13 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
                 card={card}
                 onRename={onRenameCard}
                 onDelete={onDeleteCard}
+                onArchive={onArchiveCard}
                 onClick={onCardClick}
                 currentUserRole={currentUserRole}
               />
             ))
           ) : (
-            <p className="text-sm text-gray-500 italic mb-2">Aucune carte</p>
+            <p className="text-sm text-muted-foreground italic mb-2">Aucune carte</p>
           )}
         </SortableContext>
       </div>
@@ -341,7 +360,7 @@ function ListContainer({ list, cards, onRenameList, onDeleteList, onAddCard, onR
           if (currentUserRole === "VIEWER") return;
           onAddCard(list)
         }}
-        className={`mt-auto flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500 transition-colors py-1 ${currentUserRole === "VIEWER" ? "opacity-50 cursor-not-allowed" : "hover:text-gray-700 hover:border-gray-400"}`}
+        className={`mt-auto flex items-center justify-center w-full border-2 border-dashed border-border rounded-lg text-muted-foreground transition-colors py-1 ${currentUserRole === "VIEWER" ? "opacity-50 cursor-not-allowed" : "hover:text-foreground hover:border-border"}`}
         type="button"
         disabled={currentUserRole === "VIEWER"}
       >
@@ -357,12 +376,81 @@ interface BoardClientProps {
   initialBoard: Board;
   initialCardsByList: Record<string, Card[]>;
   currentUserRole?: string;
+  initialCardId?: string;
 }
 
-export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList, currentUserRole = "VIEWER" }: BoardClientProps) {
+export default function BoardClient({ boardId, workspaceId, initialBoard, initialCardsByList, currentUserRole = "VIEWER", initialCardId }: BoardClientProps) {
 
-  const [board, setBoard] = useState<Board | null>(initialBoard);
-  const [cardsByList, setCardsByList] = useState<Record<string, Card[]>>(initialCardsByList);
+
+
+
+
+
+
+
+  // Define the SWR fetcher that aggregates all data
+  const getFullBoardData = async () => {
+    const boardRes = await fetch(`/api/boards/${boardId}`, { cache: "no-store" });
+    if (!boardRes.ok) throw new Error("Failed to fetch board");
+    const boardData = await boardRes.json();
+
+    const listsRes = await fetch(`/api/boards/${boardId}/lists`, { cache: "no-store" });
+    if (!listsRes.ok) throw new Error("Failed to fetch lists");
+    const listsData = await listsRes.json();
+
+    // Merge lists into boardData immediately
+    const boardWithLists = { ...boardData, lists: listsData };
+
+    const newCardsByList: Record<string, Card[]> = {};
+    // Parallelize card fetching
+    await Promise.all(listsData.map(async (list: List) => {
+      const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`, { cache: "no-store" });
+      if (cardsRes.ok) {
+        const cardsData = await cardsRes.json();
+        newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
+      } else {
+        throw new Error(`Failed to fetch cards for list ${list.id}`);
+      }
+    }));
+
+    return { board: boardWithLists, cardsByList: newCardsByList };
+  };
+
+  const { data: boardData, mutate } = useSWR(
+    [`board-full`, boardId],
+    getFullBoardData,
+    {
+      refreshInterval: 2000,
+      fallbackData: {
+        board: initialBoard,
+        cardsByList: initialCardsByList
+      }
+    }
+  );
+
+  // Derived state from SWR data
+  const board = boardData?.board || null;
+  const cardsByList = boardData?.cardsByList || {};
+
+  // Helper to update SWR cache optimistically or after mutation
+  const setBoard = (fn: (prev: Board | null) => Board | null) => {
+    mutate((current) => {
+      if (!current) return undefined;
+      const newBoard = fn(current.board);
+      return newBoard ? { ...current, board: newBoard } : current;
+    }, false);
+  };
+
+  const setCardsByList = (fn: (prev: Record<string, Card[]>) => Record<string, Card[]>) => {
+    mutate((current) => {
+      if (!current) return undefined;
+      const newCards = fn(current.cardsByList);
+      return { ...current, cardsByList: newCards };
+    }, false);
+  };
+
+
+
 
   const [showDialog, setShowDialog] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");
@@ -416,7 +504,94 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   const [prModalData, setPrModalData] = useState<{ listId: string; cardId: string; boardId: string } | null>(null);
   const [prLoading, setPrLoading] = useState(false);
 
-  const listIds = useMemo(() => (board?.lists || []).map(l => l.id), [board?.lists]);
+  const [showAutomationModal, setShowAutomationModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  const [filters, setFilters] = useState<FilterState>({
+    labelIds: [],
+    memberIds: [],
+    dueDate: "none",
+  });
+
+  // Handle deep linking to card
+  useEffect(() => {
+    if (initialCardId && isMounted) {
+      // Find which list the card belongs to
+      let foundListId: string | null = null;
+      Object.entries(cardsByList).forEach(([lId, cards]) => {
+        if (cards.some(c => c.id === initialCardId)) {
+          foundListId = lId;
+        }
+      });
+
+      if (foundListId) {
+        setSelectedCardId(initialCardId);
+        setSelectedListId(foundListId);
+        setShowCardModal(true);
+        // clean up URL
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+  }, [initialCardId, isMounted, cardsByList]);
+
+  // Apply filters
+  const filteredCardsByList = useMemo(() => {
+    const newCardsByList: Record<string, Card[]> = {};
+    const hasFilters = filters.labelIds.length > 0 || filters.memberIds.length > 0 || filters.dueDate !== "none";
+
+    if (!hasFilters) {
+      return cardsByList;
+    }
+
+    Object.keys(cardsByList).forEach(listId => {
+      newCardsByList[listId] = cardsByList[listId].filter(card => {
+        // Label Filter
+        if (filters.labelIds.length > 0) {
+          const cardLabelIds = card.labels?.map(l => l.id) || [];
+          if (!filters.labelIds.some(id => cardLabelIds.includes(id))) {
+            return false;
+          }
+        }
+
+        // Member Filter
+        if (filters.memberIds.length > 0) {
+          const cardMemberIds = card.members?.map(m => m.id) || [];
+          if (!filters.memberIds.some(id => cardMemberIds.includes(id))) {
+            return false;
+          }
+        }
+
+        // Due Date Filter
+        if (filters.dueDate !== "none") {
+          if (filters.dueDate === "no-date") {
+            return !card.dueDate;
+          }
+
+          if (!card.dueDate) return false;
+          const date = new Date(card.dueDate);
+
+          if (filters.dueDate === "overdue") {
+            if (isPast(date) && !isToday(date) && !card.isDone) return true;
+            return false;
+          }
+          if (filters.dueDate === "due-soon") { // within 24h
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if (date >= now && date <= tomorrow && !card.isDone) return true;
+            return false;
+          }
+        }
+
+        return true;
+      });
+    });
+    return newCardsByList;
+  }, [cardsByList, filters]);
+
+
+  const listIds = useMemo(() => (board?.lists || []).map((l: List) => l.id), [board?.lists]);
 
 
   useEffect(() => {
@@ -471,7 +646,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
   const handleRename = (listId: string) => {
     if (!board || !board.lists) return;
-    const list = board.lists.find((l) => l.id === listId);
+    const list = board.lists.find((l: List) => l.id === listId);
     if (!list) return;
     setListToRename(list);
     setRenameTitle(list.title);
@@ -523,7 +698,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
   const handleDelete = (listId: string) => {
     if (!board || !board.lists) return;
-    const list = board.lists.find((l) => l.id === listId);
+    const list = board.lists.find((l: List) => l.id === listId);
     if (!list) return;
     setListToDelete(list);
     setDeleteError(null);
@@ -603,7 +778,13 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       const newCard = await res.json();
       setCardsByList((prev) => {
         const prevCards = prev[listForNewCard.id] || [];
-        return { ...prev, [listForNewCard.id]: [...prevCards, { ...newCard, listId: listForNewCard.id }] };
+        return {
+          ...prev,
+          [listForNewCard.id]: [
+            ...prevCards,
+            { ...newCard, listId: listForNewCard.id, labels: [], members: [], checklists: [] }
+          ]
+        };
       });
       setShowAddCardDialog(false);
       setCardTitle("");
@@ -616,7 +797,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   };
 
   const handleRenameCard = (listId: string, cardId: string) => {
-    const card = cardsByList[listId]?.find((c) => c.id === cardId);
+    const card = cardsByList[listId]?.find((c: Card) => c.id === cardId);
     if (!card) return;
     setCardToRename(card);
     setListForCardAction(listId);
@@ -656,7 +837,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       const updatedCard = await res.json();
       setCardsByList((prev) => {
         const updatedCards = prev[listForCardAction].map((c) =>
-          c.id === updatedCard.id ? { ...updatedCard, listId: listForCardAction } : c
+          c.id === updatedCard.id ? { ...c, ...updatedCard, listId: listForCardAction } : c
         );
         return { ...prev, [listForCardAction]: updatedCards };
       });
@@ -714,6 +895,40 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     setDeletingCard(false);
   };
 
+  const handleArchiveCard = async (listId: string, cardId: string) => {
+    const card = cardsByList[listId]?.find((c) => c.id === cardId);
+    if (!card) return;
+
+    // Optimistic update
+    const previousCards = cardsByList[listId];
+    setCardsByList((prev) => {
+      const updated = prev[listId].map(c =>
+        c.id === cardId ? { ...c, archived: !c.archived } : c
+      );
+      return { ...prev, [listId]: updated };
+    });
+
+    try {
+      const res = await fetch(
+        `/api/boards/${boardId}/lists/${listId}/cards/${cardId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ archived: !card.archived }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to archive");
+      }
+      // Revert is handled by SWR revalidation or we can just leave it if successful
+    } catch (error) {
+      console.error("Error archiving card:", error);
+      // Revert on error
+      setCardsByList((prev) => ({ ...prev, [listId]: previousCards }));
+    }
+  };
+
 
 
   const handleCardClick = (listId: string, cardId: string) => {
@@ -729,36 +944,11 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   };
 
   const handleCardUpdate = () => {
-    fetchBoardData();
+    mutate();
   };
 
-  const fetchBoardData = async () => {
-    try {
-      const res = await fetch(`/api/boards/${boardId}`);
-      if (res.ok) {
-        const boardData = await res.json();
-        setBoard((prev) => prev ? { ...prev, ...boardData } : boardData);
-      }
 
-      const listsRes = await fetch(`/api/boards/${boardId}/lists`);
-      if (listsRes.ok) {
-        const listsData = await listsRes.json();
-        setBoard((prev) => prev ? { ...prev, lists: listsData } : prev);
 
-        const newCardsByList: Record<string, Card[]> = {};
-        for (const list of listsData) {
-          const cardsRes = await fetch(`/api/boards/${boardId}/lists/${list.id}/cards`);
-          if (cardsRes.ok) {
-            const cardsData = await cardsRes.json();
-            newCardsByList[list.id] = cardsData.map((c: Card) => ({ ...c, listId: list.id }));
-          }
-        }
-        setCardsByList((prev) => ({ ...prev, ...newCardsByList }));
-      }
-    } catch (err) {
-      console.error("Error refreshing board data:", err);
-    }
-  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -846,8 +1036,8 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
     if (isActiveAList && activeId !== overId) {
       setBoard((prev) => {
         if (!prev || !prev.lists) return prev;
-        const activeIndex = prev.lists.findIndex((l) => l.id === activeId);
-        const overIndex = prev.lists.findIndex((l) => l.id === overId);
+        const activeIndex = prev.lists.findIndex((l: List) => l.id === activeId);
+        const overIndex = prev.lists.findIndex((l: List) => l.id === overId);
         const newLists = arrayMove(prev.lists, activeIndex, overIndex);
 
         const listsToUpdate = newLists.map((list, index) => ({ id: list.id, position: index }));
@@ -922,7 +1112,7 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
         if (!activeListId || !overListId) return;
 
         // Check if moved to "Doing" or "En cours"
-        const destList = board?.lists?.find(l => l.id === overListId);
+        const destList = board?.lists?.find((l: List) => l.id === overListId);
 
         if (destList && board?.githubRepo && startListId && startListId !== overListId &&
           (destList.title.toLowerCase().includes("doing") || destList.title.toLowerCase().includes("en cours") || destList.title.toLowerCase().includes("going"))) {
@@ -1013,13 +1203,13 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
       <div className="p-6 h-full flex flex-col">
         <Link
           href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
-          className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
+          className="text-muted-foreground hover:text-foreground mb-4 inline-block text-sm font-medium transition-colors"
         >
           ← Retour aux boards
         </Link>
         <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
         {board.description && (
-          <p className="text-gray-600 mb-4">{board.description}</p>
+          <p className="text-foreground mb-4">{board.description}</p>
         )}
         <hr className="my-4" />
         <div className="flex-1">
@@ -1029,19 +1219,42 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
   }
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <Link
-        href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
-        className="text-gray-500 hover:text-gray-700 mb-4 inline-block text-sm font-medium transition-colors"
-      >
-        ← Retour aux boards
-      </Link>
+    <div className="p-6 h-full flex flex-col transition-colors duration-300" style={{ backgroundColor: board.background || "#fff" }}>
+      <div className="flex items-center justify-between mb-4">
+        <Link
+          href={workspaceId ? `/workspaces/${workspaceId}/boards` : "/workspaces"}
+          className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+        >
+          ← Retour aux boards
+        </Link>
+        {currentUserRole === "OWNER" && (
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-black/5 transition-colors"
+            title="Paramètres"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center justify-between mb-2">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
+        <div className="flex-1 gap-4 flex flex-col">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold mb-2">{board.title}</h1>
+            <FilterPopover
+              labels={board?.labels || []}
+              members={[
+                ...(board.user ? [{ ...board.user, id: board.user.id, role: 'OWNER' } as unknown as User] : []),
+                ...(board.members?.map((m: Members) => m.user) || []),
+                ...(board.workspace?.members?.map((m: Members) => m.user) || [])
+              ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)}
+              activeFilters={filters}
+              onFilterChange={setFilters}
+            />
+          </div>
           {board.description && (
-            <p className="text-gray-600 mb-4">{board.description}</p>
+            <p className="text-foreground mb-4">{board.description}</p>
           )}
         </div>
         <div>
@@ -1050,26 +1263,43 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
               {board.user && (
                 <MemberAvatar key={board.user.id} member={{ user: board.user, id: board.user.id, role: 'OWNER' }} />
               )}
-              {board.members?.map(member => (
+              {board.members?.map((member: { user: User; id: string; role: string }) => (
                 <MemberAvatar key={member.id} member={member} />
               ))}
             </div>
           </div>
           <div className="flex gap-2">
-            <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+            <div className="bg-muted p-1 rounded-lg flex items-center">
               <button
                 onClick={() => setViewMode("kanban")}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "kanban" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Kanban
               </button>
               <button
                 onClick={() => setViewMode("gantt")}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "gantt" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === "gantt" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Gantt
               </button>
             </div>
+
+            <button
+              onClick={() => setShowAutomationModal(true)}
+              className="bg-card border border-border hover:bg-muted text-foreground px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ml-2"
+            >
+              <Zap className="w-4 h-4 text-yellow-500 fill-current" />
+              Automations
+            </button>
+
+            <button
+              onClick={() => setShowAnalyticsModal(true)}
+              className="bg-card border border-border hover:bg-muted text-foreground px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ml-2"
+            >
+              <Activity className="w-4 h-4 text-blue-500" />
+              Analytics
+            </button>
+
           </div>
 
         </div>
@@ -1077,360 +1307,413 @@ export default function BoardClient({ boardId, workspaceId, initialBoard, initia
 
       <hr className="my-4" />
 
-      {viewMode === "kanban" ? (
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex-1 overflow-x-auto overflow-y-hidden">
-            <div className="flex h-full gap-4 pb-4 px-4 min-w-fit">
-              <SortableContext
-                items={listIds}
-                strategy={horizontalListSortingStrategy}
-                disabled={currentUserRole === "VIEWER"}
-              >
-                {board?.lists?.map((list) => (
-                  <ListContainer
-                    key={list.id}
-                    list={list}
-                    cards={cardsByList[list.id] || []}
-                    onRenameList={handleRename}
-                    onDeleteList={handleDelete}
-                    onAddCard={handleAddCardClick}
-                    onRenameCard={handleRenameCard}
-                    onDeleteCard={handleDeleteCard}
-                    onCardClick={handleCardClick}
-                    currentUserRole={currentUserRole}
-                  />
-                ))}
-              </SortableContext>
+      {
+        viewMode === "kanban" ? (
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex-1 overflow-x-auto overflow-y-hidden">
+              <div className="flex h-full gap-4 pb-4 px-4 min-w-fit">
+                <SortableContext
+                  items={listIds}
+                  strategy={horizontalListSortingStrategy}
+                  disabled={currentUserRole === "VIEWER"}
+                >
+                  {board?.lists?.map((list: List) => (
+                    <ListContainer
+                      key={list.id}
+                      list={list}
+                      cards={filteredCardsByList[list.id] || []}
+                      onRenameList={handleRename}
+                      onDeleteList={handleDelete}
+                      onAddCard={handleAddCardClick}
+                      onRenameCard={handleRenameCard}
+                      onDeleteCard={handleDeleteCard}
+                      onArchiveCard={handleArchiveCard}
+                      onCardClick={handleCardClick}
+                      currentUserRole={currentUserRole}
+                    />
+                  ))}
+                </SortableContext>
 
-              {currentUserRole !== "VIEWER" && (
+                {currentUserRole !== "VIEWER" && (
+                  <button
+                    onClick={handleAddListClick}
+                    className="w-64 min-w-[16rem] h-12 bg-secondary/50 hover:bg-secondary rounded-lg flex items-center justify-center text-foreground font-medium transition-colors"
+                    type="button"
+                  >
+                    + Ajouter une liste
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {isMounted ? createPortal(
+              <DragOverlay>
+                {activeList && (
+                  <div className="w-64 min-w-[16rem] bg-muted rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
+                    <h2 className="font-semibold text-foreground">{activeList.title}</h2>
+                  </div>
+                )}
+                {activeCard && (
+                  <div className="bg-card rounded shadow p-2 mb-2 w-64 opacity-90">
+                    <h3 className="font-semibold text-foreground">{activeCard.title}</h3>
+                    {activeCard.content && (
+                      <p className="text-foreground text-sm">{activeCard.content}</p>
+                    )}
+                  </div>
+                )}
+              </DragOverlay>,
+              document.body
+            ) : null}
+
+          </DndContext>
+        ) : (
+          <GanttView lists={board.lists || []} cardsByList={cardsByList} />
+        )
+      }
+
+      {
+        showDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Ajouter une liste</h3>
+              <input
+                type="text"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Titre de la liste"
+                value={newListTitle}
+                onChange={(e) => setNewListTitle(e.target.value)}
+                disabled={addingList}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleDialogConfirm();
+                }}
+              />
+              {error && (
+                <div className="text-red-500 text-sm mb-2">{error}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
                 <button
-                  onClick={handleAddListClick}
-                  className="w-64 min-w-[16rem] h-12 bg-gray-200/50 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-medium transition-colors"
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
+                  onClick={handleDialogCancel}
+                  disabled={addingList}
                   type="button"
                 >
-                  + Ajouter une liste
+                  Annuler
                 </button>
-              )}
+                <button
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  onClick={handleDialogConfirm}
+                  disabled={addingList}
+                  type="button"
+                >
+                  {addingList ? "Ajout..." : "Ajouter"}
+                </button>
+              </div>
             </div>
           </div>
+        )
+      }
 
-          {isMounted ? createPortal(
-            <DragOverlay>
-              {activeList && (
-                <div className="w-64 min-w-[16rem] bg-gray-100 rounded-lg p-3 shadow-lg relative flex flex-col max-h-[calc(100vh-12rem)] opacity-90">
-                  <h2 className="font-semibold text-gray-800">{activeList.title}</h2>
-                </div>
-              )}
-              {activeCard && (
-                <div className="bg-white rounded shadow p-2 mb-2 w-64 opacity-90">
-                  <h3 className="font-semibold text-gray-700">{activeCard.title}</h3>
-                  {activeCard.content && (
-                    <p className="text-gray-600 text-sm">{activeCard.content}</p>
-                  )}
-                </div>
-              )}
-            </DragOverlay>,
-            document.body
-          ) : null}
-
-        </DndContext>
-      ) : (
-        <GanttView lists={board.lists || []} cardsByList={cardsByList} />
-      )}
-
-      {showDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Ajouter une liste</h3>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Titre de la liste"
-              value={newListTitle}
-              onChange={(e) => setNewListTitle(e.target.value)}
-              disabled={addingList}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleDialogConfirm();
-              }}
-            />
-            {error && (
-              <div className="text-red-500 text-sm mb-2">{error}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleDialogCancel}
-                disabled={addingList}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleDialogConfirm}
-                disabled={addingList}
-                type="button"
-              >
-                {addingList ? "Ajout..." : "Ajouter"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showRenameDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Renommer la liste</h3>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Nouveau titre"
-              value={renameTitle}
-              onChange={(e) => setRenameTitle(e.target.value)}
-              disabled={renaming}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRenameConfirm();
-              }}
-            />
-            {renameError && (
-              <div className="text-red-500 text-sm mb-2">{renameError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleRenameCancel}
+      {
+        showRenameDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Renommer la liste</h3>
+              <input
+                type="text"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Nouveau titre"
+                value={renameTitle}
+                onChange={(e) => setRenameTitle(e.target.value)}
                 disabled={renaming}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleRenameConfirm}
-                disabled={renaming}
-                type="button"
-              >
-                {renaming ? "Renommage..." : "Renommer"}
-              </button>
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameConfirm();
+                }}
+              />
+              {renameError && (
+                <div className="text-red-500 text-sm mb-2">{renameError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
+                  onClick={handleRenameCancel}
+                  disabled={renaming}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  onClick={handleRenameConfirm}
+                  disabled={renaming}
+                  type="button"
+                >
+                  {renaming ? "Renommage..." : "Renommer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showDeleteDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
-            <p className="mb-4">
-              Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
-            </p>
-            {deleteError && (
-              <div className="text-red-500 text-sm mb-2">{deleteError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleDeleteCancel}
-                disabled={deleting}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
-                onClick={handleDeleteConfirm}
-                disabled={deleting}
-                type="button"
-              >
-                {deleting ? "Suppression..." : "Supprimer"}
-              </button>
+      {
+        showDeleteDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Supprimer la liste</h3>
+              <p className="mb-4">
+                Êtes-vous sûr de vouloir supprimer la liste &quot;{listToDelete?.title}&quot; ?
+              </p>
+              {deleteError && (
+                <div className="text-red-500 text-sm mb-2">{deleteError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
+                  onClick={handleDeleteCancel}
+                  disabled={deleting}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                  onClick={handleDeleteConfirm}
+                  disabled={deleting}
+                  type="button"
+                >
+                  {deleting ? "Suppression..." : "Supprimer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showAddCardDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Ajouter une carte</h3>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Titre de la carte"
-              value={cardTitle}
-              onChange={(e) => setCardTitle(e.target.value)}
-              disabled={addingCard}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleAddCardConfirm();
-              }}
-            />
-            <textarea
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-              placeholder="Contenu (optionnel)"
-              value={cardContent}
-              onChange={(e) => setCardContent(e.target.value)}
-              disabled={addingCard}
-              rows={3}
-            />
-            {addCardError && (
-              <div className="text-red-500 text-sm mb-2">{addCardError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleAddCardCancel}
+      {
+        showAddCardDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Ajouter une carte</h3>
+              <input
+                type="text"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Titre de la carte"
+                value={cardTitle}
+                onChange={(e) => setCardTitle(e.target.value)}
                 disabled={addingCard}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleAddCardConfirm}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddCardConfirm();
+                }}
+              />
+              <textarea
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                placeholder="Contenu (optionnel)"
+                value={cardContent}
+                onChange={(e) => setCardContent(e.target.value)}
                 disabled={addingCard}
-                type="button"
-              >
-                {addingCard ? "Ajout..." : "Ajouter"}
-              </button>
+                rows={3}
+              />
+              {addCardError && (
+                <div className="text-red-500 text-sm mb-2">{addCardError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
+                  onClick={handleAddCardCancel}
+                  disabled={addingCard}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  onClick={handleAddCardConfirm}
+                  disabled={addingCard}
+                  type="button"
+                >
+                  {addingCard ? "Ajout..." : "Ajouter"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showRenameCardDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Renommer la carte</h3>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Nouveau titre"
-              value={renameCardTitle}
-              onChange={(e) => setRenameCardTitle(e.target.value)}
-              disabled={renamingCard}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRenameCardConfirm();
-              }}
-            />
-            {renameCardError && (
-              <div className="text-red-500 text-sm mb-2">{renameCardError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleRenameCardCancel}
+      {
+        showRenameCardDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Renommer la carte</h3>
+              <input
+                type="text"
+                className="w-full border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Nouveau titre"
+                value={renameCardTitle}
+                onChange={(e) => setRenameCardTitle(e.target.value)}
                 disabled={renamingCard}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleRenameCardConfirm}
-                disabled={renamingCard}
-                type="button"
-              >
-                {renamingCard ? "Renommage..." : "Renommer"}
-              </button>
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameCardConfirm();
+                }}
+              />
+              {renameCardError && (
+                <div className="text-red-500 text-sm mb-2">{renameCardError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
+                  onClick={handleRenameCardCancel}
+                  disabled={renamingCard}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  onClick={handleRenameCardConfirm}
+                  disabled={renamingCard}
+                  type="button"
+                >
+                  {renamingCard ? "Renommage..." : "Renommer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showDeleteCardDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
-            <p className="mb-4">
-              Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
-            </p>
-            {deleteCardError && (
-              <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
-            )}
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={handleDeleteCardCancel}
-                disabled={deletingCard}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
-                onClick={handleDeleteCardConfirm}
-                disabled={deletingCard}
-                type="button"
-              >
-                {deletingCard ? "Suppression..." : "Supprimer"}
-              </button>
+      {
+        showDeleteCardDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-80">
+              <h3 className="text-lg font-semibold mb-3">Supprimer la carte</h3>
+              <p className="mb-4">
+                Êtes-vous sûr de vouloir supprimer la carte &quot;{cardToDelete?.title}&quot; ?
+              </p>
+              {deleteCardError && (
+                <div className="text-red-500 text-sm mb-2">{deleteCardError}</div>
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  className="px-4 py-2 rounded bg-secondary text-foreground hover:bg-accent"
+                  onClick={handleDeleteCardCancel}
+                  disabled={deletingCard}
+                  type="button"
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                  onClick={handleDeleteCardConfirm}
+                  disabled={deletingCard}
+                  type="button"
+                >
+                  {deletingCard ? "Suppression..." : "Supprimer"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
 
 
       {/* Card Modal */}
-      {showCardModal && selectedCardId && selectedListId && (
-        <CardModal
-          boardId={boardId}
-          cardId={selectedCardId}
-          listId={selectedListId}
-          isOpen={showCardModal}
-          onClose={handleCardModalClose}
-          onUpdate={handleCardUpdate}
-          currentUserRole={currentUserRole}
-        />
-      )}
+      {
+        showCardModal && selectedCardId && selectedListId && (
+          <CardModal
+            boardId={boardId}
+            cardId={selectedCardId}
+            listId={selectedListId}
+            isOpen={showCardModal}
+            onClose={handleCardModalClose}
+            onUpdate={handleCardUpdate}
+            currentUserRole={currentUserRole}
+          />
+        )
+      }
 
-      {board && board.githubRepo && prModalData && (
-        <CreatePullRequestModal
-          isOpen={showPRModal}
-          onClose={() => {
-            setShowPRModal(false);
-            setPrModalData(null);
-          }}
-          onConfirm={async (data) => {
-            if (!prModalData) return;
-            setPrLoading(true);
-            try {
-              const res = await fetch(`/api/boards/${boardId}/lists/${prModalData.listId}/cards/${prModalData.cardId}/github/pr`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-              });
+      {
+        board && board.githubRepo && prModalData && (
+          <CreatePullRequestModal
+            isOpen={showPRModal}
+            onClose={() => {
+              setShowPRModal(false);
+              setPrModalData(null);
+            }}
+            onConfirm={async (data) => {
+              if (!prModalData) return;
+              setPrLoading(true);
+              try {
+                const res = await fetch(`/api/boards/${boardId}/lists/${prModalData.listId}/cards/${prModalData.cardId}/github/pr`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(data),
+                });
 
-              if (res.ok) {
-                await res.json();
-                handleCardUpdate();
-                setShowPRModal(false);
-                setPrModalData(null);
-              } else {
-                console.error("Failed to create PR");
+                if (res.ok) {
+                  await res.json();
+                  handleCardUpdate();
+                  setShowPRModal(false);
+                  setPrModalData(null);
+                } else {
+                  console.error("Failed to create PR");
+                }
+              } catch (e) {
+                console.error("Error creating PR", e);
+              } finally {
+                setPrLoading(false);
               }
-            } catch (e) {
-              console.error("Error creating PR", e);
-            } finally {
-              setPrLoading(false);
-            }
-          }}
-          isCreating={prLoading}
+            }}
+            isCreating={prLoading}
+            boardId={boardId}
+            cardTitle={cardsByList[prModalData.listId]?.find((c: Card) => c.id === prModalData.cardId)?.title || ""}
+            repoName={board.githubRepo}
+          />
+        )
+      }
+
+      <AutomationModal
+        isOpen={showAutomationModal}
+        onClose={() => setShowAutomationModal(false)}
+        boardId={boardId}
+        lists={board.lists || []}
+        onInvite={() => {
+          setShowAutomationModal(false);
+          alert("Please use the 'Invite' button in the board header to add members.");
+        }}
+        currentUserRole={currentUserRole}
+      />
+
+      <AnalyticsModal
+        isOpen={showAnalyticsModal}
+        onClose={() => setShowAnalyticsModal(false)}
+        boardId={boardId}
+      />
+
+      {board && (
+        <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
           boardId={boardId}
-          cardTitle={cardsByList[prModalData.listId]?.find(c => c.id === prModalData.cardId)?.title || ""}
-          repoName={board.githubRepo}
+          initialTitle={board.title}
+          initialDescription={board.description || ""}
+          initialBackground={board.background || "#fff"}
+          onUpdate={(updatedBoard) => {
+            setBoard((prev) => prev ? { ...prev, ...updatedBoard } : prev);
+          }}
         />
       )}
+
+      <BoardChat boardId={boardId} />
     </div>
   );
 }

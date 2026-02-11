@@ -131,16 +131,16 @@ export function AttachmentSection({
 
     const getIcon = (type: string) => {
         if (type.startsWith("image/")) return <ImageIcon className="w-5 h-5 text-blue-500" />;
-        return <FileText className="w-5 h-5 text-gray-500" />;
+        return <FileText className="w-5 h-5 text-muted-foreground" />;
     };
 
     return (
         <div className="border-t pt-4">
             <div className="flex items-center gap-2 mb-4">
-                <Paperclip className="w-4 h-4 text-gray-500" />
-                <h3 className="text-sm font-semibold text-gray-700">Pièces jointes</h3>
+                <Paperclip className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">Pièces jointes</h3>
                 {attachments.length > 0 && (
-                    <span className="text-xs text-gray-500">({attachments.length})</span>
+                    <span className="text-xs text-muted-foreground">({attachments.length})</span>
                 )}
             </div>
 
@@ -150,10 +150,10 @@ export function AttachmentSection({
                 {attachments.map((attachment) => (
                     <div
                         key={attachment.id}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 group border border-transparent hover:border-gray-200 transition-colors"
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted group border border-transparent hover:border-border transition-colors"
                     >
                         {/* Thumbnail / Icon */}
-                        <div className="w-16 h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center flex-shrink-0">
+                        <div className="w-16 h-12 bg-muted rounded overflow-hidden flex items-center justify-center flex-shrink-0">
                             {attachment.type.startsWith("image/") ? (
                                 <Image
                                     src={attachment.url}
@@ -174,11 +174,11 @@ export function AttachmentSection({
                                 href={attachment.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm font-medium text-gray-700 hover:text-blue-600 truncate block"
+                                className="text-sm font-medium text-foreground hover:text-primary truncate block"
                             >
                                 {attachment.name}
                             </a>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-foreground">
                                 Ajoutée le {new Date(attachment.createdAt).toLocaleDateString()} • {formatSize(attachment.size)}
                             </p>
                         </div>
@@ -190,7 +190,7 @@ export function AttachmentSection({
                                 download={attachment.name} // Hint for download
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-200"
+                                className="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-accent"
                                 title="Télécharger / Ouvrir"
                             >
                                 <Download className="w-4 h-4" />
@@ -198,7 +198,7 @@ export function AttachmentSection({
                             {!readOnly && (
                                 <button
                                     onClick={() => handleDelete(attachment.id)}
-                                    className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50"
+                                    className="p-1.5 text-muted-foreground hover:text-destructive rounded hover:bg-red-50"
                                     title="Supprimer"
                                 >
                                     <Trash2 className="w-4 h-4" />
@@ -209,7 +209,7 @@ export function AttachmentSection({
                 ))}
 
                 {attachments.length === 0 && !loading && (
-                    <p className="text-sm text-gray-400 italic text-center py-2">
+                    <p className="text-sm text-muted-foreground italic text-center py-2">
                         Aucune pièce jointe
                     </p>
                 )}
